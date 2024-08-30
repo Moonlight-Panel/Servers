@@ -1,0 +1,42 @@
+<Project Sdk="Microsoft.NET.Sdk.Razor">
+
+    <PropertyGroup>
+        <TargetFramework>net8.0</TargetFramework>
+        <Nullable>enable</Nullable>
+        <ImplicitUsings>enable</ImplicitUsings>
+    </PropertyGroup>
+
+
+    <ItemGroup>
+        <SupportedPlatform Include="browser"/>
+    </ItemGroup>
+
+    <ItemGroup Label="Moonlight Dependencies">
+        <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="8.0.7" />
+        <PackageReference Include="Microsoft.Extensions.Http" Version="8.0.0"/>
+        <PackageReference Include="MoonCore" Version="1.5.3" />
+        <PackageReference Include="MoonCore.Blazor" Version="1.2.1" />
+    </ItemGroup>
+
+    <ItemGroup Label="Shared references">
+        <ProjectReference Include="..\MoonlightServers.Shared\MoonlightServers.Shared.csproj" />
+    </ItemGroup>
+
+    <ItemGroup Label="Reference moonlight builds">
+        <Reference Include="Moonlight.Client">
+            <HintPath>..\..\Moonlight\Moonlight\Client\bin\Debug\net8.0\Moonlight.Client.dll</HintPath>
+        </Reference>
+        <Reference Include="Moonlight.Shared">
+            <HintPath>..\..\Moonlight\Moonlight\Shared\bin\Debug\net8.0\Moonlight.Shared.dll</HintPath>
+        </Reference>
+    </ItemGroup>
+
+    <ItemGroup>
+      <Folder Include="Helpers\" />
+      <Folder Include="Models\" />
+      <Folder Include="Services\" />
+      <Folder Include="UI\Components\" />
+      <Folder Include="UI\Views\" />
+    </ItemGroup>
+
+</Project>
