@@ -1,0 +1,5 @@
+@page "/admin/servers"
+
+@attribute [RequirePermission("admin.servers.get")]
+
+<NavTabs Index="0" TextSize="text-base" Names="@( ["Servers", "Nodes", "Stars", "Manager"])" Links="@( ["/admin/servers", "/admin/servers/nodes", "/admin/servers/stars", "admin/servers/manager"])"/>

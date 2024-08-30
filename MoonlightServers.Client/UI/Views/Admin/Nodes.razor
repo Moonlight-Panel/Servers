@@ -1,0 +1,87 @@
+@page "/admin/servers/nodes"
+
+@using Moonlight.Client.App.Models.Crud
+@using Moonlight.Shared.Http.Resources
+@using MoonlightServers.Shared.Http.Requests.Admin.Nodes
+@using MoonlightServers.Shared.Http.Responses.Admin.Nodes
+
+@inject HttpApiClient HttpApiClient
+
+@attribute [RequirePermission("admin.servers.nodes.get")]
+
+<NavTabs Index="1" TextSize="text-base" Names="@( ["Servers", "Nodes", "Stars", "Manager"])" Links="@( ["/admin/servers", "/admin/servers/nodes", "/admin/servers/stars", "admin/servers/manager"])"/>
+
+<div class="mt-5">
+    <SmartCrud TItem="DetailNodeResponse"
+               TCreateForm="CreateNodeRequest"
+               TUpdateForm="UpdateNodeRequest"
+               OnConfigure="OnConfigure">
+        <View>
+            <SmartColumn TItem="DetailNodeResponse" Field="@(x => x.Id)" Title="Id" />
+            <SmartColumn TItem="DetailNodeResponse" Field="@(x => x.Name)" Title="Name" />
+            <SmartColumn TItem="DetailNodeResponse" Field="@(x => x.Fqdn)" Title="FQDN" />
+        </View>
+    </SmartCrud>
+</div>
+
+@code
+{
+    private void OnConfigure(CrudOptions<DetailNodeResponse, CreateNodeRequest, UpdateNodeRequest> options)
+    {
+        options.Loader = async (page, pageSize) =>
+            await HttpApiClient.GetJson<PagedResponse<DetailNodeResponse>>($"admin/servers/nodes?page={page}&pageSize={pageSize}");
+
+        options.CreateFunction = async request => await HttpApiClient.Post("admin/servers/nodes", request);
+        options.UpdateFunction = async (request, item) => await HttpApiClient.Patch($"admin/servers/nodes/{item.Id}", request);
+        options.DeleteFunction = async item => await HttpApiClient.Delete($"admin/servers/nodes/{item.Id}");
+
+        options.ShowCreateAsModal = false;
+        options.ShowUpdateAsModal = false;
+        
+        options.OnConfigureCreate = option =>
+        {
+            option
+                .DefaultPage
+                .DefaultSection
+                .AddProperty(x => x.Name);
+            
+            option
+                .DefaultPage
+                .DefaultSection
+                .AddProperty(x => x.Fqdn);
+            
+            option
+                .DefaultPage
+                .DefaultSection
+                .AddProperty(x => x.ApiPort);
+            
+            option
+                .WithPage("Security")
+                .DefaultSection
+                .AddProperty(x => x.SslEnabled);
+        };
+
+        options.OnConfigureUpdate = (option, item) =>
+        {
+            option
+                .DefaultPage
+                .DefaultSection
+                .AddProperty(x => x.Name);
+
+            option
+                .DefaultPage
+                .DefaultSection
+                .AddProperty(x => x.Fqdn);
+
+            option
+                .DefaultPage
+                .DefaultSection
+                .AddProperty(x => x.ApiPort);
+
+            option
+                .DefaultPage
+                .DefaultSection
+                .AddProperty(x => x.SslEnabled);
+        };
+    }
+}

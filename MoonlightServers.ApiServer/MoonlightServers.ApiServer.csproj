@@ -37,10 +37,9 @@
     </ItemGroup>
 
     <ItemGroup>
-      <Folder Include="Database\Entities\" />
+      <Folder Include="Database\Enums\" />
       <Folder Include="Database\Migrations\" />
       <Folder Include="Helpers\" />
-      <Folder Include="Http\Controllers\" />
       <Folder Include="Http\Hubs\" />
       <Folder Include="Http\Middleware\" />
       <Folder Include="Implementations\" />
