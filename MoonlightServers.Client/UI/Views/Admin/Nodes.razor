@@ -2,6 +2,7 @@
 
 @using Moonlight.Client.App.Models.Crud
 @using Moonlight.Shared.Http.Resources
+@using MoonlightServers.Client.UI.Components.Forms
 @using MoonlightServers.Shared.Http.Requests.Admin.Nodes
 @using MoonlightServers.Shared.Http.Responses.Admin.Nodes
 
@@ -82,6 +83,11 @@
                 .DefaultPage
                 .DefaultSection
                 .AddProperty(x => x.SslEnabled);
+            
+            option
+                .WithPage("Allocations")
+                .DefaultSection
+                .AddComponent<AllocationEditor>();
         };
     }
 }
