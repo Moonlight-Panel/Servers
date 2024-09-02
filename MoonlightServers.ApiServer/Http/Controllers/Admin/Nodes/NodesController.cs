@@ -9,7 +9,7 @@ using MoonlightServers.ApiServer.Database.Entities;
 using MoonlightServers.Shared.Http.Requests.Admin.Nodes;
 using MoonlightServers.Shared.Http.Responses.Admin.Nodes;
 
-namespace MoonlightServers.ApiServer.Http.Controllers.Admin;
+namespace MoonlightServers.ApiServer.Http.Controllers.Admin.Nodes;
 
 [ApiController]
 [Route("admin/servers/nodes")]
@@ -78,7 +78,4 @@ public class NodesController : BaseCrudController<Node, DetailNodeResponse, Crea
             throw new ApiException("The fqdn needs to be either a domain or an ip", statusCode: 400);
         }
     }
-    
-    // Allocations
-    
 }

@@ -17,11 +17,25 @@
                TCreateForm="CreateNodeRequest"
                TUpdateForm="UpdateNodeRequest"
                OnConfigure="OnConfigure">
-        <View>
+        <View Context="ViewContext">
             <SmartColumn TItem="DetailNodeResponse" Field="@(x => x.Id)" Title="Id" />
-            <SmartColumn TItem="DetailNodeResponse" Field="@(x => x.Name)" Title="Name" />
+            <SmartColumn TItem="DetailNodeResponse" Field="@(x => x.Name)" Title="Name">
+                <Template>
+                    <a class="text-blue-500" href="#" @onclick:preventDefault @onclick="() => ViewContext.LaunchDetails(context)">@context.Name</a>
+                </Template>
+            </SmartColumn>
             <SmartColumn TItem="DetailNodeResponse" Field="@(x => x.Fqdn)" Title="FQDN" />
         </View>
+        <DetailView>
+            <SmartTabs>
+                <SmartTab Name="Overview">
+                    <h3 class="text-2xl text-blue-500">Overview owo</h3>
+                </SmartTab>
+                <SmartTab Name="Allocations">
+                    <AllocationEditor NodeId="@context.Id" />
+                </SmartTab>
+            </SmartTabs>
+        </DetailView>
     </SmartCrud>
 </div>
 
@@ -38,6 +52,7 @@
 
         options.ShowCreateAsModal = false;
         options.ShowUpdateAsModal = false;
+        options.ShowDetailsAsModal = false;
         
         options.OnConfigureCreate = option =>
         {
@@ -83,11 +98,6 @@
                 .DefaultPage
                 .DefaultSection
                 .AddProperty(x => x.SslEnabled);
-            
-            option
-                .WithPage("Allocations")
-                .DefaultSection
-                .AddComponent<AllocationEditor>();
         };
     }
 }

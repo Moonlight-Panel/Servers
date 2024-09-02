@@ -1,1 +1,65 @@
-<h3 class="text-xl2 text-blue-500">Allocation editor</h3>
+@using Moonlight.Client.App.Models.Crud
+@using Moonlight.Shared.Http.Resources
+@using MoonlightServers.Shared.Http.Requests.Admin.Allocations
+@using MoonlightServers.Shared.Http.Responses.Admin.Allocations
+
+@inject HttpApiClient HttpApiClient
+
+<div class="rounded-lg border border-slate-700 bg-slate-700">
+    <SmartCrud TItem="DetailAllocationResponse"
+               TCreateForm="CreateAllocationRequest"
+               TUpdateForm="UpdateAllocationRequest"
+               OnConfigure="OnConfigure">
+        <View>
+            <SmartColumn TItem="DetailAllocationResponse" Field="@(x => x.Id)" Title="Id" />
+            <SmartColumn TItem="DetailAllocationResponse" Field="@(x => x.IpAddress)" Title="IP Address" />
+            <SmartColumn TItem="DetailAllocationResponse" Field="@(x => x.Port)" Title="Port" />
+        </View>
+    </SmartCrud>
+</div>
+
+@code
+{
+    [Parameter]
+    public int NodeId { get; set; }
+
+    private void OnConfigure(CrudOptions<DetailAllocationResponse, CreateAllocationRequest, UpdateAllocationRequest> options)
+    {
+        options.Loader = async (page, pageSize)
+            => await HttpApiClient.GetJson<PagedResponse<DetailAllocationResponse>>($"admin/servers/nodes/{NodeId}/allocations");
+
+        options.CreateFunction = async request => await HttpApiClient.Post($"admin/servers/nodes/{NodeId}/allocations", request);
+        options.UpdateFunction = async (request, item) => await HttpApiClient.Patch($"admin/servers/nodes/{NodeId}/allocations/{item.Id}", request);
+        options.DeleteFunction = async item => await HttpApiClient.Delete($"admin/servers/nodes/{NodeId}/allocations/{item.Id}");
+
+        options.OnConfigureCreate = option =>
+        {
+            option
+                .DefaultPage
+                .DefaultSection
+                .AddProperty(x => x.IpAddress)
+                .WithColumns(6);
+
+            option
+                .DefaultPage
+                .DefaultSection
+                .AddProperty(x => x.Port)
+                .WithColumns(6);
+        };
+
+        options.OnConfigureUpdate = (option, item) =>
+        {
+            option
+                .DefaultPage
+                .DefaultSection
+                .AddProperty(x => x.IpAddress)
+                .WithColumns(6);
+
+            option
+                .DefaultPage
+                .DefaultSection
+                .AddProperty(x => x.Port)
+                .WithColumns(6);
+        };
+    }
+}
