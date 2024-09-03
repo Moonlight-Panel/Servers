@@ -15,15 +15,9 @@ namespace MoonlightServers.ApiServer.Http.Controllers.Admin.Nodes;
 [Route("admin/servers/nodes")]
 public class NodesController : BaseCrudController<Node, DetailNodeResponse, CreateNodeRequest, DetailNodeResponse, UpdateNodeRequest, DetailNodeResponse>
 {
-    private DatabaseRepository<Node> NodeRepository;
-    private DatabaseRepository<Allocation> AllocationRepository;
-    
-    public NodesController(DatabaseRepository<Node> itemRepository, DatabaseRepository<Allocation> allocationRepository) : base(itemRepository)
+    public NodesController(DatabaseRepository<Node> itemRepository) : base(itemRepository)
     {
         PermissionPrefix = "admin.servers.nodes";
-        
-        NodeRepository = itemRepository;
-        AllocationRepository = allocationRepository;
     }
 
     [HttpPost]
@@ -35,7 +29,7 @@ public class NodesController : BaseCrudController<Node, DetailNodeResponse, Crea
         var node = Mapper.Map<Node>(request);
         node.Token = Formatter.GenerateString(32);
 
-        var finalNode = NodeRepository.Add(node);
+        var finalNode = ItemRepository.Add(node);
 
         return Ok(Mapper.Map<DetailNodeResponse>(finalNode));
     }
@@ -50,7 +44,7 @@ public class NodesController : BaseCrudController<Node, DetailNodeResponse, Crea
 
         item = Mapper.Map(item, request);
         
-        NodeRepository.Update(item);
+        ItemRepository.Update(item);
 
         return Ok(Mapper.Map<DetailNodeResponse>(item));
     }

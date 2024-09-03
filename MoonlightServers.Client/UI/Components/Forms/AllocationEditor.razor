@@ -26,7 +26,7 @@
     private void OnConfigure(CrudOptions<DetailAllocationResponse, CreateAllocationRequest, UpdateAllocationRequest> options)
     {
         options.Loader = async (page, pageSize)
-            => await HttpApiClient.GetJson<PagedResponse<DetailAllocationResponse>>($"admin/servers/nodes/{NodeId}/allocations");
+            => await HttpApiClient.GetJson<PagedResponse<DetailAllocationResponse>>($"admin/servers/nodes/{NodeId}/allocations?page={page}&pageSize={pageSize}");
 
         options.CreateFunction = async request => await HttpApiClient.Post($"admin/servers/nodes/{NodeId}/allocations", request);
         options.UpdateFunction = async (request, item) => await HttpApiClient.Patch($"admin/servers/nodes/{NodeId}/allocations/{item.Id}", request);
