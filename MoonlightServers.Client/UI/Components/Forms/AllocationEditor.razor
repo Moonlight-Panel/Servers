@@ -5,18 +5,16 @@
 
 @inject HttpApiClient HttpApiClient
 
-<div class="rounded-lg border border-slate-700 bg-slate-700">
-    <SmartCrud TItem="DetailAllocationResponse"
-               TCreateForm="CreateAllocationRequest"
-               TUpdateForm="UpdateAllocationRequest"
-               OnConfigure="OnConfigure">
-        <View>
-            <SmartColumn TItem="DetailAllocationResponse" Field="@(x => x.Id)" Title="Id" />
-            <SmartColumn TItem="DetailAllocationResponse" Field="@(x => x.IpAddress)" Title="IP Address" />
-            <SmartColumn TItem="DetailAllocationResponse" Field="@(x => x.Port)" Title="Port" />
-        </View>
-    </SmartCrud>
-</div>
+<SmartCrud TItem="DetailAllocationResponse"
+           TCreateForm="CreateAllocationRequest"
+           TUpdateForm="UpdateAllocationRequest"
+           OnConfigure="OnConfigure">
+    <View>
+        <SmartColumn TItem="DetailAllocationResponse" Field="@(x => x.Id)" Title="Id" />
+        <SmartColumn TItem="DetailAllocationResponse" Field="@(x => x.IpAddress)" Title="IP Address" />
+        <SmartColumn TItem="DetailAllocationResponse" Field="@(x => x.Port)" Title="Port" />
+    </View>
+</SmartCrud>
 
 @code
 {

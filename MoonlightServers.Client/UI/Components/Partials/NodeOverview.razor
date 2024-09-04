@@ -1,0 +1,15 @@
+<div class="mt-5 gap-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+    <StatCard Title="CPU Model" Text="AMD Ryzen 7 1700X Eight-Core Processor" Icon="bi bi-cpu"/>
+    <StatCard Title="CPU Usage" Text="24,19%" Icon="bi bi-speedometer2"/>
+    <StatCard Title="Memory Usage" Text="21.31 GB / 62.75 GB" Icon="bi bi-memory"/>
+    <StatCard Title="Host OS" Text="Arch Linux" Icon="bi bi-motherboard"/>
+    <StatCard Title="Uptime" Text="57d 2h 51m 50s" Icon="bi bi-clock-history"/>
+    <StatCard Title="Containers" Text="11" Icon="bi bi-box-seam"/>
+    <StatCard Title="Disk Usage" Text="318.84 GB / 904.12 GB" Icon="bi bi-hdd"/>
+    <StatCard Title="Version" Text="v2.1 - Galaxy (Release #1)" Icon="bi bi-tag"/>
+</div>
+
+@code
+{
+    [Parameter] public int NodeId { get; set; }
+}

@@ -5,6 +5,7 @@
 @using MoonlightServers.Client.UI.Components.Forms
 @using MoonlightServers.Shared.Http.Requests.Admin.Nodes
 @using MoonlightServers.Shared.Http.Responses.Admin.Nodes
+@using MoonlightServers.Client.UI.Components.Partials
 
 @inject HttpApiClient HttpApiClient
 
@@ -29,10 +30,13 @@
         <DetailView>
             <SmartTabs>
                 <SmartTab Name="Overview">
-                    <h3 class="text-2xl text-blue-500">Overview owo</h3>
+                    <NodeOverview NodeId="@context.Id" />
                 </SmartTab>
                 <SmartTab Name="Allocations">
                     <AllocationEditor NodeId="@context.Id" />
+                </SmartTab>
+                <SmartTab Name="Logs">
+                    <NodeLogs NodeId="@context.Id" />
                 </SmartTab>
             </SmartTabs>
         </DetailView>

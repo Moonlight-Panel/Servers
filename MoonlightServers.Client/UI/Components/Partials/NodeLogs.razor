@@ -1,0 +1,47 @@
+<div class="mt-5">
+    <div class="p-3 rounded-lg shadow bg-slate-800">
+        <div class="flex justify-end">
+            <div class="flex rounded-md shadow-sm">
+                <div class="relative flex flex-grow items-stretch focus-within:z-10">
+                    <input type="text" value="50" class="block w-full rounded-none rounded-l-md py-1.5 sm:text-sm sm:leading-6 border-0 bg-slate-800 text-white shadow-sm ring-1 ring-inset ring-white/10 focus:ring-2 focus:ring-inset focus:ring-indigo-500 placeholder-slate-400" placeholder="Lines to fetch">
+                </div>
+                <button type="button" class="relative -ml-px inline-flex items-center gap-x-1.5 rounded-r-md px-3 py-2 text-sm font-medium focus:outline-none text-white bg-indigo-600 hover:bg-indigo-700">
+                    <i class="bi bi-arrow-repeat text-lg mr-1"></i>
+                    Refresh
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="p-6 rounded-lg shadow bg-black font-scp text-sm mt-5">
+        10:43:29 [INF] ExecutionContext Loaded server 44 [23/25] <br />
+        10:43:29 [INF] ExecutionContext Loaded server 45 [24/25]<br />
+        10:43:29 [INF] ExecutionContext Loaded server 50 [25/25]<br />
+        10:43:29 [INF] ExecutionContext Fetched servers. Closing websocket connection<br />
+        10:43:29 [INF] AsyncTaskMethodBuilder Finishing boot<br />
+        10:43:29 [INF] AsyncTaskMethodBuilder Restoring docker containers<br />
+        10:43:29 [INF] ExecutionContext Restored server 35 and reattached stream<br />
+        10:43:29 [INF] ExecutionContext Restored server 19 and reattached stream<br />
+        10:43:29 [INF] ExecutionContext Restored server 2 and reattached stream<br />
+        10:43:29 [INF] ExecutionContext Restored server 9 and reattached stream<br />
+        10:43:29 [INF] ExecutionContext Restored server 44 and reattached stream<br />
+        10:43:29 [INF] ExecutionContext Restored server 45 and reattached stream<br />
+        10:43:29 [INF] ExecutionContext Restored server 42 and reattached stream<br />
+        10:43:29 [INF] ExecutionContext Restored server 39 and reattached stream<br />
+        10:43:29 [INF] ExecutionContext Restored server 17 and reattached stream<br />
+        10:43:29 [INF] ExecutionContext Restored server 15 and reattached stream<br />
+        10:43:29 [INF] ExecutionContext Restored server 12 and reattached stream<br />
+        10:50:08 [FTL] ConnectionManager Connection id "0HN65LD3UMODC" application never completed.<br />
+        11:20:29 [FTL] ConnectionManager Connection id "0HN65LD3UMOE9" application never completed.<br />
+        15:53:04 [FTL] ConnectionManager Connection id "0HN65LD3UMPS5" application never completed.<br />
+        15:53:04 [FTL] ConnectionManager Connection id "0HN65LD3UMPN2" application never completed.<br />
+        15:53:04 [FTL] ConnectionManager Connection id "0HN65LD3UMPN9" application never completed.<br />
+        15:53:04 [FTL] ConnectionManager Connection id "0HN65LD3UMPRK" application never completed.<br />
+        20:11:22 [WRN] AsyncTaskMethodBuilder`1 Invalid username format received. Username: 'anonymous', Password: 'IEUser<br />
+    </div>
+</div>
+
+@code
+{
+    [Parameter] public int NodeId { get; set; }
+}
