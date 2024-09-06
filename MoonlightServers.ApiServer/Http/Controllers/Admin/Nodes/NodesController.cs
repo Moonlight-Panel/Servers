@@ -5,7 +5,9 @@ using MoonCore.Helpers;
 using Moonlight.ApiServer.App.Attributes;
 using Moonlight.ApiServer.App.Exceptions;
 using Moonlight.ApiServer.App.Helpers;
+using MoonlightServers.DaemonShared.Http.Resources.Sys;
 using MoonlightServers.ApiServer.Database.Entities;
+using MoonlightServers.ApiServer.Extensions;
 using MoonlightServers.Shared.Http.Requests.Admin.Nodes;
 using MoonlightServers.Shared.Http.Responses.Admin.Nodes;
 
@@ -14,7 +16,7 @@ namespace MoonlightServers.ApiServer.Http.Controllers.Admin.Nodes;
 [ApiController]
 [Route("admin/servers/nodes")]
 public class NodesController : BaseCrudController<Node, DetailNodeResponse, CreateNodeRequest, DetailNodeResponse, UpdateNodeRequest, DetailNodeResponse>
-{
+{ 
     public NodesController(DatabaseRepository<Node> itemRepository) : base(itemRepository)
     {
         PermissionPrefix = "admin.servers.nodes";
@@ -47,6 +49,21 @@ public class NodesController : BaseCrudController<Node, DetailNodeResponse, Crea
         ItemRepository.Update(item);
 
         return Ok(Mapper.Map<DetailNodeResponse>(item));
+    }
+
+    [HttpGet("{id}/status")]
+    [RequirePermission("admin.servers.nodes.status")]
+    public async Task<ActionResult<StatusNodeResponse>> Status(int id)
+    {
+        var node = LoadItemById(id);
+
+        using var httpClient = node.CreateClient();
+
+        var response = await httpClient.GetJson<SystemInfoResponse>("system/info");
+        
+        var result = Mapper.Map<StatusNodeResponse>(response);
+
+        return Ok(result);
     }
 
     private void ValidateFqdn(string fqdn, bool ssl)

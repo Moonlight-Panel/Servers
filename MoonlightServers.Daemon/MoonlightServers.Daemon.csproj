@@ -8,7 +8,7 @@
 
     <ItemGroup>
         <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="8.0.6"/>
-        <PackageReference Include="MoonCore" Version="1.5.3" />
+        <PackageReference Include="MoonCore" Version="1.5.4" />
         <PackageReference Include="MoonCore.Unix" Version="1.0.0" />
         <PackageReference Include="Swashbuckle.AspNetCore" Version="6.4.0"/>
     </ItemGroup>
@@ -19,7 +19,6 @@
 
     <ItemGroup>
       <Folder Include="App\Extensions\" />
-      <Folder Include="App\Http\Controllers\" />
       <Folder Include="App\Http\Middleware\" />
       <Folder Include="App\Implementations\" />
       <Folder Include="App\Interfaces\" />

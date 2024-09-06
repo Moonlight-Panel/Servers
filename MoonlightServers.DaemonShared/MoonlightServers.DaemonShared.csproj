@@ -8,7 +8,6 @@
 
     <ItemGroup>
       <Folder Include="Http\Requests\" />
-      <Folder Include="Http\Resources\" />
       <Folder Include="Models\" />
     </ItemGroup>
 

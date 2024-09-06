@@ -1,6 +1,5 @@
 using MoonCore.Extensions;
 using MoonCore.Helpers;
-using MoonlightServers.Daemon.App.Helpers;
 
 var loggerFactory = new LoggerFactory();
 
@@ -30,13 +29,6 @@ builder.Services.AddControllers();
 
 var app = builder.Build();
 
-var x = new HostHelper();
-
-var data = await x.GetDiskUsage();
-
-logger.LogInformation("Total disk: {value}", Formatter.FormatSize((long)data[0]));
-logger.LogInformation("Free disk: {value}", Formatter.FormatSize((long)data[1]));
-logger.LogInformation("Total inodes: {value}", data[2]);
-logger.LogInformation("Free inodes: {value}", data[3]);
+app.MapControllers();
 
 app.Run();

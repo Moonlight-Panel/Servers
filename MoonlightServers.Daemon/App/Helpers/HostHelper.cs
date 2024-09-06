@@ -67,37 +67,37 @@ public class HostHelper
         return TimeSpan.FromSeconds(seconds);
     }
 
-    public async Task<long[]> GetMemoryDetails()
+    public async Task<ulong[]> GetMemoryDetails() // 0, total - 1, free - 2, available - 3, cached - 4, swap total - 5, swap free
     {
-        var result = new long[6];
+        var result = new ulong[6];
 
         var memInfoText = await File.ReadAllLinesAsync("/proc/meminfo");
 
         foreach (var line in memInfoText)
         {
             if (line.StartsWith("MemTotal:"))
-                result[0] = 1024 * long.Parse(line.Replace("MemTotal:", "").Replace("kB", "").Trim());
+                result[0] = 1024 * ulong.Parse(line.Replace("MemTotal:", "").Replace("kB", "").Trim());
 
             if (line.StartsWith("MemFree:"))
-                result[1] = 1024 * long.Parse(line.Replace("MemFree:", "").Replace("kB", "").Trim());
+                result[1] = 1024 * ulong.Parse(line.Replace("MemFree:", "").Replace("kB", "").Trim());
 
             if (line.StartsWith("MemAvailable:"))
-                result[2] = 1024 * long.Parse(line.Replace("MemAvailable:", "").Replace("kB", "").Trim());
+                result[2] = 1024 * ulong.Parse(line.Replace("MemAvailable:", "").Replace("kB", "").Trim());
 
             if (line.StartsWith("Cached:"))
-                result[3] = 1024 * long.Parse(line.Replace("Cached:", "").Replace("kB", "").Trim());
+                result[3] = 1024 * ulong.Parse(line.Replace("Cached:", "").Replace("kB", "").Trim());
 
             if (line.StartsWith("SwapTotal:"))
-                result[4] = 1024 * long.Parse(line.Replace("SwapTotal:", "").Replace("kB", "").Trim());
+                result[4] = 1024 * ulong.Parse(line.Replace("SwapTotal:", "").Replace("kB", "").Trim());
 
             if (line.StartsWith("SwapFree:"))
-                result[5] = 1024 * long.Parse(line.Replace("SwapFree:", "").Replace("kB", "").Trim());
+                result[5] = 1024 * ulong.Parse(line.Replace("SwapFree:", "").Replace("kB", "").Trim());
         }
 
         return result;
     }
 
-    public async Task<ulong[]> GetDiskUsage() // 0, Total size - 1, Free size, - 3, Total inodes - 4, free inodes
+    public async Task<ulong[]> GetDiskUsage() // 0, Total size - 1, Free size, - 2, Total inodes - 3, free inodes
     {
         var sysCallRes = Syscall.statvfs("/", out var buf);
 
