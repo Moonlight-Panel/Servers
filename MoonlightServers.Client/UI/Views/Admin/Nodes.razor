@@ -51,7 +51,7 @@
                             <div>
                                 <i class="bi bi-cpu text-lg text-slate-400 mr-1"></i>
                                 <span class="text-white">
-                                    @(response.CpuUsage.Average(x => x))%
+                                    @(Math.Round(response.CpuUsage.Average(x => x), 2))%
                                 </span>
                             </div>
                             <div>
