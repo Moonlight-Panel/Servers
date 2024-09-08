@@ -19,24 +19,81 @@
                TUpdateForm="UpdateNodeRequest"
                OnConfigure="OnConfigure">
         <View Context="ViewContext">
-            <SmartColumn TItem="DetailNodeResponse" Field="@(x => x.Id)" Title="Id" />
+            <SmartColumn TItem="DetailNodeResponse" Field="@(x => x.Id)" Title="Id"/>
             <SmartColumn TItem="DetailNodeResponse" Field="@(x => x.Name)" Title="Name">
                 <Template>
                     <a class="text-blue-500" href="#" @onclick:preventDefault @onclick="() => ViewContext.LaunchDetails(context)">@context.Name</a>
                 </Template>
             </SmartColumn>
-            <SmartColumn TItem="DetailNodeResponse" Field="@(x => x.Fqdn)" Title="FQDN" />
+            <SmartColumn TItem="DetailNodeResponse" Field="@(x => x.Fqdn)" Title="FQDN"/>
+            <SmartColumn TItem="DetailNodeResponse" Field="@(x => x.Id)">
+                <Template>
+                    <div class="flex justify-between">
+                        @{
+                            NodeFetchState? fetchState;
+
+                            lock (StatusCache)
+                                fetchState = StatusCache.ContainsKey(context.Id) ? StatusCache[context.Id] : null;
+                        }
+
+                        @if (fetchState == null)
+                        {
+                            <div class="text-slate-400">Loading status...</div>
+                        }
+                        else if (fetchState.Response != null)
+                        {
+                            var response = fetchState.Response!;
+                            
+                            <div class="text-green-500">
+                                <i class="mr-1 align-middle text-lg bi bi-check-circle-fill text-green-500"></i>
+                                <span>Online</span>
+                            </div>
+                            <div>
+                                <i class="bi bi-cpu text-lg text-slate-400 mr-1"></i>
+                                <span class="text-white">
+                                    @(response.CpuUsage.Average(x => x))%
+                                </span>
+                            </div>
+                            <div>
+                                <i class="bi bi-memory text-lg text-slate-400 mr-1"></i>
+                                <span class="text-white">
+                                    @Formatter.FormatSize((long)(response.MemoryTotal - response.MemoryAvailable))
+                                    <span>/</span>
+                                    @Formatter.FormatSize((long)response.MemoryTotal)
+                                </span>
+                            </div>
+                            <div>
+                                <i class="bi bi-hdd text-lg text-slate-400 mr-1"></i>
+                                <span class="text-white">
+                                    @Formatter.FormatSize((long)(response.DiskTotal - response.DiskFree))
+                                    <span>/</span>
+                                    @Formatter.FormatSize((long)response.DiskTotal)
+                                </span>
+                            </div>
+                        }
+                        else if(fetchState.Exception != null)
+                        {
+                            <div class="text-white">
+                                <i class="mr-1 align-middle text-lg bi bi-exclamation-triangle-fill text-red-500"></i>
+                                <span class="mr-1">Offline:</span>
+                                
+                                @fetchState.Exception.Message
+                            </div>
+                        }
+                    </div>
+                </Template>
+            </SmartColumn>
         </View>
         <DetailView>
             <SmartTabs>
                 <SmartTab Name="Overview">
-                    <NodeOverview NodeId="@context.Id" />
+                    <NodeOverview NodeId="@context.Id"/>
                 </SmartTab>
                 <SmartTab Name="Allocations">
-                    <AllocationEditor NodeId="@context.Id" />
+                    <AllocationEditor NodeId="@context.Id"/>
                 </SmartTab>
                 <SmartTab Name="Logs">
-                    <NodeLogs NodeId="@context.Id" />
+                    <NodeLogs NodeId="@context.Id"/>
                 </SmartTab>
             </SmartTabs>
         </DetailView>
@@ -45,10 +102,51 @@
 
 @code
 {
+    private readonly Dictionary<int, NodeFetchState> StatusCache = new();
+
     private void OnConfigure(CrudOptions<DetailNodeResponse, CreateNodeRequest, UpdateNodeRequest> options)
     {
         options.Loader = async (page, pageSize) =>
-            await HttpApiClient.GetJson<PagedResponse<DetailNodeResponse>>($"admin/servers/nodes?page={page}&pageSize={pageSize}");
+        {
+            var response = await HttpApiClient
+                .GetJson<PagedResponse<DetailNodeResponse>>($"admin/servers/nodes?page={page}&pageSize={pageSize}");
+
+            lock (StatusCache)
+                StatusCache.Clear();
+
+            Task.Run(async () =>
+            {
+                foreach (var node in response.Items)
+                {
+                    try
+                    {
+                        var status = await HttpApiClient.GetJson<StatusNodeResponse>($"admin/servers/nodes/{node.Id}/status");
+
+                        lock (StatusCache)
+                        {
+                            StatusCache.Add(node.Id, new()
+                            {
+                                Response = status
+                            });
+                        }
+                    }
+                    catch (Exception e)
+                    {
+                        lock (StatusCache)
+                        {
+                            StatusCache.Add(node.Id, new()
+                            {
+                                Exception = e
+                            });
+                        }
+                    }
+
+                    await InvokeAsync(StateHasChanged);
+                }
+            });
+
+            return response;
+        };
 
         options.CreateFunction = async request => await HttpApiClient.Post("admin/servers/nodes", request);
         options.UpdateFunction = async (request, item) => await HttpApiClient.Patch($"admin/servers/nodes/{item.Id}", request);
@@ -57,24 +155,24 @@
         options.ShowCreateAsModal = false;
         options.ShowUpdateAsModal = false;
         options.ShowDetailsAsModal = false;
-        
+
         options.OnConfigureCreate = option =>
         {
             option
                 .DefaultPage
                 .DefaultSection
                 .AddProperty(x => x.Name);
-            
+
             option
                 .DefaultPage
                 .DefaultSection
                 .AddProperty(x => x.Fqdn);
-            
+
             option
                 .DefaultPage
                 .DefaultSection
                 .AddProperty(x => x.ApiPort);
-            
+
             option
                 .DefaultPage
                 .DefaultSection
@@ -103,5 +201,11 @@
                 .DefaultSection
                 .AddProperty(x => x.SslEnabled);
         };
+    }
+
+    class NodeFetchState
+    {
+        public StatusNodeResponse? Response { get; set; }
+        public Exception? Exception { get; set; }
     }
 }
