@@ -1,3 +1,4 @@
+@using System.Text.Json
 @using MoonlightServers.Shared.Http.Responses.Admin.Nodes
 
 @implements IDisposable
@@ -5,7 +6,7 @@
 @inject HttpApiClient HttpApiClient
 
 <LazyLoader Load="Load">
-    <div class="mt-5">
+    <div class="mt-8">
         @if (IsOffline)
         {
             <IconAlert Icon="bi bi-database-x"
@@ -19,7 +20,7 @@
             var cpuUsage = Math.Round(Status.CpuUsage.Average(x => x), 2) + "%";
             var memoryUsage = $"{Formatter.FormatSize((long)(Status.MemoryTotal - Status.MemoryAvailable))} / {Formatter.FormatSize((long)Status.MemoryTotal)}";
             var uptime = Formatter.FormatUptime(Status.Uptime);
-            var diskUsage = $"{Formatter.FormatSize((long)Status.DiskFree)} / {Formatter.FormatSize((long)Status.DiskTotal)}";
+            var diskUsage = $"{Formatter.FormatSize((long)(Status.DiskTotal - Status.DiskFree))} / {Formatter.FormatSize((long)Status.DiskTotal)}";
 
             <div class="mt-5 gap-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
                 <StatCard Title="CPU Model" Text="@Status.CpuModel" Icon="bi bi-cpu"/>
@@ -30,6 +31,28 @@
                 <StatCard Title="Containers" Text="11" Icon="bi bi-box-seam"/>
                 <StatCard Title="Disk Usage" Text="@diskUsage" Icon="bi bi-hdd"/>
                 <StatCard Title="Version" Text="v2.1 - Galaxy (Release #1)" Icon="bi bi-tag"/>
+            </div>
+            
+            <div class="my-4">
+                <h2 class="text-base font-semibold leading-7 text-slate-100">
+                    CPU Cores
+                </h2>
+                <p class="mt-1 text-sm leading-6 text-slate-400">
+                    View the nodes cpu usage in detail
+                </p>
+            </div>
+            
+            <div class="mt-5 gap-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5">
+                @{
+                    int index = 1;
+                }
+                
+                @foreach (var usage in Status.CpuUsage)
+                {
+                    <TestC Title="@("Core" + index)" CurrentValue="@usage" MaxValue="100"></TestC>
+
+                    index++;
+                }
             </div>
         }
     </div>
@@ -67,6 +90,8 @@
         try
         {
             Status = await HttpApiClient.GetJson<StatusNodeResponse>($"admin/servers/nodes/{NodeId}/status");
+            
+            Console.WriteLine(JsonSerializer.Serialize(Status));
         }
         catch (Exception)
         {
