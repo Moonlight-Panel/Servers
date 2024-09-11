@@ -59,7 +59,20 @@ public class NodesController : BaseCrudController<Node, DetailNodeResponse, Crea
 
         using var httpClient = node.CreateClient();
 
-        var response = await httpClient.GetJson<SystemInfoResponse>("system/info");
+        SystemInfoResponse response;
+        
+        try
+        {
+            response = await httpClient.GetJson<SystemInfoResponse>("system/info");
+        }
+        catch (HttpRequestException e)
+        {
+            throw new ApiException(
+                "The requested node's api server was not reachable",
+                e.Message,
+                statusCode: 502
+            );
+        }
         
         var result = Mapper.Map<StatusNodeResponse>(response);
 
