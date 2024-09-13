@@ -17,6 +17,17 @@
         }
         else
         {
+            @*
+<div class="mt-8 mb-4">
+       <h2 class="text-base font-semibold leading-7 text-slate-100">
+           Node overview
+       </h2>
+       <p class="mt-1 text-sm leading-6 text-slate-400">
+           See all important details of this node at one quick look
+       </p>
+   </div>
+*@
+
             var cpuUsage = Math.Round(Status.CpuUsage.Average(x => x), 2) + "%";
             var memoryUsage = $"{Formatter.FormatSize((long)(Status.MemoryTotal - Status.MemoryAvailable))} / {Formatter.FormatSize((long)Status.MemoryTotal)}";
             var uptime = Formatter.FormatUptime(Status.Uptime);
@@ -32,7 +43,7 @@
                 <StatCard Title="Disk Usage" Text="@diskUsage" Icon="bi bi-hdd"/>
                 <StatCard Title="Version" Text="v2.1 - Galaxy (Release #1)" Icon="bi bi-tag"/>
             </div>
-            
+
             <div class="my-4">
                 <h2 class="text-base font-semibold leading-7 text-slate-100">
                     CPU Cores
@@ -41,15 +52,15 @@
                     View the nodes cpu usage in detail
                 </p>
             </div>
-            
+
             <div class="mt-5 gap-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5">
                 @{
                     int index = 1;
                 }
-                
+
                 @foreach (var usage in Status.CpuUsage)
                 {
-                    <TestC Title="@("Core" + index)" CurrentValue="@usage" MaxValue="100"></TestC>
+                    <ProgressStatCard Title="@("Core #" + index)" CurrentValue="@usage" MaxValue="100"></ProgressStatCard>
 
                     index++;
                 }
@@ -90,7 +101,7 @@
         try
         {
             Status = await HttpApiClient.GetJson<StatusNodeResponse>($"admin/servers/nodes/{NodeId}/status");
-            
+
             Console.WriteLine(JsonSerializer.Serialize(Status));
         }
         catch (Exception)
