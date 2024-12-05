@@ -1,0 +1,61 @@
+@page "/admin/servers/stars/update/{Id:int}"
+
+@using MoonCore.Blazor.Tailwind.Components
+@using MoonCore.Blazor.Tailwind.Forms
+@using MoonCore.Blazor.Tailwind.Toasts
+@using MoonCore.Helpers
+@using MoonlightServers.Shared.Http.Requests.Admin.Stars
+@using MoonlightServers.Shared.Http.Responses.Admin.Stars
+
+@inject HttpApiClient ApiClient
+@inject NavigationManager Navigation
+@inject ToastService ToastService
+
+<LazyLoader Load="Load">
+    <PageHeader Title="Update Star">
+        <button @onclick="GoBack" type="button" class="btn btn-secondary">
+            <i class="icon-chevron-left mr-1"></i>
+            Back
+        </button>
+        <WButton OnClick="_ => Form.Submit()" CssClasses="btn btn-primary">
+            <i class="icon-check mr-1"></i>
+            Update
+        </WButton>
+    </PageHeader>
+
+    <div class="mt-5">
+        <HandleForm @ref="Form" Model="Request" OnValidSubmit="OnSubmit">
+            <GeneratedForm TForm="UpdateStarRequest" Model="Request" OnConfigure="OnConfigure"/>
+        </HandleForm>
+    </div>
+</LazyLoader>
+
+@code
+{
+    [Parameter] public int Id { get; set; }
+
+    private HandleForm Form;
+    private UpdateStarRequest Request;
+
+    private async Task Load(LazyLoader _)
+    {
+        var detail = await ApiClient.GetJson<StarDetailResponse>($"api/stars/{Id}");
+        Request = Mapper.Map<UpdateStarRequest>(detail);
+    }
+
+    private void OnConfigure(FormConfiguration<UpdateStarRequest> configuration)
+    {
+        
+    }
+
+    private async Task OnSubmit()
+    {
+        await ApiClient.Patch($"api/stars/{Id}", Request);
+
+        await ToastService.Success("Successfully updated Star");
+        GoBack();
+    }
+
+    private void GoBack()
+        => Navigation.NavigateTo(ComponentHelper.GetRouteOfComponent<Index>()!);
+}

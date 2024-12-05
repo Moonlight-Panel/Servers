@@ -1,0 +1,29 @@
+@page "/admin/servers/stars"
+
+@using MoonCore.Blazor.Tailwind.MinimalCrud
+@using MoonCore.Helpers
+@using MoonCore.Models
+@using MoonCore.Blazor.Tailwind.DataTable
+@using MoonlightServers.Shared.Http.Responses.Admin.Stars
+
+@inject HttpApiClient ApiClient
+
+<MinimalCrud TItem="StarDetailResponse" OnConfigure="OnConfigure">
+    <ChildContent>
+        <DataColumn TItem="StarDetailResponse" Field="@(x => x.Id)" Title="Id" IsSortable="true"/>
+    </ChildContent>
+</MinimalCrud>
+
+@code
+{
+    private void OnConfigure(MinimalCrudOptions<StarDetailResponse> options)
+    {
+        options.Title = "Stars";
+        options.ItemLoader = async (page, pageSize) =>
+            await ApiClient.GetJson<PagedData<StarDetailResponse>>($"api/admin/servers/stars?page={page}&pageSize={pageSize}");
+
+        options.CreateUrl = ComponentHelper.GetRouteOfComponent<Create>();
+        options.UpdateUrl = item => ComponentHelper.GetRouteOfComponent<Update>(item.Id)!;
+        options.DeleteFunction = async item => await ApiClient.Delete($"api/admin/servers/stars/{item.Id}");
+    }
+}
