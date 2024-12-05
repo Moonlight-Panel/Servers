@@ -4,17 +4,19 @@
 @using MoonCore.Blazor.Tailwind.Forms
 @using MoonCore.Blazor.Tailwind.Toasts
 @using MoonCore.Helpers
+@using MoonlightServers.Frontend.UI.Components.Forms
 @using MoonlightServers.Shared.Http.Requests.Admin.Stars
+@using MoonlightServers.Shared.Http.Requests.Admin.StarVariables
 
 @inject HttpApiClient ApiClient
 @inject NavigationManager Navigation
 @inject ToastService ToastService
 
 <PageHeader Title="Create Star">
-    <WButton OnClick="_ => GoBack()" CssClasses="btn btn-secondary">
+    <button @onclick="GoBack" class="btn btn-secondary">
         <i class="icon-chevron-left mr-1"></i>
         Back
-    </WButton>
+    </button>
     <WButton OnClick="_ => Form.Submit()" CssClasses="btn btn-primary">
         <i class="icon-check mr-1"></i>
         Create
@@ -40,7 +42,46 @@
 
     private void OnConfigure(FormConfiguration<CreateStarRequest> configuration)
     {
+        var generalPage = configuration.WithPage("General");
+
+        generalPage.WithField(x => x.Name);
+        generalPage.WithField(x => x.Author);
+        generalPage.WithField(x => x.DonateUrl);
+        generalPage.WithField(x => x.UpdateUrl);
+
+        var startStopStatusPage = configuration.WithPage("Start, Stop & Status");
+
+        startStopStatusPage.WithField(x => x.StartupCommand);
+        startStopStatusPage.WithField(x => x.StopCommand);
+        startStopStatusPage.WithField(x => x.OnlineDetection);
+
+        var installationPage = configuration.WithPage("Installation");
+
+        installationPage.WithField(x => x.InstallShell);
+        installationPage.WithField(x => x.InstallDockerImage);
+
+        installationPage.WithField(x => x.InstallScript, fieldConfiguration =>
+        {
+            fieldConfiguration.Columns = 6;
+        });
+
+        var parseConfigurationPage = configuration.WithPage("Parse configuration");
+
+        parseConfigurationPage.WithField(x => x.ParseConfiguration);
+
+        var variablesPage = configuration.WithPage("Variables");
         
+        variablesPage.WithField(x => x.Variables, fieldConfiguration =>
+            {
+                fieldConfiguration.Columns = 6;
+                fieldConfiguration.Label = "";
+            })
+            .WithComponent<StarVariableComponent<CreateStarVariableRequest>>();
+
+        var miscPage = configuration.WithPage("Miscellaneous");
+
+        miscPage.WithField(x => x.AllowDockerImageChange);
+        miscPage.WithField(x => x.RequiredAllocations);
     }
 
     private async Task OnSubmit()

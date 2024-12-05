@@ -2,7 +2,6 @@
 @import "tailwindcss/components";
 
 @import "additions/animations.css";
-@import "additions/fonts.css";
 @import "additions/buttons.css";
 @import "additions/cards.css";
 @import "additions/progress.css";

@@ -5,8 +5,13 @@
 @using MoonCore.Models
 @using MoonCore.Blazor.Tailwind.DataTable
 @using MoonlightServers.Shared.Http.Responses.Admin.Stars
+@using MoonCore.Blazor.Tailwind.Components
 
 @inject HttpApiClient ApiClient
+
+<div class="mb-3">
+    <NavTabs Index="3" Names="@UiConstants.AdminNavNames" Links="@UiConstants.AdminNavLinks"/>
+</div>
 
 <MinimalCrud TItem="StarDetailResponse" OnConfigure="OnConfigure">
     <ChildContent>

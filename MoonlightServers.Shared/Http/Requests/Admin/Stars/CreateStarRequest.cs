@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using MoonlightServers.Shared.Http.Requests.Admin.StarVariables;
 
 namespace MoonlightServers.Shared.Http.Requests.Admin.Stars;
 
@@ -42,4 +43,6 @@ public class CreateStarRequest
 
     [Required(ErrorMessage = "You need to provide parse configuration")]
     public string ParseConfiguration { get; set; } = "[]";
+
+    public List<CreateStarVariableRequest> Variables { get; set; } = new();
 }

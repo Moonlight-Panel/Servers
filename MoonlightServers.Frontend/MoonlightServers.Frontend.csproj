@@ -20,7 +20,7 @@
     <ItemGroup>
         <Folder Include="Helpers\"/>
         <Folder Include="Interfaces\"/>
-        <Folder Include="UI\Components\"/>
+        <Folder Include="UI\Views\Admin\All\" />
         <Folder Include="wwwroot\"/>
     </ItemGroup>
 
