@@ -14,8 +14,6 @@ public class PluginStartup : IAppStartup
 
     public Task BuildApp(IHostApplicationBuilder builder)
     {
-        Logger.LogInformation("Elo World from MoonlightServers");
-
         // Scan the current plugin assembly for di services
         builder.Services.AutoAddServices<PluginStartup>();
 

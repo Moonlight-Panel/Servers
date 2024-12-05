@@ -8,7 +8,7 @@ public class DatabaseStartup : IDatabaseStartup
 {
     public Task ConfigureDatabase(DatabaseContextCollection collection)
     {
-        collection.Add<MoonlightServersDataContext>();
+        collection.Add<ServersDataContext>();
 
         return Task.CompletedTask;
     }

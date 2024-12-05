@@ -11,11 +11,11 @@ public class SidebarImplementation : ISidebarItemProvider
         [
             new SidebarItem()
             {
-                Name = "Example",
-                Path = "/example",
-                Icon = "icon-moon",
-                Group = "MoonlightServers",
-                Priority = 1
+                Name = "Servers",
+                Path = "/admin/servers",
+                Icon = "icon-server",
+                Group = "Admin",
+                Priority = 4
             }
         ];
     }
