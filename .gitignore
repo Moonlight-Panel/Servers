@@ -421,5 +421,11 @@ FodyWeavers.xsd
 .idea/**/libraries
 
 # Moonlight
-MoonlightServers/ApiServer/storage/**
-/.idea/.idea.MoonlightServers/.idea
+storage/
+.idea/**/.idea
+MoonlightServers.min.css
+core.min.css
+
+# Build script for nuget packages
+finalPackages/
+nupkgs/
