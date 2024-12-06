@@ -1,0 +1,110 @@
+@using MoonCore.Blazor.Tailwind.Alerts
+@using MoonCore.Blazor.Tailwind.Components
+@using MoonCore.Blazor.Tailwind.Modals
+@using MoonCore.Blazor.Tailwind.Toasts
+@using MoonCore.Helpers
+@using MoonCore.Models
+@using MoonlightServers.Frontend.UI.Components.Stars.Modals
+@using MoonlightServers.Shared.Http.Requests.Admin.StarDockerImages
+@using MoonlightServers.Shared.Http.Responses.Admin.StarDockerImages
+@using MoonlightServers.Shared.Http.Responses.Admin.Stars
+
+@inject HttpApiClient ApiClient
+@inject ModalService ModalService
+@inject ToastService ToastService
+@inject AlertService AlertService
+
+<div class="flex justify-end mb-5">
+    <button type="button" @onclick="AddDockerImage" class="btn btn-primary">Add docker image</button>
+</div>
+
+<LazyLoader @ref="LazyLoader" Load="Load">
+    <div class="grid sm:grid-cols-2 xl:grid-cols-3 gap-4">
+        @foreach (var dockerImage in DockerImages)
+        {
+            <div class="col-span-1 card card-body p-2.5">
+                <div class="flex items-center justify-between">
+                    <div class="ml-3">
+                        <i class="icon-container text-xl align-middle mr-2"></i>
+                        <span class="align-middle text-lg">@dockerImage.DisplayName</span>
+                    </div>
+
+                    <div class="gap-x-2">
+                        <button @onclick="() => UpdateDockerImage(dockerImage)" class="btn btn-primary">
+                            <i class="icon-settings text-base"></i>
+                        </button>
+
+                        <button @onclick="() => DeleteDockerImage(dockerImage)" class="btn btn-danger">
+                            <i class="icon-trash text-base"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+</LazyLoader>
+
+@code
+{
+    [Parameter] public StarDetailResponse Star { get; set; }
+    
+    private StarDockerImageDetailResponse[] DockerImages;
+    private LazyLoader LazyLoader;
+
+    private async Task Load(LazyLoader _)
+    {
+        var pagedVariables = await ApiClient.GetJson<PagedData<StarDockerImageDetailResponse>>(
+            $"api/admin/servers/stars/{Star.Id}/dockerImages?page=0&pageSize=50"
+        );
+
+        DockerImages = pagedVariables.Items;
+    }
+
+    private async Task AddDockerImage()
+    {
+        Func<CreateStarDockerImageRequest, Task> onSubmit = async request =>
+        {
+            await ApiClient.Post($"api/admin/servers/stars/{Star.Id}/dockerImages", request);
+            
+            await ToastService.Success("Successfully created docker image");
+            await LazyLoader.Reload();
+        };
+        
+        await ModalService.Launch<CreateDockerImageModal>(parameters =>
+        {
+            parameters.Add("OnSubmit", onSubmit);
+        });
+    }
+    
+    private async Task UpdateDockerImage(StarDockerImageDetailResponse dockerImage)
+    {
+        Func<UpdateStarDockerImageRequest, Task> onSubmit = async request =>
+        {
+            await ApiClient.Patch($"api/admin/servers/stars/{Star.Id}/dockerImages/{dockerImage.Id}", request);
+            
+            await ToastService.Success("Successfully updated docker image");
+            await LazyLoader.Reload();
+        };
+        
+        await ModalService.Launch<UpdateDockerImageModal>(parameters =>
+        {
+            parameters.Add("OnSubmit", onSubmit);
+            parameters.Add("DockerImage", dockerImage);
+        });
+    }
+    
+    private async Task DeleteDockerImage(StarDockerImageDetailResponse dockerImage)
+    {
+        await AlertService.ConfirmDanger(
+            "Delete docker image",
+            "Do you really want to delete the selected docker image? This cannot be undone",
+            async () =>
+            {
+                await ApiClient.Delete($"api/admin/servers/stars/{Star.Id}/dockerImages/{dockerImage.Id}");
+            
+                await ToastService.Success("Successfully deleted docker image");
+                await LazyLoader.Reload();
+            }
+        );
+    }
+}

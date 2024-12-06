@@ -1,0 +1,58 @@
+@using MoonCore.Blazor.Tailwind.Modals.Components
+@using MoonlightServers.Shared.Enums
+@using MoonlightServers.Frontend.UI.Components.Forms
+@using MoonCore.Blazor.Tailwind.Components
+@using MoonlightServers.Shared.Http.Requests.Admin.StarDockerImages
+
+@inherits BaseModal
+
+<h1 class="mb-5 font-semibold text-xl">Add a new variable</h1>
+
+<HandleForm @ref="HandleForm" Model="Form" OnValidSubmit="OnValidSubmit">
+    <div class="grid grid-cols-2 gap-2">
+        <div class="col-span-2">
+            <label class="block text-sm font-medium leading-6 text-white">Display Name</label>
+            <input @bind="Form.DisplayName" type="text" class="form-input w-full"/>
+        </div>
+
+        <div class="col-span-2">
+            <label class="block text-sm font-medium leading-6 text-white">Identifier</label>
+            <input @bind="Form.Identifier" type="text" class="form-input w-full"/>
+        </div>
+
+        <div class="col-span-2">
+            <label class="block text-sm font-medium leading-6 text-white">Automatic pulling</label>
+            <Switch @bind-Value="Form.AutoPulling"/>
+        </div>
+    </div>
+</HandleForm>
+
+<div class="mt-5 flex space-x-2">
+    <WButton OnClick="_ => Hide()" CssClasses="btn btn-secondary grow">Cancel</WButton>
+    <WButton OnClick="_ => Submit()" CssClasses="btn btn-primary grow">Create</WButton>
+</div>
+
+@code
+{
+    [Parameter] public Func<CreateStarDockerImageRequest, Task> OnSubmit { get; set; }
+
+    private CreateStarDockerImageRequest Form;
+    private HandleForm HandleForm;
+
+    protected override void OnInitialized()
+    {
+        // Set default values
+        Form = new()
+        {
+            AutoPulling = true
+        };
+    }
+
+    private async Task OnValidSubmit()
+    {
+        await OnSubmit.Invoke(Form);
+        await Hide();
+    }
+
+    private Task Submit() => HandleForm.Submit();
+}

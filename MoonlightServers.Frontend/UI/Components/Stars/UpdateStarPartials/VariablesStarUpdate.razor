@@ -25,7 +25,7 @@
             <div class="col-span-1 card card-body p-2.5">
                 <div class="flex items-center justify-between">
                     <div class="ml-3">
-                        <i class="icon-variable text-xl align-middle"></i>
+                        <i class="icon-variable text-xl align-middle mr-2"></i>
                         <span class="align-middle text-lg">@variable.Name</span>
                     </div>
                     
@@ -70,7 +70,7 @@
             await LazyLoader.Reload();
         };
         
-        await ModalService.Launch<CreateStarVariableModal>(parameters =>
+        await ModalService.Launch<CreateVariableModal>(parameters =>
         {
             parameters.Add("OnSubmit", onSubmit);
         }, "max-w-xl");
@@ -86,7 +86,7 @@
             await LazyLoader.Reload();
         };
         
-        await ModalService.Launch<UpdateStarVariableModel>(parameters =>
+        await ModalService.Launch<UpdateVariableModal>(parameters =>
         {
             parameters.Add("OnSubmit", onSubmit);
             parameters.Add("Variable", variable);
@@ -106,7 +106,5 @@
                 await LazyLoader.Reload();
             }
         );
-        
-        await InvokeAsync(StateHasChanged);
     }
 }
