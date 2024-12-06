@@ -1,0 +1,87 @@
+@using MoonCore.Blazor.Tailwind.Modals.Components
+@using MoonlightServers.Shared.Enums
+@using MoonlightServers.Shared.Http.Requests.Admin.StarVariables
+@using MoonlightServers.Frontend.UI.Components.Forms
+@using MoonCore.Blazor.Tailwind.Components
+@using MoonCore.Helpers
+@using MoonlightServers.Shared.Http.Responses.Admin.StarVariables
+
+@inherits BaseModal
+
+<h1 class="mb-5 font-semibold text-xl">Update variable</h1>
+
+<HandleForm @ref="HandleForm" Model="Form" OnValidSubmit="OnValidSubmit">
+    <div class="grid grid-cols-2 gap-2">
+        <div class="col-span-1">
+            <label class="block text-sm font-medium leading-6 text-white">Name</label>
+            <input @bind="Form.Name" type="text" class="form-input w-full"/>
+        </div>
+
+        <div class="col-span-1">
+            <label class="block text-sm font-medium leading-6 text-white">Description</label>
+            <input @bind="Form.Description" type="text" class="form-input w-full"/>
+        </div>
+
+        <div class="col-span-1">
+            <label class="block text-sm font-medium leading-6 text-white">Key</label>
+            <input @bind="Form.Key" type="text" class="form-input w-full"/>
+        </div>
+
+        <div class="col-span-1">
+            <label class="block text-sm font-medium leading-6 text-white">Default Value</label>
+            <input @bind="Form.DefaultValue" type="text" class="form-input w-full"/>
+        </div>
+
+        <div class="col-span-1">
+            <label class="block text-sm font-medium leading-6 text-white">Allow Viewing</label>
+            <Switch @bind-Value="Form.AllowViewing"/>
+        </div>
+
+        <div class="col-span-1">
+            <label class="block text-sm font-medium leading-6 text-white">Allow Editing</label>
+            <Switch @bind-Value="Form.AllowEditing"/>
+        </div>
+
+        <div class="col-span-1">
+            <label class="block text-sm font-medium leading-6 text-white">Type</label>
+            <select @bind="Form.Type" class="form-select w-full">
+                @foreach (var val in Enum.GetValues<StarVariableType>())
+                {
+                    <option value="@val">@val</option>
+                }
+            </select>
+        </div>
+
+        <div class="col-span-1">
+            <label class="block text-sm font-medium leading-6 text-white">Filter</label>
+            <input @bind="Form.Filter" type="text" class="form-input w-full"/>
+        </div>
+    </div>
+</HandleForm>
+
+<div class="mt-5 flex space-x-2">
+    <WButton OnClick="_ => Hide()" CssClasses="btn btn-secondary grow">Cancel</WButton>
+    <WButton OnClick="_ => Submit()" CssClasses="btn btn-primary grow">Update</WButton>
+</div>
+
+@code
+{
+    [Parameter] public Func<UpdateStarVariableRequest, Task> OnSubmit { get; set; }
+    [Parameter] public StarVariableDetailResponse Variable { get; set; }
+
+    private UpdateStarVariableRequest Form;
+    private HandleForm HandleForm;
+
+    protected override void OnInitialized()
+    {
+        Form = Mapper.Map<UpdateStarVariableRequest>(Variable);
+    }
+
+    private async Task OnValidSubmit()
+    {
+        await OnSubmit.Invoke(Form);
+        await Hide();
+    }
+
+    private Task Submit() => HandleForm.Submit();
+}

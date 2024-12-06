@@ -6,6 +6,7 @@
 @using MoonCore.Helpers
 @using MoonlightServers.Shared.Http.Requests.Admin.Stars
 @using MoonlightServers.Shared.Http.Responses.Admin.Stars
+@using MoonlightServers.Frontend.UI.Components.Stars.UpdateStarPartials
 
 @inject HttpApiClient ApiClient
 @inject NavigationManager Navigation
@@ -25,7 +26,29 @@
 
     <div class="mt-5">
         <HandleForm @ref="Form" Model="Request" OnValidSubmit="OnSubmit">
-            <GeneratedForm TForm="UpdateStarRequest" Model="Request" OnConfigure="OnConfigure"/>
+            
+            <Tabs>
+                <Tab Name="General">
+                    <GeneralStarUpdate Request="Request" />
+                </Tab>
+
+                <Tab Name="Start, Stop & Status">
+                    <StartStopStatusStarUpdate Request="Request" />
+                </Tab>
+
+                <Tab Name="Parse Configuration">
+                    <ParseConfigStarUpdate Request="Request" />
+                </Tab>
+
+                <Tab Name="Installation">
+                    <InstallationStarUpdate Request="Request" />
+                </Tab>
+                
+                <Tab Name="Variables">
+                    <VariablesStarUpdate Star="Detail" />
+                </Tab>
+            </Tabs>
+            
         </HandleForm>
     </div>
 </LazyLoader>
@@ -36,21 +59,55 @@
 
     private HandleForm Form;
     private UpdateStarRequest Request;
+    private StarDetailResponse Detail;
 
     private async Task Load(LazyLoader _)
     {
-        var detail = await ApiClient.GetJson<StarDetailResponse>($"api/stars/{Id}");
-        Request = Mapper.Map<UpdateStarRequest>(detail);
+        Detail = await ApiClient.GetJson<StarDetailResponse>($"api/admin/servers/stars/{Id}");
+        Request = Mapper.Map<UpdateStarRequest>(Detail);
     }
 
     private void OnConfigure(FormConfiguration<UpdateStarRequest> configuration)
     {
-        
+        var generalPage = configuration.WithPage("General");
+
+        generalPage.WithField(x => x.Name);
+        generalPage.WithField(x => x.Version);
+        generalPage.WithField(x => x.Author);
+        generalPage.WithField(x => x.DonateUrl);
+        generalPage.WithField(x => x.UpdateUrl);
+
+        var startStopStatusPage = configuration.WithPage("Start, Stop & Status");
+
+        startStopStatusPage.WithField(x => x.StartupCommand);
+        startStopStatusPage.WithField(x => x.StopCommand);
+        startStopStatusPage.WithField(x => x.OnlineDetection);
+
+        var installationPage = configuration.WithPage("Installation");
+
+        installationPage.WithField(x => x.InstallShell);
+        installationPage.WithField(x => x.InstallDockerImage);
+
+        installationPage.WithField(x => x.InstallScript, fieldConfiguration =>
+        {
+            fieldConfiguration.Columns = 6;
+        });
+
+        var parseConfigurationPage = configuration.WithPage("Parse configuration");
+
+        parseConfigurationPage.WithField(x => x.ParseConfiguration);
+
+        var variablesPage = configuration.WithPage("Variables");
+
+        var miscPage = configuration.WithPage("Miscellaneous");
+
+        miscPage.WithField(x => x.AllowDockerImageChange);
+        miscPage.WithField(x => x.RequiredAllocations);
     }
 
     private async Task OnSubmit()
     {
-        await ApiClient.Patch($"api/stars/{Id}", Request);
+        await ApiClient.Patch($"api/admin/servers/stars/{Id}", Request);
 
         await ToastService.Success("Successfully updated Star");
         GoBack();

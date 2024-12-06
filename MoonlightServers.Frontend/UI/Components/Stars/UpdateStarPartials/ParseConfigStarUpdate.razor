@@ -1,0 +1,133 @@
+@using System.Text.Json
+@using MoonCore.Blazor.Tailwind.Alerts
+@using MoonCore.Blazor.Tailwind.Modals
+@using MoonCore.Blazor.Tailwind.Toasts
+@using MoonlightServers.Frontend.UI.Components.Stars.Modals
+@using MoonlightServers.Shared.Http.Requests.Admin.Stars
+@using MoonlightServers.Shared.Models
+
+@inject ILogger<ParseConfigStarUpdate> Logger
+@inject ModalService ModalService
+@inject AlertService AlertService
+@inject ToastService ToastService
+
+<div class="flex justify-end mb-5">
+    <button type="button" @onclick="AddConfig" class="btn btn-primary">Add parse configuration</button>
+</div>
+
+@if (HasParseError)
+{
+    
+}
+else
+{
+    <div class="grid sm:grid-cols-2 xl:grid-cols-3 gap-4">
+        @foreach (var configuration in Configurations)
+        {
+            <div class="col-span-1 card card-body p-2.5">
+                <div class="flex items-center justify-between">
+                    <div class="ml-3">
+                        <i class="icon-file-cog text-xl align-middle"></i>
+                        <span class="align-middle text-lg">@configuration.File</span>
+                    </div>
+
+                    <div class="gap-x-2">
+                        <button @onclick="() => UpdateConfig(configuration)" class="btn btn-primary">
+                            <i class="icon-settings text-base"></i>
+                        </button>
+
+                        <button @onclick="() => DeleteConfig(configuration)" class="btn btn-danger">
+                            <i class="icon-trash text-base"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+@code
+{
+    [Parameter] public UpdateStarRequest Request { get; set; }
+
+    private List<ParseConfiguration> Configurations;
+    private bool HasParseError = false;
+
+    protected override Task OnInitializedAsync()
+    {
+        ReadFromJson();
+        return Task.CompletedTask;
+    }
+
+    private async Task AddConfig()
+    {
+        Func<ParseConfiguration, Task> onSubmit = async configuration =>
+        {
+            Configurations.Add(configuration);
+            SaveChanges();
+            
+            await InvokeAsync(StateHasChanged);
+            await ToastService.Success("Successfully created parse configuration");
+        };
+        
+        await ModalService.Launch<CreateParseConfigModal>(parameters =>
+        {
+            parameters.Add("OnSubmit", onSubmit);
+        }, "max-w-xl");
+    }
+    
+    private async Task UpdateConfig(ParseConfiguration configuration)
+    {
+        Func<ParseConfiguration, Task> onSubmit = async _ =>
+        {
+            SaveChanges();
+            
+            await InvokeAsync(StateHasChanged);
+            await ToastService.Success("Successfully updated parse configuration");
+        };
+        
+        await ModalService.Launch<UpdateParseConfigModal>(parameters =>
+        {
+            parameters.Add("OnSubmit", onSubmit);
+            parameters.Add("Configuration", configuration);
+        }, "max-w-xl");
+    }
+    
+    private async Task DeleteConfig(ParseConfiguration configuration)
+    {
+        await AlertService.ConfirmDanger(
+            "Parse configuration deletion",
+            "Do you really want to delete the selected parse configuration",
+            async () =>
+            {
+                Configurations.Remove(configuration);
+                SaveChanges();
+
+                await InvokeAsync(StateHasChanged);
+                await ToastService.Success("Successfully deleted parse configuration");
+            }
+        );
+    }
+
+    private void SaveChanges()
+    {
+        Request.ParseConfiguration = JsonSerializer.Serialize(Configurations);
+        ReadFromJson();
+    }
+
+    private void ReadFromJson()
+    {
+        try
+        {
+            Configurations = JsonSerializer.Deserialize<List<ParseConfiguration>>(Request.ParseConfiguration)
+                             ?? throw new ArgumentNullException();
+
+            HasParseError = false;
+        }
+        catch (Exception e)
+        {
+            Logger.LogWarning("An error occured while reading parse configuration: {e}", e);
+            HasParseError = true;
+        }
+    }
+}

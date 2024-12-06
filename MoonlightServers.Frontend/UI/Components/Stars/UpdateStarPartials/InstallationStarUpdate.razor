@@ -1,0 +1,28 @@
+@using MoonlightServers.Shared.Http.Requests.Admin.Stars
+<div>
+    <div class="grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-6">
+        <div class="sm:col-span-3">
+            <label class="block text-sm font-medium leading-6 text-white">Docker Image</label>
+            <div class="mt-2">
+                <input @bind="Request.InstallDockerImage" type="text" autocomplete="off" class="form-input w-full">
+            </div>
+        </div>
+        <div class="sm:col-span-3">
+            <label class="block text-sm font-medium leading-6 text-white">Shell</label>
+            <div class="mt-2">
+                <input @bind="Request.InstallShell" type="text" autocomplete="off" class="form-input w-full">
+            </div>
+        </div>
+        <div class="sm:col-span-6">
+            <label class="block text-sm font-medium leading-6 text-white">Script</label>
+            <div class="mt-2">
+                <textarea @bind="Request.InstallScript" class="form-textarea w-full"></textarea>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code
+{
+    [Parameter] public UpdateStarRequest Request { get; set; }
+}

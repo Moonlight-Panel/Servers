@@ -1,0 +1,77 @@
+@using MoonCore.Blazor.Tailwind.Modals.Components
+@using MoonlightServers.Shared.Enums
+@using MoonCore.Blazor.Tailwind.Components
+@using MoonlightServers.Shared.Models
+
+@inherits BaseModal
+
+<h1 class="mb-5 font-semibold text-xl">Add a new parse configuration</h1>
+
+<HandleForm @ref="HandleForm" Model="Form" OnValidSubmit="OnValidSubmit">
+    <div class="grid grid-cols-2 gap-x-2 gap-y-4">
+        <div class="col-span-1">
+            <label class="block text-sm font-medium leading-6 text-white">File</label>
+            <input @bind="Form.File" type="text" class="form-input w-full"/>
+        </div>
+
+        <div class="col-span-1">
+            <label class="block text-sm font-medium leading-6 text-white">Type</label>
+            <select @bind="Form.Parser" class="form-select w-full">
+                @foreach (var val in Enum.GetValues<FileParsers>())
+                {
+                    <option value="@val">@val</option>
+                }
+            </select>
+        </div>
+
+        <div class="col-span-2">
+            <button @onclick="AddEntry" class="btn btn-primary w-full">Add entry</button>
+        </div>
+
+        @foreach (var entry in Form.Entries)
+        {
+            <div class="col-span-2">
+                <div class="flex flex-row">
+                    <input @bind="entry.Key" placeholder="Key" class="form-input placeholder-gray-500 grow rounded-r-none"/>
+                    <input @bind="entry.Value" placeholder="Value" class="form-input placeholder-gray-500 grow rounded-none"/>
+                    <button @onclick="() => RemoveEntry(entry)" class="btn btn-danger grow-0 rounded-l-none">
+                        <i class="icon-x"></i>
+                    </button>
+                </div>
+            </div>
+        }
+    </div>
+</HandleForm>
+
+<div class="mt-5 flex space-x-2">
+    <WButton OnClick="_ => Hide()" CssClasses="btn btn-secondary grow">Cancel</WButton>
+    <WButton OnClick="_ => Submit()" CssClasses="btn btn-primary grow">Create</WButton>
+</div>
+
+@code
+{
+    [Parameter] public Func<ParseConfiguration, Task> OnSubmit { get; set; }
+
+    private ParseConfiguration Form = new();
+    private HandleForm HandleForm;
+
+    private async Task OnValidSubmit()
+    {
+        await OnSubmit.Invoke(Form);
+        await Hide();
+    }
+
+    private Task Submit() => HandleForm.Submit();
+
+    private async Task AddEntry()
+    {
+        Form.Entries.Add(new());
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task RemoveEntry(ParseConfiguration.ParseConfigurationEntry entry)
+    {
+        Form.Entries.Remove(entry);
+        await InvokeAsync(StateHasChanged);
+    }
+}

@@ -10,6 +10,7 @@ public class Star
 
     // Meta
     public string Name { get; set; }
+    public string Version { get; set; }
     public string Author { get; set; }
     public string? UpdateUrl { get; set; }
     public string? DonateUrl { get; set; }

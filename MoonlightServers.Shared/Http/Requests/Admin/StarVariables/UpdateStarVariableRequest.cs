@@ -3,7 +3,7 @@ using MoonlightServers.Shared.Enums;
 
 namespace MoonlightServers.Shared.Http.Requests.Admin.StarVariables;
 
-public class CreateStarVariableRequest
+public class UpdateStarVariableRequest
 {
     [Required(ErrorMessage = "You need to specify a variable name")]
     public string Name { get; set; }

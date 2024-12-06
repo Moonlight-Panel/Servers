@@ -1,0 +1,41 @@
+@using MoonlightServers.Shared.Http.Requests.Admin.Stars
+
+<div>
+    <div class="grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-6">
+        <div class="sm:col-span-2">
+            <label class="block text-sm font-medium leading-6 text-white">Name</label>
+            <div class="mt-2">
+                <input @bind="Request.Name" type="text" autocomplete="off" class="form-input w-full">
+            </div>
+        </div>
+        <div class="sm:col-span-2">
+            <label class="block text-sm font-medium leading-6 text-white">Version</label>
+            <div class="mt-2">
+                <input @bind="Request.Version" type="text" autocomplete="off" class="form-input w-full">
+            </div>
+        </div>
+        <div class="sm:col-span-2">
+            <label class="block text-sm font-medium leading-6 text-white">Author</label>
+            <div class="mt-2">
+                <input @bind="Request.Author" type="text" autocomplete="off" class="form-input w-full">
+            </div>
+        </div>
+        <div class="sm:col-span-2">
+            <label class="block text-sm font-medium leading-6 text-white">Donate Url</label>
+            <div class="mt-2">
+                <input @bind="Request.DonateUrl" type="text" autocomplete="off" class="form-input w-full">
+            </div>
+        </div>
+        <div class="sm:col-span-2">
+            <label class="block text-sm font-medium leading-6 text-white">Update Url</label>
+            <div class="mt-2">
+                <input @bind="Request.UpdateUrl" type="text" autocomplete="off" class="form-input w-full">
+            </div>
+        </div>
+    </div>
+</div>
+
+@code
+{
+    [Parameter] public UpdateStarRequest Request { get; set; }
+}

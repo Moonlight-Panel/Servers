@@ -1,0 +1,28 @@
+@using MoonlightServers.Shared.Http.Requests.Admin.Stars
+<div>
+    <div class="grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-6">
+        <div class="sm:col-span-4">
+            <label class="block text-sm font-medium leading-6 text-white">Startup Command</label>
+            <div class="mt-2">
+                <input @bind="Request.StartupCommand" type="text" autocomplete="off" class="form-input w-full">
+            </div>
+        </div>
+        <div class="sm:col-span-2">
+            <label class="block text-sm font-medium leading-6 text-white">Stop Command</label>
+            <div class="mt-2">
+                <input @bind="Request.StopCommand" type="text" autocomplete="off" class="form-input w-full">
+            </div>
+        </div>
+        <div class="sm:col-span-2">
+            <label class="block text-sm font-medium leading-6 text-white">Online Detection</label>
+            <div class="mt-2">
+                <input @bind="Request.OnlineDetection" type="text" autocomplete="off" class="form-input w-full">
+            </div>
+        </div>
+    </div>
+</div>
+
+@code
+{
+    [Parameter] public UpdateStarRequest Request { get; set; }
+}

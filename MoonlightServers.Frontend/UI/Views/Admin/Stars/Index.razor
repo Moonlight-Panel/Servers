@@ -16,7 +16,27 @@
 <MinimalCrud TItem="StarDetailResponse" OnConfigure="OnConfigure">
     <ChildContent>
         <DataColumn TItem="StarDetailResponse" Field="@(x => x.Id)" Title="Id" IsSortable="true"/>
+        <DataColumn TItem="StarDetailResponse" Field="@(x => x.Name)" Title="Name" IsSortable="true"/>
+        <DataColumn TItem="StarDetailResponse" Field="@(x => x.Version)" Title="Version" IsSortable="true"/>
+        <DataColumn TItem="StarDetailResponse" Field="@(x => x.Author)" Title="Author"/>
     </ChildContent>
+    <ItemActions>
+        @if (!string.IsNullOrEmpty(context.DonateUrl))
+        {
+            <a href="@context.DonateUrl" class="text-red-500 mr-3">
+                <i class="icon-heart align-middle"></i>
+                <span class="align-middle">Donate</span>
+            </a>
+        }
+
+        @if (!string.IsNullOrEmpty(context.UpdateUrl))
+        {
+            <a href="#" @onclick:preventDefault class="text-tertiary-500 mr-3">
+                <i class="icon-refresh-cw align-middle"></i>
+                <span class="align-middle">Update</span>
+            </a>
+        }
+    </ItemActions>
 </MinimalCrud>
 
 @code
