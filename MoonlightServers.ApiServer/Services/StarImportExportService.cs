@@ -5,6 +5,8 @@ using MoonCore.Exceptions;
 using MoonCore.Extended.Abstractions;
 using MoonlightServers.ApiServer.Database.Entities;
 using MoonlightServers.ApiServer.Models.Stars;
+using MoonlightServers.Shared.Enums;
+using MoonlightServers.Shared.Models;
 
 namespace MoonlightServers.ApiServer.Services;
 
@@ -95,7 +97,7 @@ public class StarImportExportService
             {
                 PropertyNameCaseInsensitive = true
             });
-            
+
             ArgumentNullException.ThrowIfNull(model);
 
             var star = new Star()
@@ -140,13 +142,104 @@ public class StarImportExportService
         catch (Exception e)
         {
             Logger.LogError("An unhandled error occured while importing star: {e}", e);
-            throw new HttpApiException("An unhandled error occured while importing the star", 400);
+            throw new HttpApiException("An unhandled error occured while importing star", 400);
         }
     }
 
     public async Task<Star> ImportImage(string json)
     {
-        throw new NotImplementedException();
+        try
+        {
+            var model = JsonSerializer.Deserialize<LegacyImageImportModel>(json, new JsonSerializerOptions()
+            {
+                PropertyNameCaseInsensitive = true
+            });
+
+            ArgumentNullException.ThrowIfNull(model);
+
+            var star = new Star()
+            {
+                Name = model.Name,
+                Author = model.Author,
+                Version = "Imported from v2.0",
+                DonateUrl = model.DonateUrl,
+                UpdateUrl = model.UpdateUrl,
+                InstallScript = model.InstallScript,
+                InstallShell = model.InstallShell,
+                InstallDockerImage = model.InstallDockerImage,
+                OnlineDetection = model.OnlineDetection,
+                StopCommand = model.StopCommand,
+                StartupCommand = model.StartupCommand,
+                RequiredAllocations = model.AllocationsNeeded,
+                AllowDockerImageChange = model.AllowDockerImageChange,
+                Variables = model.Variables.Select(x => new StarVariable()
+                {
+                    DefaultValue = x.DefaultValue,
+                    Description = x.Description,
+                    Filter = x.Filter,
+                    Key = x.Key,
+                    AllowEditing = x.AllowEdit,
+                    AllowViewing = x.AllowView,
+                    Type = StarVariableType.Text,
+                    Name = x.DisplayName
+                }).ToList(),
+                DockerImages = model.DockerImages.Select(x => new StarDockerImage()
+                {
+                    DisplayName = x.DisplayName,
+                    AutoPulling = x.AutoPull,
+                    Identifier = x.Name
+                }).ToList()
+            };
+
+            #region Convert parse configurations
+
+            var oldParseConfig = JsonSerializer.Deserialize<LegacyImageParseConfigModel[]>(model.ParseConfiguration,
+                new JsonSerializerOptions()
+                {
+                    PropertyNameCaseInsensitive = true
+                }
+            );
+
+            ArgumentNullException.ThrowIfNull(oldParseConfig);
+
+            var newParseConfig = new List<ParseConfiguration>();
+
+            // Remap values
+            foreach (var config in oldParseConfig)
+            {
+                var parseConfiguration = new ParseConfiguration()
+                {
+                    File = config.File,
+                    Parser = Enum.TryParse(config.Type, true, out FileParsers parserType)
+                        ? parserType
+                        : FileParsers.File
+                };
+
+                foreach (var option in config.Configuration)
+                {
+                    parseConfiguration.Entries.Add(new ParseConfiguration.ParseConfigurationEntry()
+                    {
+                        Key = option.Key,
+                        Value = option.Value
+                    });
+                }
+
+                newParseConfig.Add(parseConfiguration);
+            }
+
+            star.ParseConfiguration = JsonSerializer.Serialize(newParseConfig);
+
+            #endregion
+
+            var finalStar = StarRepository.Add(star);
+
+            return finalStar;
+        }
+        catch (Exception e)
+        {
+            Logger.LogError("An unhandled error occured while importing image: {e}", e);
+            throw new HttpApiException("An unhandled error occured while importing image", 400);
+        }
     }
 
     public async Task<Star> ImportEgg(string json)
