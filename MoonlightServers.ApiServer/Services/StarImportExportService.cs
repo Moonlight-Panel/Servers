@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using Microsoft.EntityFrameworkCore;
 using MoonCore.Attributes;
 using MoonCore.Exceptions;
@@ -244,6 +245,157 @@ public class StarImportExportService
 
     public async Task<Star> ImportEgg(string json)
     {
-        throw new NotImplementedException();
+        // Create result
+        var star = new Star();
+        
+        // Prepare json
+        var fixedJson = json;
+        fixedJson = fixedJson.Replace("\\/", "/");
+        var jsonDocument = JsonDocument.Parse(fixedJson);
+        var egg = jsonDocument.RootElement;
+        
+        // Let's go :O
+
+        // Basic meta
+        star.Name = egg.GetProperty("name").GetString() ?? "Parse error";
+        star.Author = egg.GetProperty("author").GetString() ?? "Parse error";
+        
+        // Start & Stop and Status
+        var configSection = egg.GetProperty("config");
+        
+        star.StartupCommand = egg.GetProperty("startup").GetString() ?? "Parse error";
+        star.StopCommand = configSection.GetProperty("stop").GetString() ?? "Parse error";
+
+        var startupSectionJson = configSection.GetProperty("startup").GetString() ?? "{}";
+        var startupSectionDocument = JsonDocument.Parse(startupSectionJson);
+        var startupSection = startupSectionDocument.RootElement;
+
+        var doneProperty = startupSection.GetProperty("done");
+
+        if (doneProperty.ValueKind == JsonValueKind.Array)
+            star.OnlineDetection = doneProperty.Deserialize<string[]>()?.First() ?? "Parse error";
+        else
+            star.OnlineDetection = doneProperty.GetString() ?? "Parse error";
+        
+        // Installation
+        var installationSection = egg.GetProperty("scripts").GetProperty("installation");
+
+        var shell = installationSection.GetProperty("entrypoint").GetString() ?? "bash";
+        star.InstallShell = shell.StartsWith("/") ? shell : $"/bin/{shell}";
+
+        star.InstallDockerImage = installationSection.GetProperty("container").GetString() ?? "Parse error";
+        star.InstallScript = installationSection.GetProperty("script").GetString() ?? "Parse error";
+        
+        // Variables
+        var variables = egg.GetProperty("variables");
+
+        foreach (var variable in variables.EnumerateArray())
+        {
+            var starVariable = new StarVariable()
+            {
+                Name = variable.GetProperty("name").GetString() ?? "Parse error",
+                Description = variable.GetProperty("description").GetString() ?? "Parse error",
+                Key = variable.GetProperty("env_variable").GetString() ?? "Parse error",
+                DefaultValue = variable.GetProperty("default_value").GetString() ?? "Parse error",
+                Type = StarVariableType.Text
+            };
+            
+            // Check if the provided value is an int or a boolean as both are apparently valid
+            if (variable.GetProperty("user_editable").ValueKind == JsonValueKind.Number)
+            {
+                starVariable.AllowEditing = variable.GetProperty("user_editable").GetInt32() == 1;
+                starVariable.AllowViewing = variable.GetProperty("user_viewable").GetInt32() == 1;
+            }
+            else
+            {
+                starVariable.AllowEditing = variable.GetProperty("user_editable").GetBoolean();
+                starVariable.AllowViewing = variable.GetProperty("user_viewable").GetBoolean();
+            }
+            
+            star.Variables.Add(starVariable);
+        }
+        
+        // Docker images
+        if (egg.TryGetProperty("image", out var imageProperty)) // Variant 1
+        {
+            star.DockerImages.Add(new StarDockerImage()
+            {
+                Identifier = imageProperty.GetString() ?? "Parse error",
+                DisplayName = imageProperty.GetString() ?? "Parse error",
+                AutoPulling = true
+            });
+        }
+        else if (egg.TryGetProperty("images", out var imagesProperty)) // Variant 2
+        {
+            foreach (var di in imagesProperty.EnumerateObject())
+            {
+                star.DockerImages.Add(new StarDockerImage()
+                {
+                    DisplayName = di.Name,
+                    Identifier = di.Value.GetString() ?? "Parse error",
+                    AutoPulling = true
+                });
+            }
+        }
+        else if (egg.TryGetProperty("docker_images", out var dockerImages)) // Variant 3
+        {
+            foreach (var di in dockerImages.EnumerateObject())
+            {
+                star.DockerImages.Add(new StarDockerImage()
+                {
+                    DisplayName = di.Name,
+                    Identifier = di.Value.GetString() ?? "Parse error",
+                    AutoPulling = true
+                });
+            }
+        }
+        
+        // Parse configuration
+        var parseConfigurationJson = configSection.GetProperty("files").GetString() ?? "{}";
+        var parseConfigurationDocument = JsonDocument.Parse(parseConfigurationJson);
+        var parseConfiguration = parseConfigurationDocument.RootElement;
+
+        var resultPcs = new List<ParseConfiguration>();
+        
+        foreach (var pConfig in parseConfiguration.EnumerateObject())
+        {
+            var pc = new ParseConfiguration()
+            {
+                File = pConfig.Name
+            };
+
+            var parser = pConfig.Value.GetProperty("parser").GetString() ?? "Parse error";
+            pc.Parser = Enum.TryParse(parser, true, out FileParsers fileParser) ? fileParser : FileParsers.File;
+
+            foreach (var pConfigFind in pConfig.Value.GetProperty("find").EnumerateObject())
+            {
+                pc.Entries.Add(new ParseConfiguration.ParseConfigurationEntry()
+                {
+                    Key = pConfigFind.Name,
+                    Value = pConfigFind.Value.GetString() ?? "Parse error"
+                });
+            }
+            
+            resultPcs.Add(pc);
+        }
+
+        star.ParseConfiguration = JsonSerializer.Serialize(resultPcs);
+        
+        // Post parse fixes
+        
+        // - Stop command signal
+        // Some weird eggs use ^^C in as a stop command, so we need to handle this as well
+        // because moonlight handles power signals correctly, wings does/did not
+        star.StopCommand = star.StopCommand.Replace("^^C", "^C");
+        
+        // - Set moonlight native values
+        star.RequiredAllocations = 1;
+        star.Version = "Imported egg";
+        star.AllowDockerImageChange = true;
+        
+        // Finally save it to the db
+        var finalStar = StarRepository.Add(star);
+
+        return finalStar;
     }
 }

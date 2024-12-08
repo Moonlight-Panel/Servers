@@ -87,7 +87,8 @@
         
         if(eventArgs.FileCount == 0)
             return;
-        else if (eventArgs.FileCount > 1)
+        
+        if (eventArgs.FileCount > 1)
             files = eventArgs.GetMultipleFiles().ToArray();
         else
             files = [eventArgs.File];
@@ -109,12 +110,13 @@
                 var star = await ApiClient.PostJson<StarDetailResponse>("api/admin/servers/stars/import", content);
                 
                 await ToastService.Success($"Successfully imported '{star.Name}'");
-                await Crud.Refresh(isSilent: false, bypassCache: true);
             }
             catch (HttpApiException e)
             {
                 await ToastService.Danger($"Failed to import '{file.Name}': {e.Title}");
             }
         }
+        
+        await Crud.Refresh(isSilent: false, bypassCache: true);
     }
 }
