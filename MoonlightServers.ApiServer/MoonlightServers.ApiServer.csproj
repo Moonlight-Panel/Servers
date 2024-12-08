@@ -23,7 +23,6 @@
         <Folder Include="Http\Middleware\"/>
         <Folder Include="Implementations\"/>
         <Folder Include="Interfaces\"/>
-        <Folder Include="Models\"/>
     </ItemGroup>
 
 </Project>
