@@ -11,7 +11,7 @@
 <h1 class="mb-5 font-semibold text-xl">Update variable</h1>
 
 <HandleForm @ref="HandleForm" Model="Form" OnValidSubmit="OnValidSubmit">
-    <div class="grid grid-cols-2 gap-2">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
         <div class="col-span-1">
             <label class="block text-sm font-medium leading-6 text-white">Name</label>
             <input @bind="Form.Name" type="text" class="form-input w-full"/>
