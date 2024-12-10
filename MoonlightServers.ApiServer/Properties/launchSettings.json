@@ -7,7 +7,6 @@
       "launchBrowser": false,
       "launchUrl": "swagger",
       "applicationUrl": "http://localhost:5269",
-      "commandLineArgs": "--frontend-asset /css/MoonlightServers.min.css",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development",
         "MOONLIGHT_APP_PUBLICURL": "http://localhost:5269"
