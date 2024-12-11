@@ -1,0 +1,80 @@
+@page "/admin/servers/nodes"
+
+@using MoonCore.Blazor.Tailwind.MinimalCrud
+@using MoonCore.Helpers
+@using MoonCore.Models
+@using MoonCore.Blazor.Tailwind.DataTable
+@using MoonlightServers.Shared.Http.Responses.Admin.Nodes
+@using MoonCore.Blazor.Tailwind.Components
+
+@inject HttpApiClient ApiClient
+
+<div class="mb-3">
+    <NavTabs Index="2" Names="@UiConstants.AdminNavNames" Links="@UiConstants.AdminNavLinks"/>
+</div>
+
+<MinimalCrud TItem="NodeDetailResponse" OnConfigure="OnConfigure">
+    <ChildContent>
+        <DataColumn TItem="NodeDetailResponse" Field="@(x => x.Id)" Title="Id" IsSortable="true"/>
+        <DataColumn TItem="NodeDetailResponse" Field="@(x => x.Name)" Title="Name" IsSortable="true"/>
+        <DataColumn TItem="NodeDetailResponse" Field="@(x => x.Fqdn)" Title="Fqdn"/>
+        <DataColumn TItem="NodeDetailResponse" Field="@(x => x.Fqdn)" Title="Status">
+            <Template>
+                <span class="text-success-500">
+                    <i class="icon-check text-base me-1 align-middle"></i>
+                    <span class="align-middle">Online (v.2.1.0)</span>
+                </span>
+            </Template>
+        </DataColumn>
+        <DataColumn TItem="NodeDetailResponse"
+                    Title=""
+                    HeadCssClasses="p-2 font-semibold text-left hidden xl:table-cell"
+                    CssClasses="p-2 text-left font-normal hidden xl:table-cell">
+            <Template>
+                <div>
+                    <i class="icon-cpu text-lg me-1 align-middle text-primary-500"></i>
+                    <span class="align-middle">33% of 6 Cores</span>
+                </div>
+            </Template>
+        </DataColumn>
+        <DataColumn TItem="NodeDetailResponse"
+                    Title=""
+                    HeadCssClasses="p-2 font-semibold text-left hidden xl:table-cell"
+                    CssClasses="p-2 text-left font-normal hidden xl:table-cell">
+            <Template>
+                <div>
+                    <i class="icon-memory-stick text-lg me-1 align-middle text-primary-500"></i>
+                    <span class="align-middle">1.56GB / 64GB</span>
+                </div>
+            </Template>
+        </DataColumn>
+        <DataColumn TItem="NodeDetailResponse"
+                    Title=""
+                    HeadCssClasses="p-2 font-semibold text-left hidden xl:table-cell"
+                    CssClasses="p-2 text-left font-normal hidden xl:table-cell">
+            <Template>
+                <div>
+                    <i class="icon-hard-drive text-lg me-1 align-middle text-primary-500"></i>
+                    <span class="align-middle">78.68GB / 1TB</span>
+                </div>
+            </Template>
+        </DataColumn>
+    </ChildContent>
+</MinimalCrud>
+
+@code
+
+
+
+{
+    private void OnConfigure(MinimalCrudOptions<NodeDetailResponse> options)
+    {
+        options.Title = "Nodes";
+        options.ItemLoader = async (page, pageSize) =>
+            await ApiClient.GetJson<PagedData<NodeDetailResponse>>($"api/admin/servers/nodes?page={page}&pageSize={pageSize}");
+
+        options.CreateUrl = ComponentHelper.GetRouteOfComponent<Create>();
+        options.UpdateUrl = item => ComponentHelper.GetRouteOfComponent<Update>(item.Id)!;
+        options.DeleteFunction = async item => await ApiClient.Delete($"api/admin/servers/nodes/{item.Id}");
+    }
+}
