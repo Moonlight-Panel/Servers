@@ -24,6 +24,7 @@ public class StarExportModel
     // Misc
     public int RequiredAllocations { get; set; }
     public bool AllowDockerImageChange { get; set; }
+    public int DefaultDockerImage { get; set; }
     public string ParseConfiguration { get; set; }
     
     // Relations

@@ -42,6 +42,7 @@ public class UpdateStarRequest
     public int RequiredAllocations { get; set; }
 
     public bool AllowDockerImageChange { get; set; }
+    public int DefaultDockerImage { get; set; }
 
     [Required(ErrorMessage = "You need to provide parse configuration")]
     public string ParseConfiguration { get; set; }

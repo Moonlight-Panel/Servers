@@ -50,6 +50,7 @@ public class StarImportExportService
             ParseConfiguration = star.ParseConfiguration,
             RequiredAllocations = star.RequiredAllocations,
             AllowDockerImageChange = star.AllowDockerImageChange,
+            DefaultDockerImage = star.DefaultDockerImage,
             Variables = star.Variables.Select(x => new StarExportModel.StarVariableExportModel()
             {
                 Name = x.Name,
@@ -117,6 +118,7 @@ public class StarImportExportService
                 ParseConfiguration = model.ParseConfiguration,
                 RequiredAllocations = model.RequiredAllocations,
                 AllowDockerImageChange = model.AllowDockerImageChange,
+                DefaultDockerImage = model.DefaultDockerImage,
                 Variables = model.Variables.Select(x => new StarVariable()
                 {
                     DefaultValue = x.DefaultValue,
@@ -173,6 +175,7 @@ public class StarImportExportService
                 StartupCommand = model.StartupCommand,
                 RequiredAllocations = model.AllocationsNeeded,
                 AllowDockerImageChange = model.AllowDockerImageChange,
+                DefaultDockerImage = model.DefaultDockerImage,
                 Variables = model.Variables.Select(x => new StarVariable()
                 {
                     DefaultValue = x.DefaultValue,

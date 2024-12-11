@@ -14,12 +14,12 @@
 @inject ToastService ToastService
 @inject AlertService AlertService
 
-<div class="flex justify-end mb-5">
-    <button type="button" @onclick="AddDockerImage" class="btn btn-primary">Add docker image</button>
-</div>
-
 <LazyLoader @ref="LazyLoader" Load="Load">
-    <div class="grid sm:grid-cols-2 xl:grid-cols-3 gap-4">
+    <div class="flex justify-end">
+        <button type="button" @onclick="AddDockerImage" class="btn btn-primary">Add docker image</button>
+    </div>
+    
+    <div class="grid sm:grid-cols-2 xl:grid-cols-3 gap-4 mt-5">
         @foreach (var dockerImage in DockerImages)
         {
             <div class="col-span-1 card card-body p-2.5">

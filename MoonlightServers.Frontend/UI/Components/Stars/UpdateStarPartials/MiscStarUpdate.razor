@@ -1,0 +1,67 @@
+@using MoonCore.Blazor.Tailwind.Components
+@using MoonCore.Helpers
+@using MoonCore.Models
+@using MoonlightServers.Shared.Http.Requests.Admin.Stars
+@using MoonlightServers.Shared.Http.Responses.Admin.StarDockerImages
+@using MoonlightServers.Shared.Http.Responses.Admin.Stars
+@using MoonlightServers.Frontend.UI.Components.Forms
+
+@inject HttpApiClient ApiClient
+
+<LazyLoader Load="Load">
+    <div>
+        <div class="grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-6">
+            <div class="sm:col-span-2">
+                <label class="block text-sm font-medium leading-6 text-white">Allow docker image change</label>
+                <div class="mt-2">
+                    <Switch @bind-Value="Request.AllowDockerImageChange" />
+                </div>
+            </div>
+            <div class="sm:col-span-2">
+                <label class="block text-sm font-medium leading-6 text-white">Default docker image</label>
+                <div class="mt-2">
+                    <select @bind="Request.DefaultDockerImage" class="form-select w-full">
+                        @foreach (var dockerImage in DockerImages)
+                        {
+                            var index = DockerImages.IndexOf(dockerImage);
+                            
+                            if (Request.DefaultDockerImage == index)
+                            {
+                                <option selected="selected"
+                                        value="@index">
+                                    @dockerImage.DisplayName
+                                </option>
+                            }
+                            else
+                            {
+                                <option value="@index">
+                                    @dockerImage.DisplayName
+                                </option>
+                            }
+                        }
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+</LazyLoader>
+
+@code
+{
+    [Parameter] public UpdateStarRequest Request { get; set; }
+    [Parameter] public StarDetailResponse Star { get; set; }
+    
+    private List<StarDockerImageDetailResponse> DockerImages;
+
+    private async Task Load(LazyLoader _)
+    {
+        var pagedVariables = await ApiClient.GetJson<PagedData<StarDockerImageDetailResponse>>(
+            $"api/admin/servers/stars/{Star.Id}/dockerImages?page=0&pageSize=50"
+        );
+
+        DockerImages = pagedVariables
+            .Items
+            .OrderBy(x => x.Id) // Make sure its in the correct order every time
+            .ToList();
+    }
+}

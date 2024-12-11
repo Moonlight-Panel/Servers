@@ -75,6 +75,7 @@ public class StarsController : Controller
         star.InstallScript = "echo Installing...";
         star.RequiredAllocations = 1;
         star.AllowDockerImageChange = false;
+        star.DefaultDockerImage = -1;
         star.ParseConfiguration = "[]";
 
         var finalStar = StarRepository.Add(star);

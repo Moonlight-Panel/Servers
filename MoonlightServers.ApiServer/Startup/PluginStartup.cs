@@ -6,12 +6,10 @@ namespace MoonlightServers.ApiServer.Startup;
 
 public class PluginStartup : IAppStartup
 {
-    private readonly ILogger<PluginStartup> Logger;
     private readonly BundleService BundleService;
 
-    public PluginStartup(ILogger<PluginStartup> logger, BundleService bundleService)
+    public PluginStartup(BundleService bundleService)
     {
-        Logger = logger;
         BundleService = bundleService;
     }
 
