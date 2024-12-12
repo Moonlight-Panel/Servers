@@ -6,6 +6,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MoonlightServers.Frontend",
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MoonlightServers.Shared", "MoonlightServers.Shared\MoonlightServers.Shared.csproj", "{70FAFFFB-9EA6-4BB7-B4C0-A6BEF9684B32}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MoonlightServers.Daemon", "MoonlightServers.Daemon\MoonlightServers.Daemon.csproj", "{5EAFCB32-500B-477C-937A-3DAD63C5BB1A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MoonlightServers.DaemonShared", "MoonlightServers.DaemonShared\MoonlightServers.DaemonShared.csproj", "{15EBCC5D-2440-4B5B-A046-F8327E0C1CB8}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -24,5 +28,13 @@ Global
 		{70FAFFFB-9EA6-4BB7-B4C0-A6BEF9684B32}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{70FAFFFB-9EA6-4BB7-B4C0-A6BEF9684B32}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{70FAFFFB-9EA6-4BB7-B4C0-A6BEF9684B32}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5EAFCB32-500B-477C-937A-3DAD63C5BB1A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5EAFCB32-500B-477C-937A-3DAD63C5BB1A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5EAFCB32-500B-477C-937A-3DAD63C5BB1A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5EAFCB32-500B-477C-937A-3DAD63C5BB1A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{15EBCC5D-2440-4B5B-A046-F8327E0C1CB8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{15EBCC5D-2440-4B5B-A046-F8327E0C1CB8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{15EBCC5D-2440-4B5B-A046-F8327E0C1CB8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{15EBCC5D-2440-4B5B-A046-F8327E0C1CB8}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
