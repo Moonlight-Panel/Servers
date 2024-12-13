@@ -1,13 +1,19 @@
 @page "/admin/servers/nodes"
 
+@using System.Diagnostics
+@using MoonCore.Blazor.Tailwind.Alerts
 @using MoonCore.Blazor.Tailwind.MinimalCrud
 @using MoonCore.Helpers
 @using MoonCore.Models
 @using MoonCore.Blazor.Tailwind.DataTable
 @using MoonlightServers.Shared.Http.Responses.Admin.Nodes
 @using MoonCore.Blazor.Tailwind.Components
+@using MoonlightServers.Frontend.Services
+@using MoonlightServers.Shared.Http.Responses.Admin.Nodes.Sys
 
 @inject HttpApiClient ApiClient
+@inject NodeService NodeService
+@inject AlertService AlertService
 
 <div class="mb-3">
     <NavTabs Index="2" Names="@UiConstants.AdminNavNames" Links="@UiConstants.AdminNavLinks"/>
@@ -20,10 +26,56 @@
         <DataColumn TItem="NodeDetailResponse" Field="@(x => x.Fqdn)" Title="Fqdn"/>
         <DataColumn TItem="NodeDetailResponse" Field="@(x => x.Fqdn)" Title="Status">
             <Template>
-                <span class="text-success-500">
-                    <i class="icon-check text-base me-1 align-middle"></i>
-                    <span class="align-middle">Online (v.2.1.0)</span>
-                </span>
+                <LazyLoader Load="_ => LoadNodeStatus(context.Id)">
+                    @{
+                        bool isFetched;
+                        NodeSystemStatusResponse? data;
+
+                        lock (Responses)
+                            isFetched = Responses.TryGetValue(context.Id, out data);
+                    }
+
+                    @if (isFetched)
+                    {
+                        if (data == null)
+                        {
+                            <span class="text-danger-500">
+                                <i class="icon-server-offg text-base me-1 align-middle"></i>
+                                <span class="align-middle">
+                                    API Error
+                                </span>
+                            </span>
+                        }
+                        else
+                        {
+                            if (data.RoundtripSuccess)
+                            {
+                                <span class="text-success-500">
+                                    <i class="icon-check text-base me-1 align-middle"></i>
+                                    <span class="align-middle">Online (@(data.Version))</span>
+                                </span>
+                            }
+                            else
+                            {
+                                <span class="text-danger-500">
+                                    <i class="icon-server-off text-base me-1 align-middle"></i>
+                                    <span class="align-middle">
+                                        Error
+                                        <a @onclick="() => ShowErrorDetails(context.Id)" @onclick:preventDefault
+                                           href="#" class="ms-1 text-gray-600">Details</a>
+                                    </span>
+                                </span>
+                            }
+                        }
+                    }
+                    else
+                    {
+                        <span class="text-gray-500">
+                            <i class="icon-loader text-base me-1 align-middle"></i>
+                            <span class="align-middle">Loading</span>
+                        </span>
+                    }
+                </LazyLoader>
             </Template>
         </DataColumn>
         <DataColumn TItem="NodeDetailResponse"
@@ -63,10 +115,49 @@
 </MinimalCrud>
 
 @code
-
-
-
 {
+    private Dictionary<int, NodeSystemStatusResponse?> Responses = new();
+
+    private Task LoadNodeStatus(int node)
+    {
+        Task.Run(async () =>
+        {
+            try
+            {
+                var status = await NodeService.GetSystemStatus(node);
+
+                lock (Responses)
+                    Responses[node] = status;
+            }
+            catch (Exception e)
+            {
+                lock (Responses)
+                    Responses[node] = null;
+            }
+
+            await InvokeAsync(StateHasChanged);
+        });
+
+        return Task.CompletedTask;
+    }
+
+    private async Task ShowErrorDetails(int id)
+    {
+        NodeSystemStatusResponse? data;
+
+        lock (Responses)
+            data = Responses.GetValueOrDefault(id);
+
+        if (data == null)
+            return;
+
+        var message = $"Failed after {Math.Round(data.RoundtripTime.TotalSeconds, 2)} seconds: " +
+                      (data.RoundtripRemoteFailure ? "(Failed at node)" : "(Failed at api server)") +
+                      $" {data.RoundtripError}";
+
+        await AlertService.Danger("Node error details", message);
+    }
+
     private void OnConfigure(MinimalCrudOptions<NodeDetailResponse> options)
     {
         options.Title = "Nodes";

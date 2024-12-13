@@ -5,6 +5,12 @@ public class AppConfiguration
     public DockerData Docker { get; set; } = new();
     public StorageData Storage { get; set; } = new();
     public SecurityData Security { get; set; } = new();
+    public RemoteData Remote { get; set; } = new();
+    
+    public class RemoteData
+    {
+        public string Url { get; set; }
+    }
     
     public class DockerData
     {

@@ -16,6 +16,7 @@ public class Node
     public string Token { get; set; }
     public int HttpPort { get; set; }
     public int FtpPort { get; set; }
+    public bool UseSsl { get; set; }
     
     // Misc
     public bool EnableTransparentMode { get; set; }

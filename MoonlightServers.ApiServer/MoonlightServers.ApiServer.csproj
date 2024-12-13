@@ -13,6 +13,7 @@
     </ItemGroup>
 
     <ItemGroup>
+        <ProjectReference Include="..\MoonlightServers.DaemonShared\MoonlightServers.DaemonShared.csproj" />
         <ProjectReference Include="..\MoonlightServers.Frontend\MoonlightServers.Frontend.csproj"/>
         <ProjectReference Include="..\MoonlightServers.Shared\MoonlightServers.Shared.csproj"/>
     </ItemGroup>
