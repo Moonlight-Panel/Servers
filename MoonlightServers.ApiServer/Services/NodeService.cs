@@ -1,6 +1,7 @@
 using MoonCore.Attributes;
 using MoonCore.Helpers;
 using MoonlightServers.ApiServer.Database.Entities;
+using MoonlightServers.DaemonShared.Http.Responses.Statistics;
 using MoonlightServers.DaemonShared.Http.Responses.Sys;
 
 namespace MoonlightServers.ApiServer.Services;
@@ -28,25 +29,32 @@ public class NodeService
 
         return new HttpApiClient(httpClient);
     }
-
-    public async Task<SystemInfoResponse> GetSystemInfo(Node node)
-    {
-        using var apiClient = await CreateApiClient(node);
-
-        return await apiClient.GetJson<SystemInfoResponse>("api/system/info");
-    }
     
     public async Task<SystemStatusResponse> GetSystemStatus(Node node)
     {
         using var apiClient = await CreateApiClient(node);
-
         return await apiClient.GetJson<SystemStatusResponse>("api/system/status");
     }
 
-    public async Task<SystemDataUsageResponse> GetSystemDataUsage(Node node)
+    #region Statistics
+
+    public async Task<StatisticsApplicationResponse> GetApplicationStatistics(Node node)
     {
         using var apiClient = await CreateApiClient(node);
-
-        return await apiClient.GetJson<SystemDataUsageResponse>("api/system/dataUsage");
+        return await apiClient.GetJson<StatisticsApplicationResponse>("api/statistics/application");
     }
+    
+    public async Task<StatisticsHostResponse> GetHostStatistics(Node node)
+    {
+        using var apiClient = await CreateApiClient(node);
+        return await apiClient.GetJson<StatisticsHostResponse>("api/statistics/host");
+    }
+    
+    public async Task<StatisticsDockerResponse> GetDockerStatistics(Node node)
+    {
+        using var apiClient = await CreateApiClient(node);
+        return await apiClient.GetJson<StatisticsDockerResponse>("api/statistics/docker");
+    }
+
+    #endregion
 }
