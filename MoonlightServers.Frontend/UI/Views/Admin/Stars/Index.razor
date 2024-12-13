@@ -20,8 +20,16 @@
 
 <MinimalCrud @ref="Crud" TItem="StarDetailResponse" OnConfigure="OnConfigure">
     <ChildContent>
-        <DataColumn TItem="StarDetailResponse" Field="@(x => x.Id)" Title="Id" IsSortable="true"/>
-        <DataColumn TItem="StarDetailResponse" Field="@(x => x.Name)" Title="Name" IsSortable="true"/>
+        <DataColumn TItem="StarDetailResponse" Field="@(x => x.Id)" Title="Id" IsSortable="true" />
+        <DataColumn TItem="StarDetailResponse" Field="@(x => x.Name)" Title="Name" IsSortable="true">
+            <Template>
+                @{
+                    var url = ComponentHelper.GetRouteOfComponent<Update>(context.Id)!;
+                }
+
+                <a class="text-primary-500" href="@url">@context.Name</a>
+            </Template>
+        </DataColumn>
         <DataColumn TItem="StarDetailResponse" Field="@(x => x.Version)" Title="Version" IsSortable="true"/>
         <DataColumn TItem="StarDetailResponse" Field="@(x => x.Author)" Title="Author"/>
     </ChildContent>

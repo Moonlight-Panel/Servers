@@ -6,6 +6,7 @@
 @using MoonCore.Helpers
 @using MoonlightServers.Shared.Http.Requests.Admin.Nodes
 @using MoonlightServers.Shared.Http.Responses.Admin.Nodes
+@using MoonlightServers.Frontend.UI.Components.Nodes.UpdateNodePartials
 
 @inject HttpApiClient ApiClient
 @inject NavigationManager Navigation
@@ -25,7 +26,21 @@
 
     <div class="mt-5">
         <HandleForm @ref="Form" Model="Request" OnValidSubmit="OnSubmit">
-            <GeneratedForm TForm="UpdateNodeRequest" Model="Request" OnConfigure="OnConfigure"/>
+            
+            <Tabs>
+                <Tab Name="Settings">
+                    <GeneralNodeUpdate Request="Request"/>
+                </Tab>
+                
+                <Tab Name="Allocations">
+                    <AllocationsNodeUpdate Node="Node" />
+                </Tab>
+
+                <Tab Name="Advanced Settings">
+                    <AdvancedNodeUpdate Request="Request"/>
+                </Tab>
+            </Tabs>
+            
         </HandleForm>
     </div>
 </LazyLoader>
@@ -36,11 +51,12 @@
 
     private HandleForm Form;
     private UpdateNodeRequest Request;
+    private NodeDetailResponse Node;
 
     private async Task Load(LazyLoader _)
     {
-        var detail = await ApiClient.GetJson<NodeDetailResponse>($"api/admin/servers/nodes/{Id}");
-        Request = Mapper.Map<UpdateNodeRequest>(detail);
+        Node = await ApiClient.GetJson<NodeDetailResponse>($"api/admin/servers/nodes/{Id}");
+        Request = Mapper.Map<UpdateNodeRequest>(Node);
     }
 
     private void OnConfigure(FormConfiguration<UpdateNodeRequest> configuration)

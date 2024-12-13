@@ -22,7 +22,15 @@
 <MinimalCrud TItem="NodeDetailResponse" OnConfigure="OnConfigure">
     <ChildContent>
         <DataColumn TItem="NodeDetailResponse" Field="@(x => x.Id)" Title="Id" IsSortable="true"/>
-        <DataColumn TItem="NodeDetailResponse" Field="@(x => x.Name)" Title="Name" IsSortable="true"/>
+        <DataColumn TItem="NodeDetailResponse" Field="@(x => x.Name)" Title="Name" IsSortable="true">
+            <Template>
+                @{
+                    var url = ComponentHelper.GetRouteOfComponent<Update>(context.Id)!;
+                }
+
+                <a class="text-primary-500" href="@url">@context.Name</a>
+            </Template>
+        </DataColumn>
         <DataColumn TItem="NodeDetailResponse" Field="@(x => x.Fqdn)" Title="Fqdn"/>
         <DataColumn TItem="NodeDetailResponse" Field="@(x => x.Fqdn)" Title="Status">
             <Template>

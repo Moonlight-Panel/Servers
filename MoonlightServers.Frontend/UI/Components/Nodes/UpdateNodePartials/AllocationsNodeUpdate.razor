@@ -1,0 +1,117 @@
+@using MoonCore.Blazor.Tailwind.Alerts
+@using MoonlightServers.Shared.Http.Responses.Admin.Nodes
+@using MoonCore.Blazor.Tailwind.DataTable
+@using MoonCore.Blazor.Tailwind.Modals
+@using MoonCore.Blazor.Tailwind.Toasts
+@using MoonCore.Helpers
+@using MoonCore.Models
+@using MoonlightServers.Frontend.UI.Components.Nodes.Modals
+@using MoonlightServers.Shared.Http.Requests.Admin.NodeAllocations
+@using MoonlightServers.Shared.Http.Responses.Admin.NodeAllocations
+
+@inject HttpApiClient ApiClient
+@inject ModalService ModalService
+@inject ToastService ToastService
+@inject AlertService AlertService
+
+<div class="grid grid-cols-1 md:grid-cols-3 md:gap-x-5">
+    <div class="col-span-1">
+        <div class="card">
+            <div class="card-header card-header bg-gray-700 rounded-t-lg text-gray-500 bg-opacity-50 border-0 py-2 text-base font-semibold">
+                <span class="card-title">Actions</span>
+            </div>
+            <div class="card-body">
+                <div class="flex flex-col gap-y-3">
+                    <button @onclick="AddAllocation" class="btn btn-primary">Create allocation</button>
+                    <button class="btn btn-tertiary">Add multiple</button>
+                    <button class="btn btn-danger">Delete all</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-span-1 md:col-span-2 -mb-3">
+        <ItemDataTable @ref="Table"
+                       TItem="NodeAllocationDetailResponse"
+                       Title=""
+                       ItemLoader="Load">
+            <ChildContent>
+                <DataColumn TItem="NodeAllocationDetailResponse" Field="@(x => x.IpAddress)" Title="IP Address"/>
+                <DataColumn TItem="NodeAllocationDetailResponse" Field="@(x => x.Port)" Title="Port"/>
+                <DataColumn TItem="NodeAllocationDetailResponse" Title="">
+                    <Template>
+                        <div class="flex justify-end items-center">
+                            <a @onclick="() => UpdateAllocation(context)" @onclick:preventDefault href="#" class="text-primary-500 mr-2 sm:mr-3">
+                                <i class="icon-pencil text-base"></i>
+                            </a>
+                            <a @onclick="() => DeleteAllocation(context)" @onclick:preventDefault href="#" class="text-danger-500">
+                                <i class="icon-trash text-base"></i>
+                            </a>
+                        </div>
+                    </Template>
+                </DataColumn>
+            </ChildContent>
+        </ItemDataTable>
+    </div>
+</div>
+
+@code
+{
+    [Parameter] public NodeDetailResponse Node { get; set; }
+
+    private ItemDataTable<NodeAllocationDetailResponse> Table;
+
+    private async Task<IPagedData<NodeAllocationDetailResponse>> Load(int page, int pageSize)
+    {
+        return await ApiClient.GetJson<PagedData<NodeAllocationDetailResponse>>(
+            $"api/admin/servers/nodes/{Node.Id}/allocations?page={page}&pageSize={pageSize}"
+        );
+    }
+
+    private async Task AddAllocation()
+    {
+        Func<CreateNodeAllocationRequest, Task> onSubmit = async request =>
+        {
+            await ApiClient.Post($"api/admin/servers/nodes/{Node.Id}/allocations", request);
+
+            await ToastService.Success("Successfully created allocation");
+            await Table.Refresh(isSilent: false, bypassCache: true);
+        };
+
+        await ModalService.Launch<CreateAllocationModal>(parameters =>
+        {
+            parameters.Add("OnSubmit", onSubmit);
+        });
+    }
+
+    private async Task UpdateAllocation(NodeAllocationDetailResponse allocation)
+    {
+        Func<UpdateNodeAllocationRequest, Task> onSubmit = async request =>
+        {
+            await ApiClient.Patch($"api/admin/servers/nodes/{Node.Id}/allocations/{allocation.Id}", request);
+
+            await ToastService.Success("Successfully updated allocation");
+            await Table.Refresh(isSilent: false, bypassCache: true);
+        };
+
+        await ModalService.Launch<UpdateAllocationModal>(parameters =>
+        {
+            parameters.Add("OnSubmit", onSubmit);
+            parameters.Add("Allocation", allocation);
+        });
+    }
+
+    private async Task DeleteAllocation(NodeAllocationDetailResponse allocation)
+    {
+        await AlertService.ConfirmDanger(
+            "Delete allocation",
+            "Do you really want to delete the selected allocation? This cannot be undone",
+            async () =>
+            {
+                await ApiClient.Delete($"api/admin/servers/nodes/{Node.Id}/allocations/{allocation.Id}");
+            
+                await ToastService.Success("Successfully deleted allocation");
+                await Table.Refresh(isSilent: false, bypassCache: true);
+            }
+        );
+    }
+}

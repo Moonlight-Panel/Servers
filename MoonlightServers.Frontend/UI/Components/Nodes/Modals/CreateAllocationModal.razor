@@ -1,0 +1,50 @@
+@using MoonCore.Blazor.Tailwind.Modals.Components
+@using MoonCore.Blazor.Tailwind.Components
+@using MoonlightServers.Shared.Http.Requests.Admin.NodeAllocations
+
+@inherits BaseModal
+
+<h1 class="mb-5 font-semibold text-xl">Add a new allocation</h1>
+
+<HandleForm @ref="HandleForm" Model="Form" OnValidSubmit="OnValidSubmit">
+    <div class="grid grid-cols-1 gap-2">
+        <div class="col-span-1">
+            <label class="block text-sm font-medium leading-6 text-white">IP Address</label>
+            <input @bind="Form.IpAddress" type="text" class="form-input w-full"/>
+        </div>
+
+        <div class="col-span-1">
+            <label class="block text-sm font-medium leading-6 text-white">Port</label>
+            <input @bind="Form.Port" type="text" class="form-input w-full"/>
+        </div>
+    </div>
+</HandleForm>
+
+<div class="mt-5 flex space-x-2">
+    <WButton OnClick="_ => Hide()" CssClasses="btn btn-secondary grow">Cancel</WButton>
+    <WButton OnClick="_ => Submit()" CssClasses="btn btn-primary grow">Create</WButton>
+</div>
+
+@code
+{
+    [Parameter] public Func<CreateNodeAllocationRequest, Task> OnSubmit { get; set; }
+
+    private CreateNodeAllocationRequest Form;
+    private HandleForm HandleForm;
+
+    protected override void OnInitialized()
+    {
+        Form = new()
+        {
+            IpAddress = "0.0.0.0"
+        };
+    }
+
+    private async Task OnValidSubmit()
+    {
+        await OnSubmit.Invoke(Form);
+        await Hide();
+    }
+
+    private Task Submit() => HandleForm.Submit();
+}
