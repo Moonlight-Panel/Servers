@@ -90,4 +90,57 @@ public class NodeAllocationsController : Controller
         
         await CrudHelper.Delete(id);
     }
+
+    [HttpPost("{nodeId:int}/allocations/range")]
+    public Task CreateRange([FromRoute] int nodeId, [FromBody] CreateNodeAllocationRangeRequest rangeRequest)
+    {
+        ApplyNode(nodeId);
+        
+        var existingAllocations = AllocationRepository
+            .Get()
+            .Where(x => x.Node.Id == nodeId)
+            .ToArray();
+
+        var ports = new List<int>();
+
+        for (var i = rangeRequest.Start; i < rangeRequest.End; i++)
+        {
+            // Skip existing allocations
+            if(existingAllocations.Any(x => x.Port == i && x.IpAddress == rangeRequest.IpAddress))
+                continue;
+            
+            ports.Add(i);
+        }
+
+        var allocations = ports
+            .Select(port => new Allocation()
+            {
+                IpAddress = rangeRequest.IpAddress,
+                Port = port,
+                Node = Node
+            })
+            .ToArray();
+        
+        // TODO: Add AddRange in database repository
+        foreach (var allocation in allocations)
+            AllocationRepository.Add(allocation);
+        
+        return Task.CompletedTask;
+    }
+
+    [HttpDelete("{nodeId:int}/allocations/all")]
+    public Task DeleteAll([FromRoute] int nodeId)
+    {
+        ApplyNode(nodeId);
+        
+        var allocations = AllocationRepository
+            .Get()
+            .Where(x => x.Node.Id == nodeId)
+            .ToArray();
+
+        foreach (var allocation in allocations)
+            AllocationRepository.Delete(allocation);
+        
+        return Task.CompletedTask;
+    }
 }

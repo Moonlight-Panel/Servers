@@ -17,14 +17,15 @@
 <div class="grid grid-cols-1 md:grid-cols-3 md:gap-x-5">
     <div class="col-span-1">
         <div class="card">
-            <div class="card-header card-header bg-gray-700 rounded-t-lg text-gray-500 bg-opacity-50 border-0 py-2 text-base font-semibold">
+            <div
+                class="card-header card-header bg-gray-700 rounded-t-lg text-gray-500 bg-opacity-50 border-0 py-2 text-base font-semibold">
                 <span class="card-title">Actions</span>
             </div>
             <div class="card-body">
                 <div class="flex flex-col gap-y-3">
                     <button @onclick="AddAllocation" class="btn btn-primary">Create allocation</button>
-                    <button class="btn btn-tertiary">Add multiple</button>
-                    <button class="btn btn-danger">Delete all</button>
+                    <button @onclick="AddAllocationRange" class="btn btn-tertiary">Add multiple</button>
+                    <button @onclick="DeleteAllAllocations" class="btn btn-danger">Delete all</button>
                 </div>
             </div>
         </div>
@@ -40,10 +41,12 @@
                 <DataColumn TItem="NodeAllocationDetailResponse" Title="">
                     <Template>
                         <div class="flex justify-end items-center">
-                            <a @onclick="() => UpdateAllocation(context)" @onclick:preventDefault href="#" class="text-primary-500 mr-2 sm:mr-3">
+                            <a @onclick="() => UpdateAllocation(context)" @onclick:preventDefault href="#"
+                               class="text-primary-500 mr-2 sm:mr-3">
                                 <i class="icon-pencil text-base"></i>
                             </a>
-                            <a @onclick="() => DeleteAllocation(context)" @onclick:preventDefault href="#" class="text-danger-500">
+                            <a @onclick="() => DeleteAllocation(context)" @onclick:preventDefault href="#"
+                               class="text-danger-500">
                                 <i class="icon-trash text-base"></i>
                             </a>
                         </div>
@@ -67,6 +70,22 @@
         );
     }
 
+    private async Task AddAllocationRange()
+    {
+        Func<CreateNodeAllocationRangeRequest, Task> onSubmit = async request =>
+        {
+            await ApiClient.Post($"api/admin/servers/nodes/{Node.Id}/allocations/range", request);
+
+            await ToastService.Success("Successfully created allocations");
+            await Table.Refresh(isSilent: false, bypassCache: true);
+        };
+
+        await ModalService.Launch<CreateMultipleAllocationModal>(parameters =>
+        {
+            parameters.Add("OnSubmit", onSubmit);
+        });
+    }
+
     private async Task AddAllocation()
     {
         Func<CreateNodeAllocationRequest, Task> onSubmit = async request =>
@@ -77,10 +96,7 @@
             await Table.Refresh(isSilent: false, bypassCache: true);
         };
 
-        await ModalService.Launch<CreateAllocationModal>(parameters =>
-        {
-            parameters.Add("OnSubmit", onSubmit);
-        });
+        await ModalService.Launch<CreateAllocationModal>(parameters => { parameters.Add("OnSubmit", onSubmit); });
     }
 
     private async Task UpdateAllocation(NodeAllocationDetailResponse allocation)
@@ -108,8 +124,23 @@
             async () =>
             {
                 await ApiClient.Delete($"api/admin/servers/nodes/{Node.Id}/allocations/{allocation.Id}");
-            
+
                 await ToastService.Success("Successfully deleted allocation");
+                await Table.Refresh(isSilent: false, bypassCache: true);
+            }
+        );
+    }
+    
+    private async Task DeleteAllAllocations()
+    {
+        await AlertService.ConfirmDanger(
+            "Delete all allocations",
+            "Do you really want to delete all allocations? This cannot be undone",
+            async () =>
+            {
+                await ApiClient.Delete($"api/admin/servers/nodes/{Node.Id}/allocations/all");
+
+                await ToastService.Success("Successfully deleted allocations");
                 await Table.Refresh(isSilent: false, bypassCache: true);
             }
         );
