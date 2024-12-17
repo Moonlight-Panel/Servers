@@ -24,23 +24,6 @@ public class StarsController : Controller
     {
         CrudHelper = crudHelper;
         StarRepository = starRepository;
-
-        CrudHelper.QueryModifier = stars => stars
-            .Include(x => x.Variables)
-            .Include(x => x.DockerImages);
-
-        CrudHelper.LateMapper = (star, response) =>
-        {
-            response.DockerImages = star.DockerImages
-                .Select(x => Mapper.Map<StarDockerImageDetailResponse>(x))
-                .ToArray();
-
-            response.Variables = star.Variables
-                .Select(x => Mapper.Map<StarVariableDetailResponse>(x))
-                .ToArray();
-            
-            return response;
-        };
     }
 
     [HttpGet]

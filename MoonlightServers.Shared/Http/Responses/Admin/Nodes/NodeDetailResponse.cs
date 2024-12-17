@@ -5,9 +5,6 @@ namespace MoonlightServers.Shared.Http.Responses.Admin.Nodes;
 public class NodeDetailResponse
 {
     public int Id { get; set; }
-    
-    //public List<Server> Servers { get; set; } = new();
-    public NodeAllocationDetailResponse[] Allocations { get; set; }
 
     public string Name { get; set; }
     

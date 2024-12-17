@@ -1,0 +1,89 @@
+@using MoonlightServers.Shared.Http.Requests.Admin.Servers
+@using MoonlightServers.Frontend.UI.Components.Forms
+@using MoonCore.Helpers
+@using MoonCore.Models
+@using MoonlightServers.Shared.Http.Responses.Admin.Nodes
+@using MoonlightServers.Shared.Http.Responses.Admin.Stars
+@using MoonCore.Blazor.Tailwind.Inputs
+
+@inject HttpApiClient ApiClient
+
+<div class="grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-6">
+    <div class="sm:col-span-2">
+        <label class="block text-sm font-medium leading-6 text-white">Name</label>
+        <div class="mt-2">
+            <input @bind="Request.Name" type="text" autocomplete="off" class="form-input w-full">
+        </div>
+    </div>
+
+    <div class="sm:col-span-2">
+        <label class="block text-sm font-medium leading-6 text-white">Star</label>
+        <div class="mt-2">
+            <InputItemSelect TItem="StarDetailResponse"
+                             TProperty="int"
+                             @bind-Value="Request.StarId"
+                             DisplayProperty="@(x => x.Name)"
+                             ValueProperty="@(x => x?.Id ?? -1)"
+                             Loader="LoadStars"/>
+        </div>
+    </div>
+
+    <div class="sm:col-span-2">
+        <label class="block text-sm font-medium leading-6 text-white">Node</label>
+        <div class="mt-2">
+            <InputItemSelect TItem="NodeDetailResponse"
+                             TProperty="int"
+                             @bind-Value="Request.NodeId"
+                             DisplayProperty="@(x => x.Name)"
+                             ValueProperty="@(x => x?.Id ?? -1)"
+                             Loader="LoadNodes"/>
+        </div>
+    </div>
+</div>
+
+<div class="border-t border-gray-100/10 pt-6 my-8">
+    <div class="mb-8"><h2 class="text-base font-semibold leading-7 text-gray-100">
+            Resources
+        </h2>
+        <p class="mt-1 text-sm leading-6 text-gray-400">Define the servers resource limit</p></div>
+
+    <div class="grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-6">
+        <div class="sm:col-span-2">
+            <label class="block text-sm font-medium leading-6 text-white">Cpu</label>
+            <div class="mt-2">
+                <input @bind="Request.Cpu" type="number" autocomplete="off" class="form-input w-full">
+            </div>
+        </div>
+
+        <div class="sm:col-span-2">
+            <label class="block text-sm font-medium leading-6 text-white">Memory</label>
+            <div class="mt-2">
+                <input @bind="Request.Memory" type="number" autocomplete="off" class="form-input w-full">
+            </div>
+        </div>
+
+        <div class="sm:col-span-2">
+            <label class="block text-sm font-medium leading-6 text-white">Disk</label>
+            <div class="mt-2">
+                <input @bind="Request.Disk" type="number" autocomplete="off" class="form-input w-full">
+            </div>
+        </div>
+    </div>
+</div>
+
+@code
+{
+    [Parameter] public CreateServerRequest Request { get; set; }
+
+    private async Task<StarDetailResponse[]> LoadStars()
+    {
+        var starData = await ApiClient.GetJson<PagedData<StarDetailResponse>>("api/admin/servers/stars?page=0&pageSize=50");
+        return starData.Items;
+    }
+
+    private async Task<NodeDetailResponse[]> LoadNodes()
+    {
+        var nodeData = await ApiClient.GetJson<PagedData<NodeDetailResponse>>("api/admin/servers/nodes?page=0&pageSize=50");
+        return nodeData.Items;
+    }
+}

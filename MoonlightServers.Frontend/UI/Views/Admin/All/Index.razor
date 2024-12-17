@@ -1,0 +1,94 @@
+@page "/admin/servers/all"
+
+@using MoonCore.Blazor.Tailwind.MinimalCrud
+@using MoonCore.Blazor.Tailwind.DataTable
+@using MoonCore.Helpers
+@using MoonCore.Models
+@using MoonlightServers.Shared.Http.Responses.Admin.Nodes
+@using MoonlightServers.Shared.Http.Responses.Admin.Servers
+@using MoonlightServers.Shared.Http.Responses.Admin.Stars
+@using MoonCore.Blazor.Tailwind.Components
+
+@inject HttpApiClient ApiClient
+
+<div class="mb-3">
+    <NavTabs Index="1" Names="@UiConstants.AdminNavNames" Links="@UiConstants.AdminNavLinks"/>
+</div>
+
+<MinimalCrud TItem="ServerDetailResponse" OnConfigure="OnConfigure">
+    <ChildContent>
+        <DataColumn TItem="ServerDetailResponse" Field="@(x => x.Id)" Title="Id" IsSortable="true"/>
+        <DataColumn TItem="ServerDetailResponse" Field="@(x => x.Name)" Title="Name"/>
+        <DataColumn TItem="ServerDetailResponse" Field="@(x => x.NodeId)" Title="Node">
+            <Template>
+                @{
+                    var node = Nodes.FirstOrDefault(x => x.Id == context.NodeId);
+                }
+                
+                @if (node != null)
+                {
+                    <span>@node.Name</span>
+                }
+                else
+                {
+                    <span>N/A</span>
+                }
+            </Template>
+        </DataColumn>
+        <DataColumn TItem="ServerDetailResponse" Field="@(x => x.StarId)" Title="Star">
+            <Template>
+                @{
+                    var star = Stars.FirstOrDefault(x => x.Id == context.StarId);
+                }
+
+                @if (star != null)
+                {
+                    <span>@star.Name</span>
+                }
+                else
+                {
+                    <span>N/A</span>
+                }
+            </Template>
+        </DataColumn>
+    </ChildContent>
+</MinimalCrud>
+
+@code
+{
+    private List<StarDetailResponse> Stars = new();
+    private List<NodeDetailResponse> Nodes = new();
+    
+    private void OnConfigure(MinimalCrudOptions<ServerDetailResponse> options)
+    {
+        options.Title = "Servers";
+        options.ItemLoader = LoadItems;
+
+        options.CreateUrl = ComponentHelper.GetRouteOfComponent<Create>();
+        options.UpdateUrl = item => ComponentHelper.GetRouteOfComponent<Update>(item.Id)!;
+        options.DeleteFunction = async item => await ApiClient.Delete($"api/admin/servers/{item.Id}");
+    }
+
+    private async Task<IPagedData<ServerDetailResponse>> LoadItems(int page, int pageSize)
+    {
+        // Clear potential previous data
+        var data = await ApiClient.GetJson<PagedData<ServerDetailResponse>>($"api/admin/servers?page={page}&pageSize={pageSize}");
+
+        foreach (var item in data.Items)
+        {
+            if (Nodes.All(x => x.Id != item.NodeId))
+            {
+                var node = await ApiClient.GetJson<NodeDetailResponse>($"api/admin/servers/nodes/{item.NodeId}");
+                Nodes.Add(node);
+            }
+
+            if (Stars.All(x => x.Id != item.StarId))
+            {
+                var star = await ApiClient.GetJson<StarDetailResponse>($"api/admin/servers/stars/{item.StarId}");
+                Stars.Add(star);
+            }
+        }
+
+        return data;
+    }
+}

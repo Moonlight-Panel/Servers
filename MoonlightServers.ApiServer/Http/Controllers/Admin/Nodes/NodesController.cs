@@ -25,18 +25,6 @@ public class NodesController : Controller
     {
         CrudHelper = crudHelper;
         NodeRepository = nodeRepository;
-
-        CrudHelper.QueryModifier = nodes =>
-            nodes.Include(x => x.Allocations);
-
-        CrudHelper.LateMapper = (node, response) =>
-        {
-            response.Allocations = node.Allocations
-                .Select(x => Mapper.Map<NodeAllocationDetailResponse>(x))
-                .ToArray();
-
-            return response;
-        };
     }
 
     [HttpGet]

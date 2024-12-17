@@ -1,0 +1,23 @@
+@using MoonlightServers.Shared.Http.Requests.Admin.Servers
+@using MoonlightServers.Frontend.UI.Components.Forms
+
+<div class="grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-6">
+    <div class="sm:col-span-2">
+        <label class="block text-sm font-medium leading-6 text-white">Use Virtual Disk</label>
+        <div class="mt-2">
+            <Switch @bind-Value="Request.UseVirtualDisk"/>
+        </div>
+    </div>
+
+    <div class="sm:col-span-2">
+        <label class="block text-sm font-medium leading-6 text-white">Bandwidth</label>
+        <div class="mt-2">
+            <input @bind="Request.Bandwidth" type="number" autocomplete="off" class="form-input w-full">
+        </div>
+    </div>
+</div>
+
+@code
+{
+    [Parameter] public CreateServerRequest Request { get; set; }
+}

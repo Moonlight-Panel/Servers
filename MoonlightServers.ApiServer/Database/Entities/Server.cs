@@ -8,6 +8,8 @@ public class Server
     public Star Star { get; set; }
     public Node Node { get; set; }
     public List<Allocation> Allocations { get; set; } = new();
+    public List<ServerVariable> Variables { get; set; } = new();
+    public List<ServerBackup> Backups { get; set; } = new();
 
     // Meta
     public string Name { get; set; }

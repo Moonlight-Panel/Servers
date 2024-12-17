@@ -1,0 +1,58 @@
+@page "/admin/servers/all/create"
+
+@using MoonCore.Blazor.Tailwind.Components
+@using MoonCore.Blazor.Tailwind.Forms
+@using MoonCore.Blazor.Tailwind.Toasts
+@using MoonCore.Helpers
+@using MoonlightServers.Shared.Http.Requests.Admin.Servers
+@using MoonlightServers.Frontend.UI.Components.Servers.CreateServerPartials
+
+@inject HttpApiClient ApiClient
+@inject NavigationManager Navigation
+@inject ToastService ToastService
+
+<PageHeader Title="Create Server">
+    <button @onclick="GoBack" type="button" class="btn btn-secondary">
+        <i class="icon-chevron-left mr-1"></i>
+        Back
+    </button>
+    <WButton OnClick="_ => Form.Submit()" CssClasses="btn btn-primary">
+        <i class="icon-check mr-1"></i>
+        Create
+    </WButton>
+</PageHeader>
+
+<div class="mt-5">
+    <HandleForm @ref="Form" Model="Request" OnValidSubmit="OnSubmit">
+        <Tabs>
+            <Tab Name="General">
+                <GeneralServerCreate Request="Request" />
+            </Tab>
+            <Tab Name="Advanced">
+                <AdvancedServerCreate Request="Request" />
+            </Tab>
+        </Tabs>
+    </HandleForm>
+</div>
+
+@code
+{
+    private HandleForm Form;
+    private CreateServerRequest Request;
+
+    protected override void OnInitialized()
+    {
+        Request = new();
+    }
+
+    private async Task OnSubmit()
+    {
+        await ApiClient.Post("api/admin/servers", Request);
+
+        await ToastService.Success("Successfully created Server");
+        GoBack();
+    }
+
+    private void GoBack()
+        => Navigation.NavigateTo(ComponentHelper.GetRouteOfComponent<Index>()!);
+}

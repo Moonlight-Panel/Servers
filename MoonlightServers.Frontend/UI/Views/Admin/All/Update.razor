@@ -1,0 +1,61 @@
+@page "/admin/servers/all/update/{Id:int}"
+
+@using MoonCore.Blazor.Tailwind.Components
+@using MoonCore.Blazor.Tailwind.Forms
+@using MoonCore.Blazor.Tailwind.Toasts
+@using MoonCore.Helpers
+@using MoonlightServers.Shared.Http.Requests.Admin.Servers
+@using MoonlightServers.Shared.Http.Responses.Admin.Servers
+
+@inject HttpApiClient ApiClient
+@inject NavigationManager Navigation
+@inject ToastService ToastService
+
+<LazyLoader Load="Load">
+    <PageHeader Title="Update Server">
+        <button @onclick="GoBack" type="button" class="btn btn-secondary">
+            <i class="icon-chevron-left mr-1"></i>
+            Back
+        </button>
+        <WButton OnClick="_ => Form.Submit()" CssClasses="btn btn-primary">
+            <i class="icon-check mr-1"></i>
+            Update
+        </WButton>
+    </PageHeader>
+
+    <div class="mt-5">
+        <HandleForm @ref="Form" Model="Request" OnValidSubmit="OnSubmit">
+            <GeneratedForm TForm="UpdateServerRequest" Model="Request" OnConfigure="OnConfigure"/>
+        </HandleForm>
+    </div>
+</LazyLoader>
+
+@code
+{
+    [Parameter] public int Id { get; set; }
+
+    private HandleForm Form;
+    private UpdateServerRequest Request;
+
+    private async Task Load(LazyLoader _)
+    {
+        var detail = await ApiClient.GetJson<ServerDetailResponse>($"api/admin/servers/{Id}");
+        Request = Mapper.Map<UpdateServerRequest>(detail);
+    }
+
+    private void OnConfigure(FormConfiguration<UpdateServerRequest> configuration)
+    {
+        
+    }
+
+    private async Task OnSubmit()
+    {
+        await ApiClient.Patch($"api/admin/servers/{Id}", Request);
+
+        await ToastService.Success("Successfully updated Server");
+        GoBack();
+    }
+
+    private void GoBack()
+        => Navigation.NavigateTo(ComponentHelper.GetRouteOfComponent<Index>()!);
+}
