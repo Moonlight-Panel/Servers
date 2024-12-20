@@ -1,8 +1,6 @@
 @using MoonlightServers.Shared.Http.Requests.Admin.Servers
 @using MoonCore.Helpers
 @using MoonCore.Models
-@using MoonlightServers.Shared.Http.Responses.Admin.Nodes
-@using MoonlightServers.Shared.Http.Responses.Admin.Stars
 @using MoonCore.Blazor.Tailwind.Inputs
 @using Moonlight.Shared.Http.Responses.Admin.Users
 
@@ -27,30 +25,6 @@
                                    DisplayProperty="@(x => x.Email)"
                                    ValueProperty="@(x => x.Id)"/>
             
-        </div>
-    </div>
-
-    <div class="sm:col-span-2">
-        <label class="block text-sm font-medium leading-6 text-white">Star</label>
-        <div class="mt-2">
-            <InputItemSelect TItem="StarDetailResponse"
-                             TProperty="int"
-                             @bind-Value="Request.StarId"
-                             DisplayProperty="@(x => x.Name)"
-                             ValueProperty="@(x => x?.Id ?? -1)"
-                             Loader="LoadStars"/>
-        </div>
-    </div>
-
-    <div class="sm:col-span-2">
-        <label class="block text-sm font-medium leading-6 text-white">Node</label>
-        <div class="mt-2">
-            <InputItemSelect TItem="NodeDetailResponse"
-                             TProperty="int"
-                             @bind-Value="Request.NodeId"
-                             DisplayProperty="@(x => x.Name)"
-                             ValueProperty="@(x => x?.Id ?? -1)"
-                             Loader="LoadNodes"/>
         </div>
     </div>
 </div>
@@ -87,31 +61,9 @@
 
 @code
 {
-    [Parameter] public CreateServerRequest Request { get; set; }
+    [Parameter] public UpdateServerRequest Request { get; set; }
 
     private UserDetailResponse[]? Users;
-
-    private async Task<StarDetailResponse[]> LoadStars()
-    {
-        var items = await PagedData<StarDetailResponse>.All(async (page, pageSize) =>
-            await ApiClient.GetJson<PagedData<StarDetailResponse>>(
-                $"api/admin/servers/stars?page={page}&pageSize={pageSize}"
-            )
-        );
-
-        return items;
-    }
-
-    private async Task<NodeDetailResponse[]> LoadNodes()
-    {
-        var items = await PagedData<NodeDetailResponse>.All(async (page, pageSize) =>
-            await ApiClient.GetJson<PagedData<NodeDetailResponse>>(
-                $"api/admin/servers/nodes?page={page}&pageSize={pageSize}"
-            )
-        );
-
-        return items;
-    }
 
     private async Task<UserDetailResponse[]> Loader(string searchTerm)
     {

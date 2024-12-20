@@ -22,4 +22,6 @@ public class ServerDetailResponse
     public int StarId { get; set; }
     
     public int NodeId { get; set; }
+    
+    public int[] AllocationIds { get; set; } = [];
 }

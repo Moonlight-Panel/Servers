@@ -6,6 +6,7 @@ using MoonCore.Extended.Abstractions;
 using MoonCore.Extended.Helpers;
 using MoonCore.Helpers;
 using MoonCore.Models;
+using Moonlight.ApiServer.Database.Entities;
 using MoonlightServers.ApiServer.Database.Entities;
 using MoonlightServers.Shared.Http.Requests.Admin.Servers;
 using MoonlightServers.Shared.Http.Responses.Admin.NodeAllocations;
@@ -24,6 +25,7 @@ public class ServersController : Controller
     private readonly DatabaseRepository<Allocation> AllocationRepository;
     private readonly DatabaseRepository<ServerVariable> VariableRepository;
     private readonly DatabaseRepository<Server> ServerRepository;
+    private readonly DatabaseRepository<User> UserRepository;
 
     public ServersController(
         CrudHelper<Server, ServerDetailResponse> crudHelper,
@@ -31,8 +33,8 @@ public class ServersController : Controller
         DatabaseRepository<Node> nodeRepository,
         DatabaseRepository<Allocation> allocationRepository,
         DatabaseRepository<ServerVariable> variableRepository,
-        DatabaseRepository<Server> serverRepository
-    )
+        DatabaseRepository<Server> serverRepository,
+        DatabaseRepository<User> userRepository)
     {
         CrudHelper = crudHelper;
         StarRepository = starRepository;
@@ -40,6 +42,7 @@ public class ServersController : Controller
         AllocationRepository = allocationRepository;
         VariableRepository = variableRepository;
         ServerRepository = serverRepository;
+        UserRepository = userRepository;
 
         CrudHelper.QueryModifier = servers => servers
             .Include(x => x.Node)
@@ -51,6 +54,7 @@ public class ServersController : Controller
         {
             response.NodeId = server.Node.Id;
             response.StarId = server.Star.Id;
+            response.AllocationIds = server.Allocations.Select(x => x.Id).ToArray();
 
             return response;
         };
@@ -76,6 +80,10 @@ public class ServersController : Controller
     {
         // Construct model
         var server = Mapper.Map<Server>(request);
+        
+        // Check if owner user exist
+        if (UserRepository.Get().All(x => x.Id != request.OwnerId))
+            throw new HttpApiException("No user with this id found", 400);
 
         var star = StarRepository
             .Get()

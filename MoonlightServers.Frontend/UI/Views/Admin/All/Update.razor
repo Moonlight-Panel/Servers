@@ -6,6 +6,7 @@
 @using MoonCore.Helpers
 @using MoonlightServers.Shared.Http.Requests.Admin.Servers
 @using MoonlightServers.Shared.Http.Responses.Admin.Servers
+@using MoonlightServers.Frontend.UI.Components.Servers.UpdateServerPartials
 
 @inject HttpApiClient ApiClient
 @inject NavigationManager Navigation
@@ -25,7 +26,20 @@
 
     <div class="mt-5">
         <HandleForm @ref="Form" Model="Request" OnValidSubmit="OnSubmit">
-            <GeneratedForm TForm="UpdateServerRequest" Model="Request" OnConfigure="OnConfigure"/>
+            <Tabs>
+                <Tab Name="General">
+                    <GeneralServerUpdate Request="Request" />
+                </Tab>
+                <Tab Name="Allocations">
+                    <AllocationsServerUpdate Request="Request" Server="Server" />
+                </Tab>
+                <Tab Name="Variables">
+                    <VariablesServerUpdate Request="Request" Server="Server" />
+                </Tab>
+                <Tab Name="Advanced">
+                    <AdvancedServerUpdate Request="Request" />
+                </Tab>
+            </Tabs>
         </HandleForm>
     </div>
 </LazyLoader>
@@ -36,16 +50,12 @@
 
     private HandleForm Form;
     private UpdateServerRequest Request;
+    private ServerDetailResponse Server;
 
     private async Task Load(LazyLoader _)
     {
-        var detail = await ApiClient.GetJson<ServerDetailResponse>($"api/admin/servers/{Id}");
-        Request = Mapper.Map<UpdateServerRequest>(detail);
-    }
-
-    private void OnConfigure(FormConfiguration<UpdateServerRequest> configuration)
-    {
-        
+        var Server = await ApiClient.GetJson<ServerDetailResponse>($"api/admin/servers/{Id}");
+        Request = Mapper.Map<UpdateServerRequest>(Server);
     }
 
     private async Task OnSubmit()

@@ -16,8 +16,6 @@ public class UpdateServerRequest
     
     [Range(1, int.MaxValue, ErrorMessage = "You need to provide a valid disk amount")]
     public int Disk { get; set; }
-
-    public bool UseVirtualDisk { get; set; }
     
     [Range(0, int.MaxValue, ErrorMessage = "You need to provide a valid bandwidth amount")]
     public int Bandwidth { get; set; }
@@ -26,10 +24,11 @@ public class UpdateServerRequest
     
     public int DockerImageIndex { get; set; }
     
-    public int StarId { get; set; }
+    // TODO: Add star change
+    //public int StarId { get; set; }
     
-    public int NodeId { get; set; }
+    // TODO: Add transfer
+    //public int NodeId { get; set; }
 
     public int[] AllocationIds { get; set; } = [];
-    public Dictionary<string, string> Variables { get; set; } = new();
 }

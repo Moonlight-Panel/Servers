@@ -30,11 +30,13 @@
         // Handle unselected node
         if (Request.NodeId <= 0)
             return [];
-        
-        var data = await ApiClient.GetJson<PagedData<NodeAllocationDetailResponse>>(
-            $"api/admin/servers/nodes/{Request.NodeId}/allocations/free?page=0&pageSize=50"
-        );
 
-        return data.Items;
+        var items = await PagedData<NodeAllocationDetailResponse>.All(async (page, pageSize) =>
+            await ApiClient.GetJson<PagedData<NodeAllocationDetailResponse>>(
+                $"api/admin/servers/nodes/{Request.NodeId}/allocations/free?page={page}&pageSize={pageSize}"
+            )
+        );
+        
+        return items;
     }
 }
