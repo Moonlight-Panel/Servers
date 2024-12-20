@@ -1,5 +1,3 @@
-using MoonlightServers.Shared.Http.Responses.Admin.NodeAllocations;
-
 namespace MoonlightServers.Shared.Http.Responses.Admin.Nodes;
 
 public class NodeDetailResponse

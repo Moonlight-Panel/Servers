@@ -143,4 +143,24 @@ public class NodeAllocationsController : Controller
         
         return Task.CompletedTask;
     }
+    
+    [HttpGet("{nodeId:int}/allocations/free")]
+    [RequirePermission("admin.servers.nodes.get")]
+    public async Task<IPagedData<NodeAllocationDetailResponse>> GetFree([FromRoute] int nodeId, [FromQuery] int page, [FromQuery] int pageSize)
+    {
+        var node = NodeRepository
+            .Get()
+            .FirstOrDefault(x => x.Id == nodeId);
+
+        if (node == null)
+            throw new HttpApiException("A node with this id could not be found", 404);
+
+        Node = node;
+
+        CrudHelper.QueryModifier = variables => variables
+                .Where(x => x.Node.Id == node.Id)
+                .Where(x => x.Server == null);
+        
+        return await CrudHelper.Get(page, pageSize);
+    }
 }

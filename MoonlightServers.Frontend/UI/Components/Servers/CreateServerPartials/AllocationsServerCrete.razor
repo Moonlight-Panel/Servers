@@ -1,0 +1,40 @@
+@using MoonlightServers.Shared.Http.Requests.Admin.Servers
+@using MoonCore.Blazor.Tailwind.Inputs
+@using MoonCore.Helpers
+@using MoonCore.Models
+@using MoonlightServers.Shared.Http.Responses.Admin.NodeAllocations
+
+@inject HttpApiClient ApiClient
+
+<div class="grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-6">
+    <div class="sm:col-span-2">
+        <label class="block text-sm font-medium leading-6 text-white">Allocations</label>
+        <div class="mt-2">
+            <InputMultiSelect TItem="NodeAllocationDetailResponse"
+                              TProperty="int"
+                              @bind-Value="Request.AllocationIds"
+                              Loader="Loader"
+                              AllowSearch="true"
+                              DisplayProperty="@(x => $"{x.IpAddress}:{x.Port}")"
+                              ValueProperty="@(x => x.Id)"/>
+        </div>
+    </div>
+</div>
+
+@code
+{
+    [Parameter] public CreateServerRequest Request { get; set; }
+
+    private async Task<NodeAllocationDetailResponse[]> Loader()
+    {
+        // Handle unselected node
+        if (Request.NodeId <= 0)
+            return [];
+        
+        var data = await ApiClient.GetJson<PagedData<NodeAllocationDetailResponse>>(
+            $"api/admin/servers/nodes/{Request.NodeId}/allocations/free?page=0&pageSize=50"
+        );
+
+        return data.Items;
+    }
+}
