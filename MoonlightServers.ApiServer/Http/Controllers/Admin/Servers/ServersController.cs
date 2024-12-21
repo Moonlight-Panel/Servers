@@ -80,7 +80,7 @@ public class ServersController : Controller
     {
         // Construct model
         var server = Mapper.Map<Server>(request);
-        
+
         // Check if owner user exist
         if (UserRepository.Get().All(x => x.Id != request.OwnerId))
             throw new HttpApiException("No user with this id found", 400);
@@ -160,7 +160,7 @@ public class ServersController : Controller
         // Set relations
         server.Node = node;
         server.Star = star;
-        
+
         // TODO: Call node
 
         var finalServer = ServerRepository.Add(server);
@@ -171,7 +171,45 @@ public class ServersController : Controller
     [HttpPatch("{id:int}")]
     public async Task<ServerDetailResponse> Update([FromRoute] int id, [FromBody] UpdateServerRequest request)
     {
-        return await CrudHelper.Update(id, request);
+        var server = await CrudHelper.GetSingleModel(id);
+
+        server = Mapper.Map(server, request);
+
+        var allocations = new List<Allocation>();
+
+        // Fetch specified allocations from the request
+        foreach (var allocationId in request.AllocationIds)
+        {
+            var allocation = AllocationRepository
+                .Get()
+                .Where(x => x.Server == null || x.Server.Id == server.Id)
+                .Where(x => x.Node.Id == server.Node.Id)
+                .FirstOrDefault(x => x.Id == allocationId);
+            
+            // ^ This loads the allocations specified in the request.
+            // Valid allocations are either free ones or ones which are already allocated to this server
+
+            if (allocation == null)
+                continue;
+
+            allocations.Add(allocation);
+        }
+
+        // Check if the specified allocations are enough for the star
+        if (allocations.Count < server.Star.RequiredAllocations)
+        {
+            throw new HttpApiException(
+                $"You need to specify at least {server.Star.RequiredAllocations} allocation(s)",
+                400
+            );
+        }
+
+        // Set allocations
+        server.Allocations = allocations;
+        
+        ServerRepository.Update(server);
+
+        return CrudHelper.MapToResult(server);
     }
 
     [HttpDelete("{id:int}")]

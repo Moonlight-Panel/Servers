@@ -54,7 +54,7 @@
 
     private async Task Load(LazyLoader _)
     {
-        var Server = await ApiClient.GetJson<ServerDetailResponse>($"api/admin/servers/{Id}");
+        Server = await ApiClient.GetJson<ServerDetailResponse>($"api/admin/servers/{Id}");
         Request = Mapper.Map<UpdateServerRequest>(Server);
     }
 

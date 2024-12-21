@@ -29,16 +29,12 @@
 
     private async Task<NodeAllocationDetailResponse[]> Loader()
     {
-        // Handle unselected node
-        if (Server.NodeId <= 0)
-            return [];
-
         var items = await PagedData<NodeAllocationDetailResponse>.All(async (page, pageSize) =>
             await ApiClient.GetJson<PagedData<NodeAllocationDetailResponse>>(
-                $"api/admin/servers/nodes/{Server.NodeId}/allocations/free?page={page}&pageSize={pageSize}"
+                $"api/admin/servers/nodes/{Server.NodeId}/allocations/free?page={page}&pageSize={pageSize}&serverId={Server.Id}"
             )
         );
-        
+            
         return items;
     }
 }

@@ -146,7 +146,7 @@ public class NodeAllocationsController : Controller
     
     [HttpGet("{nodeId:int}/allocations/free")]
     [RequirePermission("admin.servers.nodes.get")]
-    public async Task<IPagedData<NodeAllocationDetailResponse>> GetFree([FromRoute] int nodeId, [FromQuery] int page, [FromQuery] int pageSize)
+    public async Task<IPagedData<NodeAllocationDetailResponse>> GetFree([FromRoute] int nodeId, [FromQuery] int page, [FromQuery] int pageSize, [FromQuery] int serverId = -1)
     {
         var node = NodeRepository
             .Get()
@@ -159,7 +159,7 @@ public class NodeAllocationsController : Controller
 
         CrudHelper.QueryModifier = variables => variables
                 .Where(x => x.Node.Id == node.Id)
-                .Where(x => x.Server == null);
+                .Where(x => x.Server == null || x.Server.Id == serverId);
         
         return await CrudHelper.Get(page, pageSize);
     }
