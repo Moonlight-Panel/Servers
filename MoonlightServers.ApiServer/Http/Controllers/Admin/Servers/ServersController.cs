@@ -146,11 +146,13 @@ public class ServersController : Controller
         // Variables
         foreach (var variable in star.Variables)
         {
+            var requestVar = request.Variables.FirstOrDefault(x => x.Key == variable.Key);
+            
             var serverVar = new ServerVariable()
             {
                 Key = variable.Key,
-                Value = request.Variables.TryGetValue(variable.Key, out var value)
-                    ? value
+                Value = requestVar != null
+                    ? requestVar.Value
                     : variable.DefaultValue
             };
 
@@ -206,6 +208,22 @@ public class ServersController : Controller
 
         // Set allocations
         server.Allocations = allocations;
+        
+        // Process variables
+        foreach (var variable in request.Variables)
+        {
+            // Search server variable associated to the variable in the request
+            var serverVar = server.Variables
+                .FirstOrDefault(x => x.Key == variable.Key);
+            
+            if(serverVar == null)
+                continue;
+
+            // Update value
+            serverVar.Value = variable.Value;
+        }
+        
+        // TODO: Call node
         
         ServerRepository.Update(server);
 

@@ -2,36 +2,38 @@
 @using MoonCore.Helpers
 @using MoonCore.Blazor.Tailwind.Components
 @using MoonCore.Models
+@using MoonlightServers.Shared.Http.Requests.Admin.ServerVariables
 @using MoonlightServers.Shared.Http.Responses.Admin.Servers
+@using MoonlightServers.Shared.Http.Responses.Admin.ServerVariables
 @using MoonlightServers.Shared.Http.Responses.Admin.StarVariables
 
 @inject HttpApiClient ApiClient
 
 <LazyLoader Load="Load">
     <div class="grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-6">
-        @foreach (var variable in StarVariables)
+        @foreach (var variable in Variables)
         {
-            // Load value of default
-            /*
-            var value = Request.Variables.TryGetValue(variable.Key, out var val)
-                ? val
-                : variable.DefaultValue;*/
+            var reqVariable = Request.Variables.FirstOrDefault(x => x.Key == variable.Key);
+            var starVariable = StarVariables.FirstOrDefault(x => x.Key == variable.Key);
 
-            var value = "";
+            // Ignore all variables which aren't defined in the star
+            if (starVariable == null)
+                continue;
+
+            var value = reqVariable != null
+                ? reqVariable.Value
+                : variable.Value;
 
             <div class="sm:col-span-2">
                 <label class="block text-sm font-medium leading-6 text-white">
-                    @variable.Name
+                    @starVariable.Name
                 </label>
                 <div class="mt-2">
-                    <input type="text"
-                           class="form-input placeholder-gray-500 w-full"
-                           value="@value"
-                           placeholder="@variable.DefaultValue"
+                    <input type="text" class="form-input w-full" value="@value"
                            @onchange="@(args => UpdateValue(variable, args))"/>
                 </div>
                 <p class="mt-1 text-sm leading-6 text-gray-400">
-                    @variable.Description
+                    @starVariable.Description
                 </p>
             </div>
         }
@@ -44,6 +46,7 @@
     [Parameter] public ServerDetailResponse Server { get; set; }
 
     private StarVariableDetailResponse[] StarVariables;
+    private ServerVariableDetailResponse[] Variables;
 
     private async Task Load(LazyLoader _)
     {
@@ -52,19 +55,39 @@
                 $"api/admin/servers/stars/{Server.StarId}/variables?page={page}&pageSize={pageSize}"
             )
         );
+
+        Variables = await PagedData<ServerVariableDetailResponse>.All(async (page, pageSize) =>
+            await ApiClient.GetJson<PagedData<ServerVariableDetailResponse>>(
+                $"api/admin/servers/{Server.Id}/variables?page={page}&pageSize={pageSize}"
+            )
+        );
     }
 
-    private async Task UpdateValue(StarVariableDetailResponse starVariable, ChangeEventArgs args)
+    private async Task UpdateValue(ServerVariableDetailResponse serverVariable, ChangeEventArgs args)
     {
-        /*
         var value = args.Value?.ToString() ?? "";
 
         // Remove variable from request when set to its default value
-        if (value == starVariable.DefaultValue && Request.Variables.ContainsKey(starVariable.Key))
-            Request.Variables.Remove(starVariable.Key);
+        if (value == serverVariable.Value && Request.Variables.Any(x => x.Key == serverVariable.Key))
+            Request.Variables.RemoveAll(x => x.Key == serverVariable.Key);
         else
-            Request.Variables[starVariable.Key] = value;
+        {
+            var serverVar = Request.Variables
+                .FirstOrDefault(x => x.Key == serverVariable.Key);
 
-        await InvokeAsync(StateHasChanged);*/
+            if (serverVar == null)
+            {
+                serverVar = new UpdateServerVariableRequest()
+                {
+                    Key = serverVariable.Key
+                };
+                
+                Request.Variables.Add(serverVar);
+            }
+
+            serverVar.Value = value;
+        }
+
+        await InvokeAsync(StateHasChanged);
     }
 }

@@ -2,6 +2,7 @@
 @using MoonCore.Helpers
 @using MoonCore.Blazor.Tailwind.Components
 @using MoonCore.Models
+@using MoonlightServers.Shared.Http.Requests.Admin.ServerVariables
 @using MoonlightServers.Shared.Http.Responses.Admin.StarVariables
 
 @inject HttpApiClient ApiClient
@@ -11,8 +12,9 @@
         @foreach (var variable in StarVariables)
         {
             // Load value of default
-            var value = Request.Variables.TryGetValue(variable.Key, out var val)
-                ? val
+            var requestVar = Request.Variables.FirstOrDefault(x => x.Key == variable.Key);
+            var value = requestVar != null
+                ? requestVar.Value
                 : variable.DefaultValue;
 
             <div class="sm:col-span-2">
@@ -60,10 +62,25 @@
         var value = args.Value?.ToString() ?? "";
 
         // Remove variable from request when set to its default value
-        if (value == starVariable.DefaultValue && Request.Variables.ContainsKey(starVariable.Key))
-            Request.Variables.Remove(starVariable.Key);
+        if (value == starVariable.DefaultValue && Request.Variables.Any(x => x.Key == starVariable.Key))
+            Request.Variables.RemoveAll(x => x.Key == starVariable.Key);
         else
-            Request.Variables[starVariable.Key] = value;
+        {
+            var serverVar = Request.Variables
+                .FirstOrDefault(x => x.Key == starVariable.Key);
+
+            if (serverVar == null)
+            {
+                serverVar = new CreateServerVariableRequest()
+                {
+                    Key = starVariable.Key
+                };
+                
+                Request.Variables.Add(serverVar);
+            }
+
+            serverVar.Value = value;
+        }
 
         await InvokeAsync(StateHasChanged);
     }

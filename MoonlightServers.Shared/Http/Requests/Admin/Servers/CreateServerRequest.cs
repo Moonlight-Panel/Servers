@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using MoonlightServers.Shared.Http.Requests.Admin.ServerVariables;
 
 namespace MoonlightServers.Shared.Http.Requests.Admin.Servers;
 
@@ -31,5 +32,5 @@ public class CreateServerRequest
     public int NodeId { get; set; }
 
     public int[] AllocationIds { get; set; } = [];
-    public Dictionary<string, string> Variables { get; set; } = new();
+    public List<CreateServerVariableRequest> Variables { get; set; } = new();
 }
