@@ -1,4 +1,4 @@
-namespace MoonlightServers.DaemonShared.Http.Responses.Sys;
+namespace MoonlightServers.DaemonShared.DaemonSide.Http.Responses.Sys;
 
 public class SystemStatusResponse
 {

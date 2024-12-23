@@ -1,7 +1,7 @@
 using System.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 using MoonlightServers.Daemon.Services;
-using MoonlightServers.DaemonShared.Http.Responses.Sys;
+using MoonlightServers.DaemonShared.DaemonSide.Http.Responses.Sys;
 
 namespace MoonlightServers.Daemon.Http.Controllers.Sys;
 

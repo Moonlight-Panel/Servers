@@ -1,4 +1,4 @@
-namespace MoonlightServers.DaemonShared.Http.Responses.Statistics;
+namespace MoonlightServers.DaemonShared.DaemonSide.Http.Responses.Statistics;
 
 public class StatisticsDockerResponse
 {

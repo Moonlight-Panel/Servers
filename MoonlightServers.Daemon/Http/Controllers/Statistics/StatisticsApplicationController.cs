@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using MoonlightServers.Daemon.Helpers;
-using MoonlightServers.DaemonShared.Http.Responses.Statistics;
+using MoonlightServers.DaemonShared.DaemonSide.Http.Responses.Statistics;
 
 namespace MoonlightServers.Daemon.Http.Controllers.Statistics;
 

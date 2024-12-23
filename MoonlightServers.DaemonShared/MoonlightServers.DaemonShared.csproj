@@ -7,7 +7,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <Folder Include="Http\Requests\" />
+      <Folder Include="DaemonSide\" />
     </ItemGroup>
 
 </Project>

@@ -1,8 +1,8 @@
 using MoonCore.Attributes;
 using MoonCore.Helpers;
 using MoonlightServers.ApiServer.Database.Entities;
-using MoonlightServers.DaemonShared.Http.Responses.Statistics;
-using MoonlightServers.DaemonShared.Http.Responses.Sys;
+using MoonlightServers.DaemonShared.DaemonSide.Http.Responses.Statistics;
+using MoonlightServers.DaemonShared.DaemonSide.Http.Responses.Sys;
 
 namespace MoonlightServers.ApiServer.Services;
 

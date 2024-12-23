@@ -6,6 +6,7 @@ using MoonCore.Extensions;
 using MoonCore.Helpers;
 using MoonCore.Services;
 using MoonlightServers.Daemon.Configuration;
+using MoonlightServers.Daemon.Services;
 
 namespace MoonlightServers.Daemon;
 
@@ -41,6 +42,7 @@ public class Startup
         await RegisterLogging();
         await RegisterBase();
         await RegisterDocker();
+        await RegisterServers();
 
         await BuildWebApplication();
 
@@ -235,6 +237,24 @@ public class Startup
             "Microsoft.AspNetCore.Diagnostics.DeveloperExceptionPageMiddleware",
             LogLevel.Critical
         );
+    }
+
+    #endregion
+
+    #region Servers
+
+    private Task RegisterServers()
+    {
+        WebApplicationBuilder.Services.AddHostedService<ApplicationStateService>(
+            sp => sp.GetRequiredService<ApplicationStateService>()
+        );
+        
+        return Task.CompletedTask;
+    }
+
+    private Task UseServers()
+    {
+        return Task.CompletedTask;
     }
 
     #endregion
