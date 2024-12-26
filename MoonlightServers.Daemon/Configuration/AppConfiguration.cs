@@ -1,3 +1,5 @@
+using MoonCore.Helpers;
+
 namespace MoonlightServers.Daemon.Configuration;
 
 public class AppConfiguration
@@ -24,9 +26,9 @@ public class AppConfiguration
     
     public class StorageData
     {
-        public string Volumes { get; set; }
-        public string VirtualDisks { get; set; }
-        public string Backups { get; set; }
-        public string Install { get; set; }
+        public string Volumes { get; set; } = PathBuilder.Dir("volumes");
+        public string VirtualDisks { get; set; } = PathBuilder.Dir("virtualDisks");
+        public string Backups { get; set; } = PathBuilder.Dir("backups");
+        public string Install { get; set; } = PathBuilder.Dir("install");
     }
 }
