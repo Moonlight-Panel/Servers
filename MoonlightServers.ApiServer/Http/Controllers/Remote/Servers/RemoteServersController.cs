@@ -56,7 +56,7 @@ public class RemoteServersController : Controller
             }
 
             if (dockerImage == null)
-                dockerImage = server.Star.DockerImages.FirstOrDefault();
+                dockerImage = server.Star.DockerImages.LastOrDefault();
 
             if (dockerImage == null)
             {

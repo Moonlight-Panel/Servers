@@ -10,16 +10,26 @@
         <PackageReference Include="Docker.DotNet" Version="3.125.15" />
         <PackageReference Include="MoonCore" Version="1.8.1" />
         <PackageReference Include="MoonCore.Extended" Version="1.2.4" />
+        <PackageReference Include="MoonCore.Unix" Version="1.0.0" />
         <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2"/>
     </ItemGroup>
 
     <ItemGroup>
-      <Folder Include="Extensions\" />
       <Folder Include="Http\Middleware\" />
     </ItemGroup>
 
     <ItemGroup>
       <ProjectReference Include="..\MoonlightServers.DaemonShared\MoonlightServers.DaemonShared.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <_ContentIncludedByDefault Remove="storage\volumes\11\banned-ips.json" />
+      <_ContentIncludedByDefault Remove="storage\volumes\11\banned-players.json" />
+      <_ContentIncludedByDefault Remove="storage\volumes\11\ops.json" />
+      <_ContentIncludedByDefault Remove="storage\volumes\11\plugins\spark\config.json" />
+      <_ContentIncludedByDefault Remove="storage\volumes\11\usercache.json" />
+      <_ContentIncludedByDefault Remove="storage\volumes\11\version_history.json" />
+      <_ContentIncludedByDefault Remove="storage\volumes\11\whitelist.json" />
     </ItemGroup>
 
 </Project>

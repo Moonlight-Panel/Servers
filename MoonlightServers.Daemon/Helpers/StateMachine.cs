@@ -14,7 +14,7 @@ public class StateMachine<T> where T : struct, Enum
         CurrentState = initialState;
     }
 
-    public void AddTransition(T from, T to, T? onError, Func<Task> fun)
+    public void AddTransition(T from, T to, T? onError, Func<Task>? fun)
     {
         Transitions.Add(new()
         {
@@ -26,6 +26,7 @@ public class StateMachine<T> where T : struct, Enum
     }
 
     public void AddTransition(T from, T to, Func<Task> fun) => AddTransition(from, to, null, fun);
+    public void AddTransition(T from, T to) => AddTransition(from, to, null, null);
 
     public async Task TransitionTo(T to)
     {
@@ -41,7 +42,11 @@ public class StateMachine<T> where T : struct, Enum
 
             try
             {
-                transition.OnTransitioning.Invoke().Wait();
+                if(transition.OnTransitioning != null)
+                    transition.OnTransitioning.Invoke().Wait();
+
+                // Successfully executed => update state
+                CurrentState = transition.To;
             }
             catch (Exception e)
             {
@@ -64,6 +69,6 @@ public class StateMachine<T> where T : struct, Enum
         public T From { get; set; }
         public T To { get; set; }
         public T? OnError { get; set; }
-        public Func<Task> OnTransitioning { get; set; }
+        public Func<Task>? OnTransitioning { get; set; }
     }
 }

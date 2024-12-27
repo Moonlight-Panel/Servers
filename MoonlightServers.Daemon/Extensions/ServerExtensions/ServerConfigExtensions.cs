@@ -1,48 +1,61 @@
 using Docker.DotNet.Models;
 using Mono.Unix.Native;
 using MoonCore.Helpers;
-using MoonlightServers.Daemon.Configuration;
-using MoonlightServers.Daemon.Models.Cache;
+using MoonlightServers.Daemon.Models;
 
-namespace MoonlightServers.Daemon.Helpers;
+namespace MoonlightServers.Daemon.Extensions.ServerExtensions;
 
-public static class ServerConfigurationHelper
+public static class ServerConfigExtensions
 {
-    public static void ApplyRuntimeOptions(CreateContainerParameters parameters, ServerConfiguration configuration, AppConfiguration appConfiguration)
+    public static CreateContainerParameters GetRuntimeContainerParameters(this Server server)
     {
-        ApplySharedOptions(parameters, configuration);
+        var parameters = server.GetSharedContainerParameters();
         
-        // -- Cap drops
+        #region Security
+
         parameters.HostConfig.CapDrop = new List<string>()
         {
             "setpcap", "mknod", "audit_write", "net_raw", "dac_override",
             "fowner", "fsetid", "net_bind_service", "sys_chroot", "setfcap"
         };
 
-        // -- More security options
         parameters.HostConfig.ReadonlyRootfs = true;
         parameters.HostConfig.SecurityOpt = new List<string>()
         {
             "no-new-privileges"
         };
 
-        // - Name
-        var name = $"moonlight-runtime-{configuration.Id}";
-        parameters.Name = name;
-        parameters.Hostname = name;
-        
-        // - Image
-        parameters.Image = configuration.DockerImage;
-        
-        // - Env
-        parameters.Env = ConstructEnv(configuration)
+        #endregion
+
+        #region Name
+
+        parameters.Name = server.RuntimeContainerName;
+        parameters.Hostname = server.RuntimeContainerName;
+
+        #endregion
+
+        #region Docker Image
+
+        parameters.Image = server.Configuration.DockerImage;
+
+        #endregion
+
+        #region Environment
+
+        parameters.Env = server.ConstructEnv()
             .Select(x => $"{x.Key}={x.Value}")
             .ToList();
-        
-        // -- Working directory
+
+        #endregion
+
+        #region Working Dir
+
         parameters.WorkingDir = "/home/container";
-        
-        // - User
+
+        #endregion
+
+        #region User
+
         var userId = Syscall.getuid();
 
         if (userId == 0)
@@ -56,28 +69,31 @@ public static class ServerConfigurationHelper
             // as we are not able to chown the container content to a different user
             parameters.User = $"{userId}:{userId}";
         }
-        
 
-        // -- Mounts
+        #endregion
+
+        #region Mounts
+
         parameters.HostConfig.Mounts = new List<Mount>();
         
         parameters.HostConfig.Mounts.Add(new()
         {
-            Source = GetRuntimeVolume(configuration, appConfiguration),
+            Source = server.RuntimeVolumePath,
             Target = "/home/container",
             ReadOnly = false,
             Type = "bind"
         });
+
+        #endregion
         
-        // -- Ports
-        //var config = configService.Get();
+        #region Port Bindings
 
         if (true) // TODO: Add network toggle
         {
             parameters.ExposedPorts = new Dictionary<string, EmptyStruct>();
             parameters.HostConfig.PortBindings = new Dictionary<string, IList<PortBinding>>();
 
-            foreach (var allocation in configuration.Allocations)
+            foreach (var allocation in server.Configuration.Allocations)
             {
                 parameters.ExposedPorts.Add($"{allocation.Port}/tcp", new());
                 parameters.ExposedPorts.Add($"{allocation.Port}/udp", new());
@@ -101,27 +117,40 @@ public static class ServerConfigurationHelper
                 });
             }
         }
-    }
 
-    public static void ApplySharedOptions(CreateContainerParameters parameters, ServerConfiguration configuration)
+        #endregion
+
+        return parameters;
+    }
+    
+    public static CreateContainerParameters GetSharedContainerParameters(this Server server)
     {
-        // - Input, output & error streams and tty
+        var parameters = new CreateContainerParameters()
+        {
+            HostConfig = new()
+        };
+
+        #region Input, output & error streams and tty
+
         parameters.Tty = true;
         parameters.AttachStderr = true;
         parameters.AttachStdin = true;
         parameters.AttachStdout = true;
         parameters.OpenStdin = true;
-        
-        // - Host config
-        parameters.HostConfig = new HostConfig();
 
-        // -- CPU limits
-        parameters.HostConfig.CPUQuota = configuration.Cpu * 1000;
+        #endregion
+
+        #region CPU
+
+        parameters.HostConfig.CPUQuota = server.Configuration.Cpu * 1000;
         parameters.HostConfig.CPUPeriod = 100000;
         parameters.HostConfig.CPUShares = 1024;
 
-        // -- Memory and swap limits
-        var memoryLimit = configuration.Memory;
+        #endregion
+
+        #region Memory & Swap
+
+        var memoryLimit = server.Configuration.Memory;
 
         // The overhead multiplier gives the container a little bit more memory to prevent crashes
         var memoryOverhead = memoryLimit + (memoryLimit * 0.05f); // TODO: Config
@@ -141,75 +170,89 @@ public static class ServerConfigurationHelper
         parameters.HostConfig.MemoryReservation = ByteConverter.FromMegaBytes(memoryLimit, 1000).Bytes;
         parameters.HostConfig.MemorySwap = swapLimit == -1 ? swapLimit : ByteConverter.FromMegaBytes(swapLimit, 1000).Bytes;
 
+        #endregion
+
+        #region Misc Limits
+
         // -- Other limits
         parameters.HostConfig.BlkioWeight = 100;
         //container.HostConfig.PidsLimit = configuration.Limits.PidsLimit;
         parameters.HostConfig.OomKillDisable = true; //!configuration.Limits.EnableOomKill;
-        
-        // -- DNS
+
+        #endregion
+
+        #region DNS
+
         parameters.HostConfig.DNS = /*config.Docker.DnsServers.Any() ? config.Docker.DnsServers :*/ new List<string>()
         {
             "1.1.1.1",
             "9.9.9.9"
         };
 
-        // -- Tmpfs
+        #endregion
+
+        #region Tmpfs
+
         parameters.HostConfig.Tmpfs = new Dictionary<string, string>()
         {
             { "/tmp", $"rw,exec,nosuid,size=100M" } // TODO: Config
         };
-        
-        // -- Logging
+
+        #endregion
+
+        #region Logging
+
         parameters.HostConfig.LogConfig = new()
         {
             Type = "json-file", // We need to use this provider, as the GetLogs endpoint needs it
             Config = new Dictionary<string, string>()
         };
+
+        #endregion
+
+        #region Labels
         
-        // - Labels
         parameters.Labels = new Dictionary<string, string>();
         
         parameters.Labels.Add("Software", "Moonlight-Panel");
-        parameters.Labels.Add("ServerId", configuration.Id.ToString());
+        parameters.Labels.Add("ServerId", server.Configuration.Id.ToString());
+
+        #endregion
+
+        return parameters;
     }
-
-    public static Dictionary<string, string> ConstructEnv(ServerConfiguration configuration)
+    
+    public static Dictionary<string, string> ConstructEnv(this Server server)
     {
-        var result = new Dictionary<string, string>();
-
-        // Default environment variables
-        //TODO: Add timezone, add server ip
-        result.Add("STARTUP", configuration.StartupCommand);
-        result.Add("SERVER_MEMORY", configuration.Memory.ToString());
-
-        if (configuration.Allocations.Length > 0)
+        var config = server.Configuration;
+        
+        var result = new Dictionary<string, string>
         {
-            var mainAllocation = configuration.Allocations.First();
+            //TODO: Add timezone, add server ip
+            { "STARTUP", config.StartupCommand },
+            { "SERVER_MEMORY", config.Memory.ToString() }
+        };
+
+        if (config.Allocations.Length > 0)
+        {
+            var mainAllocation = config.Allocations.First();
             
             result.Add("SERVER_IP", mainAllocation.IpAddress);
             result.Add("SERVER_PORT", mainAllocation.Port.ToString());
         }
         
-        // Handle additional allocation variables
+        // Handle allocation variables
         var i = 1;
-        foreach (var additionalAllocation in configuration.Allocations)
+        foreach (var allocation in config.Allocations)
         {
-            result.Add($"ML_PORT_{i}", additionalAllocation.Port.ToString());
+            result.Add($"ML_PORT_{i}", allocation.Port.ToString());
             i++;
         }
 
         // Copy variables as env vars
-        foreach (var variable in configuration.Variables)
+        foreach (var variable in config.Variables)
             result.Add(variable.Key, variable.Value);
 
         return result;
-    }
-
-    public static string GetRuntimeVolume(ServerConfiguration configuration, AppConfiguration appConfiguration)
-    {
-        var localPath = PathBuilder.Dir(appConfiguration.Storage.Volumes, configuration.Id.ToString());
-        var absolutePath = Path.GetFullPath(localPath);
-
-        return absolutePath;
     }
 }

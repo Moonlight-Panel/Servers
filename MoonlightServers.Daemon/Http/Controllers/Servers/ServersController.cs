@@ -2,6 +2,8 @@ using Microsoft.AspNetCore.Mvc;
 using MoonCore.Exceptions;
 using MoonlightServers.Daemon.Models;
 using MoonlightServers.Daemon.Services;
+using MoonlightServers.DaemonShared.DaemonSide.Http.Responses.Servers;
+using MoonlightServers.DaemonShared.Enums;
 
 namespace MoonlightServers.Daemon.Http.Controllers.Servers;
 
@@ -16,7 +18,21 @@ public class ServersController : Controller
         ServerService = serverService;
     }
 
-    [HttpPost("{serverId}/start")]
+    [HttpGet("{serverId:int}/status")]
+    public async Task<ServerStatusResponse> GetStatus(int serverId)
+    {
+        var server = ServerService.GetServer(serverId);
+
+        if (server == null)
+            throw new HttpApiException("No server with this id found", 404);
+        
+        return new ServerStatusResponse()
+        {
+            State = server.State
+        };
+    }
+
+    [HttpPost("{serverId:int}/start")]
     public async Task Start(int serverId)
     {
         var server = ServerService.GetServer(serverId);

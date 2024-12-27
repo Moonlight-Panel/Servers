@@ -1,4 +1,4 @@
-namespace MoonlightServers.Daemon.Models;
+namespace MoonlightServers.DaemonShared.Enums;
 
 public enum ServerTask
 {
@@ -7,5 +7,6 @@ public enum ServerTask
     PullingDockerImage = 2,
     RemovingContainer = 3,
     CreatingContainer = 4,
-    StartingContainer = 5
+    StartingContainer = 5,
+    StoppingContainer = 6
 }

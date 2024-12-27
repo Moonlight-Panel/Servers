@@ -33,6 +33,10 @@ public class ApplicationStateService : IHostedLifecycleService
     public Task StoppedAsync(CancellationToken cancellationToken)
         => Task.CompletedTask;
 
-    public Task StoppingAsync(CancellationToken cancellationToken)
-        => Task.CompletedTask;
+    public async Task StoppingAsync(CancellationToken cancellationToken)
+    {
+        Logger.LogInformation("Stopping services");
+
+        await ServerService.Stop();
+    }
 }

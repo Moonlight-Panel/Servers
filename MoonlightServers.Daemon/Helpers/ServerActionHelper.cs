@@ -3,6 +3,7 @@ using Docker.DotNet.Models;
 using MoonCore.Helpers;
 using MoonlightServers.Daemon.Configuration;
 using MoonlightServers.Daemon.Models;
+using MoonlightServers.DaemonShared.Enums;
 
 namespace MoonlightServers.Daemon.Helpers;
 

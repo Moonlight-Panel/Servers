@@ -1,4 +1,4 @@
-namespace MoonlightServers.Daemon.Models;
+namespace MoonlightServers.DaemonShared.Enums;
 
 public enum ServerState
 {
