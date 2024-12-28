@@ -12,6 +12,13 @@ public class SidebarImplementation : ISidebarItemProvider
             new SidebarItem()
             {
                 Name = "Servers",
+                Path = "/servers",
+                Icon = "icon-server",
+                Priority = 4
+            },
+            new SidebarItem()
+            {
+                Name = "Servers",
                 Path = "/admin/servers",
                 Icon = "icon-server",
                 Group = "Admin",

@@ -1,0 +1,125 @@
+@using MoonlightServers.Shared.Http.Responses.Users.Servers
+@{
+    var gradient = Status switch
+    {
+        4 => "from-primary-600/20",
+        3 => "from-danger-600/20",
+        2 => "from-warning-600/20",
+        1 => "from-success-600/20",
+        _ => "from-gray-600/20"
+    };
+
+    var border = Status switch
+    {
+        4 => "border-primary-600",
+        3 => "border-danger-600",
+        2 => "border-warning-600",
+        1 => "border-success-600",
+        _ => "border-gray-600"
+    };
+}
+
+<a href="/servers/@Server.Id" class="w-full bg-gradient-to-r @gradient to-gray-750/65 to-25% px-5 py-3.5 rounded-xl border-l-8 @border">
+    <div class="grid grid-cols-6">
+        <div class="flex items-center col-span-6 sm:col-span-2 2xl:col-span-1">
+            <div class="bg-gray-900 bg-opacity-45 py-1 px-2 rounded-lg flex items-center">
+                <i class="icon-server me-3 align-middle"></i>
+                <div class="text-lg align-middle">
+                    @Server.Name
+                </div>
+            </div>
+        </div>
+        
+        <div class="hidden sm:flex items-center justify-end gap-x-3 sm:col-span-4 2xl:col-span-3">
+            @if (Status >= 1 && Status <= 2)
+            {
+                <div class="bg-gray-900 bg-opacity-45 py-1 px-2 rounded-lg flex flex-row">
+                    <div>
+                        <i class="icon-cpu"></i>
+                    </div>
+
+                    <div class="ms-3">56,8%</div>
+                </div>
+
+                <div class="bg-gray-900 bg-opacity-45 py-1 px-2 rounded-lg flex flex-row">
+                    <div>
+                        <i class="icon-memory-stick"></i>
+                    </div>
+
+                    <div class="ms-3">4,2 GB / 8 GB</div>
+                </div>
+
+                <div class="bg-gray-900 bg-opacity-45 py-1 px-2 rounded-lg flex flex-row">
+                    <div>
+                        <i class="icon-hard-drive"></i>
+                    </div>
+
+                    <div class="ms-3">53 GB / 100GB</div>
+                </div>
+            }
+            else
+            {
+                if (Status == 0)
+                {
+                    <div class="bg-gray-900 bg-opacity-45 py-1 px-2 rounded-lg flex flex-row text-gray-700">
+                        <div>
+                            <i class="icon-loader"></i>
+                        </div>
+
+                        <div class="ms-3">Loading</div>
+                    </div>
+                }
+                else if (Status == 3)
+                {
+                    <div class="bg-gray-900 bg-opacity-45 py-1 px-2 rounded-lg flex flex-row text-danger-500">
+                        <div>
+                            <i class="icon-power-off"></i>
+                        </div>
+
+                        <div class="ms-3">Offline</div>
+                    </div>
+                }
+                else if (Status == 4)
+                {
+                    <div class="bg-gray-900 bg-opacity-45 py-1 px-2 rounded-lg flex flex-row text-primary-500">
+                        <div>
+                            <i class="icon-hammer"></i>
+                        </div>
+
+                        <div class="ms-3">Installing</div>
+                    </div>
+                }
+            }
+        </div>
+
+        <div class="hidden 2xl:flex items-center justify-end gap-x-3 2xl:col-span-2">
+
+            <div class="bg-gray-900 bg-opacity-45 py-1 px-2 rounded-lg flex flex-row">
+                <div>
+                    <i class="icon-sparkles"></i>
+                </div>
+
+                <div class="ms-3">@Server.StarName</div>
+            </div>
+
+            <div class="bg-gray-900 bg-opacity-45 py-1 px-2 rounded-lg flex flex-row">
+                <div>
+                    <i class="icon-database"></i>
+                </div>
+
+                <div class="ms-3">@Server.NodeName</div>
+            </div>
+        </div>
+    </div>
+
+
+</a>
+
+@code
+{
+    [Parameter]
+    public ServerDetailResponse Server { get; set; }
+    
+    [Parameter]
+    public int Status { get; set; }
+}

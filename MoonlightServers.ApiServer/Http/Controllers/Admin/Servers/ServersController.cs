@@ -9,9 +9,7 @@ using MoonCore.Models;
 using Moonlight.ApiServer.Database.Entities;
 using MoonlightServers.ApiServer.Database.Entities;
 using MoonlightServers.Shared.Http.Requests.Admin.Servers;
-using MoonlightServers.Shared.Http.Responses.Admin.NodeAllocations;
 using MoonlightServers.Shared.Http.Responses.Admin.Servers;
-using MoonlightServers.Shared.Http.Responses.Admin.ServerVariables;
 
 namespace MoonlightServers.ApiServer.Http.Controllers.Admin.Servers;
 
