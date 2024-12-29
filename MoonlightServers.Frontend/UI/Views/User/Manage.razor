@@ -1,0 +1,156 @@
+@page "/servers/{ServerId:int}"
+
+@using MoonlightServers.Shared.Http.Responses.Users.Servers
+@using MoonCore.Blazor.Tailwind.Components
+@using MoonCore.Exceptions
+@using MoonCore.Helpers
+
+@inject HttpApiClient ApiClient
+
+<LazyLoader Load="Load">
+    @if (NotFound)
+    {
+        <div class="flex flex-col justify-center text-center"><img class="h-48 mt-5 mb-3" src="/svg/notfound.svg"
+                                                                   alt="Not found illustration">
+            <h3 class="mt-2 font-semibold text-white text-lg">Server not found</h3>
+            <p class="mt-1 text-gray-300">
+                The server you requested does not exist
+            </p>
+        </div>
+    }
+    else
+    {
+        <div class="card card-body justify-between py-2.5 px-5 flex-row">
+            <div class="flex flex-row items-center">
+                <div class="p-2.5 rounded-full bg-success-400 me-3"></div>
+
+                <div class="flex flex-col">
+                    <div class="hidden sm:flex text-lg font-semibold">@Server.Name</div>
+                    <div class="hidden text-sm text-gray-400 md:flex gap-x-3">
+                        <span>
+                            <i class="icon-sparkles me-0.5 align-middle"></i>
+                            <span class="align-middle">@Server.StarName</span>
+                        </span>
+
+                        <span>
+                            <i class="icon-database me-0.5 align-middle"></i>
+                            <span class="align-middle">@Server.NodeName</span>
+                        </span>
+                    </div>
+                </div>
+            </div>
+            <div class="flex flex-row items-center">
+                @if (!string.IsNullOrEmpty(CurrentTask))
+                {
+                    <div class="hidden md:flex me-8 items-center text-gray-600">
+                        <i class="icon-loader me-1.5 animate-spin text-lg align-middle"></i>
+                        <span class="text-base align-middle">
+                            @CurrentTask
+                        </span>
+                    </div>
+                }
+
+                <div class="flex gap-x-1.5">
+                    <WButton CssClasses="btn btn-primary" OnClick="_ => DoSmth()">
+                        <i class="icon-play me-1 align-middle"></i>
+                        <span class="align-middle">Start</span>
+                    </WButton>
+                    <button type="button" class="btn btn-tertiary">
+                        <i class="icon-rotate-ccw me-1 align-middle"></i>
+                        <span class="align-middle">Restart</span>
+                    </button>
+                    <button type="button" class="btn btn-danger">
+                        <i class="icon-squircle me-1 align-middle"></i>
+                        <span class="align-middle">Stop</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-5 mx-2 relative">
+            <ul class="relative text-sm font-medium flex flex-nowrap -mx-4 sm:-mx-6 lg:-mx-8 overflow-x-scroll no-scrollbar">
+                <li class="mr-6 last:mr-0 first:pl-4 sm:first:pl-6 lg:first:pl-8 last:pr-4 sm:last:pr-6 lg:last:pr-8"><a
+                        href="/admin/servers"
+                        class="block pb-3 text-gray-400 hover:text-white whitespace-nowrap hover:border-b-2 hover:border-primary-500">Console</a>
+                </li>
+                <li class="mr-6 last:mr-0 first:pl-4 sm:first:pl-6 lg:first:pl-8 last:pr-4 sm:last:pr-6 lg:last:pr-8"><a
+                        href="/admin/servers/all"
+                        class="block pb-3 text-white whitespace-nowrap border-b-2 border-primary-500">Files</a></li>
+                <li class="mr-6 last:mr-0 first:pl-4 sm:first:pl-6 lg:first:pl-8 last:pr-4 sm:last:pr-6 lg:last:pr-8"><a
+                        href="/admin/servers/nodes"
+                        class="block pb-3 text-gray-400 hover:text-white whitespace-nowrap hover:border-b-2 hover:border-primary-500">Backups</a>
+                </li>
+                <li class="mr-6 last:mr-0 first:pl-4 sm:first:pl-6 lg:first:pl-8 last:pr-4 sm:last:pr-6 lg:last:pr-8"><a
+                        href="/admin/servers/stars"
+                        class="block pb-3 text-gray-400 hover:text-white whitespace-nowrap hover:border-b-2 hover:border-primary-500">Networking</a>
+                </li>
+                <li class="mr-6 last:mr-0 first:pl-4 sm:first:pl-6 lg:first:pl-8 last:pr-4 sm:last:pr-6 lg:last:pr-8"><a
+                        href="/admin/servers/manager"
+                        class="block pb-3 text-gray-400 hover:text-white whitespace-nowrap hover:border-b-2 hover:border-primary-500">Variables</a>
+                </li>
+            </ul>
+        </div>
+    }
+</LazyLoader>
+
+@code
+{
+    [Parameter] public int ServerId { get; set; }
+
+    private ServerDetailResponse Server;
+    private bool NotFound = false;
+
+    private string CurrentTask = "";
+
+    private async Task Load(LazyLoader _)
+    {
+        try
+        {
+            Server = await ApiClient.GetJson<ServerDetailResponse>(
+                $"api/servers/{ServerId}"
+            );
+        }
+        catch (HttpApiException e)
+        {
+            if (e.Status == 404)
+                NotFound = false;
+            else
+                throw;
+        }
+    }
+
+    private async Task DoSmth()
+    {
+        await AddTask("Creating storage");
+        await Task.Delay(1500);
+
+        await AddTask("Pulling docker image");
+        await Task.Delay(1500);
+
+        await AddTask("Removing container");
+        await Task.Delay(1500);
+
+        await AddTask("Creating container");
+        await Task.Delay(1500);
+
+        await AddTask("Starting container");
+        await Task.Delay(1500);
+    }
+
+    private async Task AddTask(string message)
+    {
+        CurrentTask = message;
+        await InvokeAsync(StateHasChanged);
+
+        Task.Run(async () =>
+        {
+            await Task.Delay(2000);
+
+            if (CurrentTask != message)
+                return;
+
+            CurrentTask = "";
+            await InvokeAsync(StateHasChanged);
+        });
+    }
+}
