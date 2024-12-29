@@ -27,9 +27,9 @@ public class ServersController : Controller
         NodeService = nodeService;
     }
 
-    [HttpGet("list")]
+    [HttpGet]
     [RequirePermission("meta.authenticated")]
-    public async Task<PagedData<ServerDetailResponse>> List([FromQuery] int page, [FromQuery] int pageSize)
+    public async Task<PagedData<ServerDetailResponse>> GetAll([FromQuery] int page, [FromQuery] int pageSize)
     {
         var user = User.AsIdentity<User>();
 
@@ -39,7 +39,7 @@ public class ServersController : Controller
             .Include(x => x.Star)
             .Include(x => x.Node)
             .Where(x => x.OwnerId == user.Id);
-        
+
         var count = await query.CountAsync();
         var items = await query.Skip(page * pageSize).Take(pageSize).ToArrayAsync();
 
@@ -56,7 +56,7 @@ public class ServersController : Controller
                 IpAddress = y.IpAddress
             }).ToArray()
         }).ToArray();
-        
+
         return new PagedData<ServerDetailResponse>()
         {
             Items = mappedItems,
@@ -64,6 +64,33 @@ public class ServersController : Controller
             PageSize = pageSize,
             TotalItems = count,
             TotalPages = count == 0 ? 0 : count / pageSize
+        };
+    }
+
+    [HttpGet("{serverId:int}")]
+    [RequirePermission("meta.authenticated")]
+    public async Task<ServerDetailResponse> Get([FromRoute] int serverId)
+    {
+        var server = await GetServerWithPermCheck(
+            serverId,
+            query =>
+                query
+                    .Include(x => x.Allocations)
+                    .Include(x => x.Star)
+        );
+
+        return new ServerDetailResponse()
+        {
+            Id = server.Id,
+            Name = server.Name,
+            NodeName = server.Node.Name,
+            StarName = server.Star.Name,
+            Allocations = server.Allocations.Select(y => new AllocationDetailResponse()
+            {
+                Id = y.Id,
+                Port = y.Port,
+                IpAddress = y.IpAddress
+            }).ToArray()
         };
     }
 
@@ -92,13 +119,19 @@ public class ServersController : Controller
         }
     }
 
-    private async Task<Server> GetServerWithPermCheck(int serverId)
+    private async Task<Server> GetServerWithPermCheck(int serverId,
+        Func<IQueryable<Server>, IQueryable<Server>>? queryModifier = null)
     {
         var user = User.AsIdentity<User>();
-        
-        var server = await ServerRepository
+
+        var query = ServerRepository
             .Get()
-            .Include(x => x.Node)
+            .Include(x => x.Node) as IQueryable<Server>;
+
+        if (queryModifier != null)
+            query = queryModifier.Invoke(query);
+
+        var server = await query
             .FirstOrDefaultAsync(x => x.Id == serverId);
 
         if (server == null)
@@ -109,7 +142,7 @@ public class ServersController : Controller
 
         if (User.HasPermission("admin.servers.get")) // The current user is an admin
             return server;
-        
+
         throw new HttpApiException("No server with this id found", 404);
     }
 }

@@ -25,7 +25,7 @@
     {
         Servers = await PagedData<ServerDetailResponse>.All(async (page, pageSize) =>
             await ApiClient.GetJson<PagedData<ServerDetailResponse>>(
-                $"api/servers/list?page={page}&pageSize={pageSize}"
+                $"api/servers?page={page}&pageSize={pageSize}"
             )
         );
     }
