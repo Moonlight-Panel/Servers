@@ -1,4 +1,5 @@
 using MoonCore.Attributes;
+using MoonCore.Extended.Helpers;
 using MoonCore.Helpers;
 using MoonlightServers.ApiServer.Database.Entities;
 using MoonlightServers.DaemonShared.DaemonSide.Http.Responses.Statistics;
@@ -11,7 +12,7 @@ public class NodeService
 {
     public async Task<HttpApiClient> CreateApiClient(Node node)
     {
-        string url = "";
+        var url = "";
 
         if (node.UseSsl)
             url += "https://";
@@ -29,6 +30,9 @@ public class NodeService
 
         return new HttpApiClient(httpClient);
     }
+
+    public string CreateAccessToken(Node node, Action<Dictionary<string, object>> parameters, TimeSpan duration)
+        => JwtHelper.Encode(node.Token, parameters, duration);
     
     public async Task<SystemStatusResponse> GetSystemStatus(Node node)
     {

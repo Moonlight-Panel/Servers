@@ -8,6 +8,7 @@
 
     <ItemGroup>
         <PackageReference Include="Docker.DotNet" Version="3.125.15" />
+        <PackageReference Include="Microsoft.AspNetCore.SignalR" Version="1.1.0" />
         <PackageReference Include="MoonCore" Version="1.8.1" />
         <PackageReference Include="MoonCore.Extended" Version="1.2.4" />
         <PackageReference Include="MoonCore.Unix" Version="1.0.0" />

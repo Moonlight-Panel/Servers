@@ -118,6 +118,36 @@ public class ServersController : Controller
             throw new HttpApiException("Unable to access the node the server is running on", 502);
         }
     }
+    
+    [HttpGet("{serverId:int}/console")]
+    [RequirePermission("meta.authenticated")]
+    public async Task<ServerConsoleResponse> GetConsole([FromRoute] int serverId)
+    {
+        var server = await GetServerWithPermCheck(serverId);
+
+        // TODO: Handle transparent proxy
+
+        var accessToken = NodeService.CreateAccessToken(server.Node, parameters =>
+        {
+            parameters.Add("type", "console");
+            parameters.Add("serverId", server.Id);
+        }, TimeSpan.FromMinutes(10));
+        
+        var url = "";
+
+        if (server.Node.UseSsl)
+            url += "https://";
+        else
+            url += "http://";
+
+        url += $"{server.Node.Fqdn}:{server.Node.HttpPort}/api/servers/console";
+
+        return new ServerConsoleResponse()
+        {
+            Target = url,
+            AccessToken = accessToken
+        };
+    }
 
     private async Task<Server> GetServerWithPermCheck(int serverId,
         Func<IQueryable<Server>, IQueryable<Server>>? queryModifier = null)

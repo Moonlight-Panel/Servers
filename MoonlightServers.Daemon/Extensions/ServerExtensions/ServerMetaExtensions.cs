@@ -8,5 +8,6 @@ public static class ServerMetaExtensions
     public static async Task NotifyTask(this Server server, ServerTask task)
     {
         server.Logger.LogInformation("Task: {task}", task);
+        await server.InvokeTaskAdded(task.ToString());
     }
 }

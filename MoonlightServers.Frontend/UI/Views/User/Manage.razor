@@ -1,11 +1,15 @@
 @page "/servers/{ServerId:int}"
 
+@using Microsoft.AspNetCore.SignalR.Client
 @using MoonlightServers.Shared.Http.Responses.Users.Servers
 @using MoonCore.Blazor.Tailwind.Components
 @using MoonCore.Exceptions
 @using MoonCore.Helpers
+@using MoonlightServers.Shared.Enums
 
 @inject HttpApiClient ApiClient
+
+@implements IAsyncDisposable
 
 <LazyLoader Load="Load">
     @if (NotFound)
@@ -22,7 +26,19 @@
     {
         <div class="card card-body justify-between py-2.5 px-5 flex-row">
             <div class="flex flex-row items-center">
-                <div class="p-2.5 rounded-full bg-success-400 me-3"></div>
+                @{
+                    var bgColor = PowerState switch
+                    {
+                        ServerPowerState.Installing => "bg-primary-500",
+                        ServerPowerState.Offline => "bg-danger-500",
+                        ServerPowerState.Starting => "bg-warning-500",
+                        ServerPowerState.Stopping => "bg-warning-500",
+                        ServerPowerState.Online => "bg-success-500",
+                        _ => "bg-gray-500"
+                    };
+                }
+                
+                <div class="p-2.5 rounded-full @bgColor me-3"></div>
 
                 <div class="flex flex-col">
                     <div class="hidden sm:flex text-lg font-semibold">@Server.Name</div>
@@ -99,16 +115,57 @@
 
     private ServerDetailResponse Server;
     private bool NotFound = false;
+    private ServerPowerState PowerState;
 
     private string CurrentTask = "";
+    private HubConnection ConsoleConnection;
 
     private async Task Load(LazyLoader _)
     {
         try
         {
+            // Load meta data
             Server = await ApiClient.GetJson<ServerDetailResponse>(
                 $"api/servers/{ServerId}"
             );
+
+            // Load initial status for first render
+            var status = await ApiClient.GetJson<ServerStatusResponse>(
+                $"api/servers/{ServerId}/status"
+            );
+
+            PowerState = status.PowerState;
+
+            // Load console meta
+            var consoleDetails = await ApiClient.GetJson<ServerConsoleResponse>(
+                $"api/servers/{ServerId}/console"
+            );
+
+            // Build signal r
+            ConsoleConnection = new HubConnectionBuilder()
+                .WithUrl(consoleDetails.Target)
+                .Build();
+
+            // Define handlers
+            ConsoleConnection.On<string>("PowerStateChanged", async powerStateStr =>
+            {
+                if(!Enum.TryParse(powerStateStr, out ServerPowerState receivedState))
+                    return;
+
+                PowerState = receivedState;
+                await InvokeAsync(StateHasChanged);
+            });
+            
+            ConsoleConnection.On<string>("TaskNotify", async task =>
+            {
+                await AddTask(Formatter.ConvertCamelCaseToSpaces(task));
+            });
+
+            // Connect
+            await ConsoleConnection.StartAsync();
+            
+            // Authenticate
+            await ConsoleConnection.SendAsync("Authenticate", consoleDetails.AccessToken);
         }
         catch (HttpApiException e)
         {
@@ -152,5 +209,13 @@
             CurrentTask = "";
             await InvokeAsync(StateHasChanged);
         });
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (ConsoleConnection.State == HubConnectionState.Connected)
+            await ConsoleConnection.StopAsync();
+        
+        await ConsoleConnection.DisposeAsync();
     }
 }

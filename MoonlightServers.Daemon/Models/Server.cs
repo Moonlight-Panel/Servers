@@ -15,6 +15,7 @@ public class Server
     public StateMachine<ServerState> StateMachine { get; set; }
     public ServerConfiguration Configuration { get; set; }
     public string? ContainerId { get; set; }
+    public event Func<string, Task> OnTaskAdded;
     
     // This can be used to stop streaming when the server gets destroyed or something
     public CancellationTokenSource Cancellation { get; set; }
@@ -56,6 +57,18 @@ public class Server
 
             return absolutePath;
         }
+    }
+
+    #endregion
+
+    #region Event invokers
+
+    public async Task InvokeTaskAdded(string task)
+    {
+        if(OnTaskAdded == null)
+            return;
+        
+        await OnTaskAdded.Invoke(task).ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
     }
 
     #endregion

@@ -6,6 +6,7 @@ using MoonCore.Extensions;
 using MoonCore.Helpers;
 using MoonCore.Services;
 using MoonlightServers.Daemon.Configuration;
+using MoonlightServers.Daemon.Http.Hubs;
 using MoonlightServers.Daemon.Services;
 
 namespace MoonlightServers.Daemon;
@@ -43,13 +44,17 @@ public class Startup
         await RegisterBase();
         await RegisterDocker();
         await RegisterServers();
+        await RegisterSignalR();
+        await RegisterCors();
 
         await BuildWebApplication();
 
         await UseBase();
+        await UseCors();
         await UseBaseMiddleware();
 
         await MapBase();
+        await MapHubs();
 
         await WebApplication.RunAsync();
     }
@@ -71,7 +76,6 @@ public class Startup
         WebApplicationBuilder.Services.AddControllers();
 
         WebApplicationBuilder.Services.AddApiExceptionHandler();
-        WebApplicationBuilder.Services.AddSignalR();
 
         return Task.CompletedTask;
     }
@@ -248,12 +252,51 @@ public class Startup
         WebApplicationBuilder.Services.AddHostedService<ApplicationStateService>(
             sp => sp.GetRequiredService<ApplicationStateService>()
         );
-        
+
         return Task.CompletedTask;
     }
 
     private Task UseServers()
     {
+        return Task.CompletedTask;
+    }
+
+    #endregion
+
+    #region Maps
+
+    private Task RegisterSignalR()
+    {
+        WebApplicationBuilder.Services.AddSignalR();
+        return Task.CompletedTask;
+    }
+
+    private Task MapHubs()
+    {
+        WebApplication.MapHub<ServerConsoleHub>("api/servers/console");
+
+        return Task.CompletedTask;
+    }
+
+    #endregion
+
+    #region Cors
+
+    private Task RegisterCors()
+    {
+        //TODO: IMPORTANT: CHANGE !!!
+        WebApplicationBuilder.Services.AddCors(x =>
+            x.AddDefaultPolicy(builder => 
+                builder.AllowAnyHeader().AllowAnyOrigin().AllowAnyMethod().Build()
+            )
+        );
+
+        return Task.CompletedTask;
+    }
+
+    private Task UseCors()
+    {
+        WebApplication.UseCors();
         return Task.CompletedTask;
     }
 
