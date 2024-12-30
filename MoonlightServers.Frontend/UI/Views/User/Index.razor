@@ -10,9 +10,27 @@
 
 <LazyLoader Load="Load">
     <div class="flex flex-col gap-y-5">
+        @* Folder design idea
+        <div class="w-full bg-gray-800 px-5 py-3.5 rounded-xl">
+            <div class="flex items-center">
+                <div class="bg-gray-900 bg-opacity-45 py-1 px-2 rounded-lg flex items-center">
+                    <i class="icon-folder-open me-3 align-middle"></i>
+                    <div class="text-lg align-middle">
+                        My Cool Folder
+                    </div>
+                </div>
+            </div>
+            <div class="mt-5 flex flex-col gap-y-3">
+                @foreach (var server in Servers)
+                {
+                    <ServerCard Server="server" />
+                }
+            </div>
+        </div>
+*@
         @foreach (var server in Servers)
         {
-            <ServerCard Server="server" />
+            <ServerCard Server="server"/>
         }
     </div>
 </LazyLoader>
