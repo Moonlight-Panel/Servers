@@ -1,0 +1,97 @@
+@using XtermBlazor
+
+@inject IJSRuntime JsRuntime
+@inject ILogger<XtermConsole> Logger
+
+<div class="bg-black rounded-lg p-2">
+    @if (IsInitialized)
+    {
+        <Xterm @ref="Terminal"
+               Addons="Addons"
+               Options="Options"
+               OnFirstRender="HandleFirstRender"/>
+    }
+</div>
+
+@code
+{
+    [Parameter] public Func<Task>? OnAfterInitialized { get; set; }
+    [Parameter] public Func<Task>? OnFirstRender { get; set; }
+    
+    private Xterm Terminal;
+    private bool IsInitialized = false;
+    private bool HadFirstRender = false;
+
+    private readonly Queue<string> MessageCache = new();
+    private readonly HashSet<string> Addons = ["addon-fit"];
+    private readonly TerminalOptions Options = new()
+    {
+        CursorBlink = false,
+        CursorStyle = CursorStyle.Bar,
+        CursorWidth = 1,
+        FontFamily = "Space Mono, monospace",
+        DisableStdin = true,
+        CursorInactiveStyle = CursorInactiveStyle.None,
+        Theme =
+        {
+            Background = "#000000"
+        }
+    };
+    
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if(!firstRender)
+            return;
+
+        // Initialize addons
+        
+        try
+        {
+            await JsRuntime.InvokeVoidAsync("moonlightServers.loadAddons");
+        }
+        catch (Exception e)
+        {
+            Logger.LogError("An error occured while initializing addons: {e}", e);
+        }
+
+        IsInitialized = true;
+        await InvokeAsync(StateHasChanged);
+
+        if(OnAfterInitialized != null)
+            await OnAfterInitialized.Invoke();
+    }
+
+    private async Task HandleFirstRender()
+    {
+        try
+        {
+            await Terminal.Addon("addon-fit").InvokeVoidAsync("fit");
+        }
+        catch (Exception e)
+        {
+            Logger.LogError("An error occured while calling addons: {e}", e);
+        }
+
+        HadFirstRender = true;
+
+        // Write out cache
+        while (MessageCache.Count > 0)
+        {
+            await Terminal.Write(MessageCache.Dequeue());
+        }
+
+        if (OnFirstRender != null)
+            await OnFirstRender.Invoke();
+    }
+
+    public async Task Write(string content)
+    {
+        // We cache messages here as there is the chance that the console isn't ready for input while receiving write tasks 
+        
+        if (HadFirstRender)
+            await Terminal.Write(content);
+        else
+            MessageCache.Enqueue(content);
+    }
+}

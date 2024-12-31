@@ -125,7 +125,7 @@ public class ServersController : Controller
     {
         var server = await GetServerWithPermCheck(serverId);
 
-        // TODO: Handle transparent proxy
+        // TODO: Handle transparent node proxy
 
         var accessToken = NodeService.CreateAccessToken(server.Node, parameters =>
         {
@@ -147,6 +147,31 @@ public class ServersController : Controller
             Target = url,
             AccessToken = accessToken
         };
+    }
+    
+    [HttpGet("{serverId:int}/logs")]
+    [RequirePermission("meta.authenticated")]
+    public async Task<ServerLogsResponse> GetLogs([FromRoute] int serverId)
+    {
+        var server = await GetServerWithPermCheck(serverId);
+
+        var apiClient = await NodeService.CreateApiClient(server.Node);
+
+        try
+        {
+            var data = await apiClient.GetJson<DaemonShared.DaemonSide.Http.Responses.Servers.ServerLogsResponse>(
+                $"api/servers/{server.Id}/logs"
+            );
+
+            return new ServerLogsResponse()
+            {
+                Messages = data.Messages
+            };
+        }
+        catch (HttpRequestException e)
+        {
+            throw new HttpApiException("Unable to access the node the server is running on", 502);
+        }
     }
 
     private async Task<Server> GetServerWithPermCheck(int serverId,

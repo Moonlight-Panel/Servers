@@ -32,6 +32,20 @@ public class ServersController : Controller
         };
     }
 
+    [HttpGet("{serverId:int}/logs")]
+    public async Task<ServerLogsResponse> GetLogs([FromRoute] int serverId)
+    {
+        var server = ServerService.GetServer(serverId);
+
+        if (server == null)
+            throw new HttpApiException("No server with this id found", 404);
+        
+        return new ServerLogsResponse()
+        {
+            Messages = server.Console.Messages
+        };
+    }
+
     [HttpPost("{serverId:int}/start")]
     public async Task Start(int serverId)
     {

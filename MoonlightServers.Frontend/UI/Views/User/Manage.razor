@@ -6,6 +6,7 @@
 @using MoonCore.Exceptions
 @using MoonCore.Helpers
 @using MoonlightServers.Shared.Enums
+@using MoonlightServers.Frontend.UI.Components
 
 @inject HttpApiClient ApiClient
 
@@ -67,11 +68,11 @@
                 }
 
                 <div class="flex gap-x-1.5">
-                    <WButton CssClasses="btn btn-primary" OnClick="_ => DoSmth()">
+                    <button class="btn btn-success">
                         <i class="icon-play me-1 align-middle"></i>
                         <span class="align-middle">Start</span>
-                    </WButton>
-                    <button type="button" class="btn btn-tertiary">
+                    </button>
+                    <button type="button" class="btn btn-primary">
                         <i class="icon-rotate-ccw me-1 align-middle"></i>
                         <span class="align-middle">Restart</span>
                     </button>
@@ -85,26 +86,32 @@
 
         <div class="mt-5 mx-2 relative">
             <ul class="relative text-sm font-medium flex flex-nowrap -mx-4 sm:-mx-6 lg:-mx-8 overflow-x-scroll no-scrollbar">
+
                 <li class="mr-6 last:mr-0 first:pl-4 sm:first:pl-6 lg:first:pl-8 last:pr-4 sm:last:pr-6 lg:last:pr-8"><a
-                        href="/admin/servers"
-                        class="block pb-3 text-gray-400 hover:text-white whitespace-nowrap hover:border-b-2 hover:border-primary-500">Console</a>
+                                                                                                                          href="/admin/servers/all"
+                                                                                                                          class="block pb-3 text-white whitespace-nowrap border-b-2 border-primary-500">Console</a></li>
+                
+                <li class="mr-6 last:mr-0 first:pl-4 sm:first:pl-6 lg:first:pl-8 last:pr-4 sm:last:pr-6 lg:last:pr-8"><a
+                                                                                                                          href="/admin/servers"
+                                                                                                                          class="block pb-3 text-gray-400 hover:text-white whitespace-nowrap hover:border-b-2 hover:border-primary-500">Files</a>
                 </li>
                 <li class="mr-6 last:mr-0 first:pl-4 sm:first:pl-6 lg:first:pl-8 last:pr-4 sm:last:pr-6 lg:last:pr-8"><a
-                        href="/admin/servers/all"
-                        class="block pb-3 text-white whitespace-nowrap border-b-2 border-primary-500">Files</a></li>
-                <li class="mr-6 last:mr-0 first:pl-4 sm:first:pl-6 lg:first:pl-8 last:pr-4 sm:last:pr-6 lg:last:pr-8"><a
-                        href="/admin/servers/nodes"
-                        class="block pb-3 text-gray-400 hover:text-white whitespace-nowrap hover:border-b-2 hover:border-primary-500">Backups</a>
+                                                                                                                          href="/admin/servers/nodes"
+                                                                                                                          class="block pb-3 text-gray-400 hover:text-white whitespace-nowrap hover:border-b-2 hover:border-primary-500">Backups</a>
                 </li>
                 <li class="mr-6 last:mr-0 first:pl-4 sm:first:pl-6 lg:first:pl-8 last:pr-4 sm:last:pr-6 lg:last:pr-8"><a
-                        href="/admin/servers/stars"
-                        class="block pb-3 text-gray-400 hover:text-white whitespace-nowrap hover:border-b-2 hover:border-primary-500">Networking</a>
+                                                                                                                          href="/admin/servers/stars"
+                                                                                                                          class="block pb-3 text-gray-400 hover:text-white whitespace-nowrap hover:border-b-2 hover:border-primary-500">Networking</a>
                 </li>
                 <li class="mr-6 last:mr-0 first:pl-4 sm:first:pl-6 lg:first:pl-8 last:pr-4 sm:last:pr-6 lg:last:pr-8"><a
-                        href="/admin/servers/manager"
-                        class="block pb-3 text-gray-400 hover:text-white whitespace-nowrap hover:border-b-2 hover:border-primary-500">Variables</a>
+                                                                                                                          href="/admin/servers/manager"
+                                                                                                                          class="block pb-3 text-gray-400 hover:text-white whitespace-nowrap hover:border-b-2 hover:border-primary-500">Variables</a>
                 </li>
             </ul>
+        </div>
+        
+        <div class="mt-3 h-44">
+            <XtermConsole @ref="XtermConsole" OnAfterInitialized="OnAfterConsoleInitialized" />
         </div>
     }
 </LazyLoader>
@@ -116,8 +123,11 @@
     private ServerDetailResponse Server;
     private bool NotFound = false;
     private ServerPowerState PowerState;
+    private string InitialConsoleMessage; // TODO: When moving to a single component, fail safe when failed to load
 
     private string CurrentTask = "";
+    private XtermConsole? XtermConsole;
+    
     private HubConnection ConsoleConnection;
 
     private async Task Load(LazyLoader _)
@@ -136,6 +146,16 @@
 
             PowerState = status.PowerState;
 
+            // Load initial messages
+            var initialLogs = await ApiClient.GetJson<ServerLogsResponse>(
+                $"api/servers/{ServerId}/logs"
+            );
+
+            InitialConsoleMessage = "";
+
+            foreach (var message in initialLogs.Messages)
+                InitialConsoleMessage += message;
+            
             // Load console meta
             var consoleDetails = await ApiClient.GetJson<ServerConsoleResponse>(
                 $"api/servers/{ServerId}/console"
@@ -161,6 +181,14 @@
                 await AddTask(Formatter.ConvertCamelCaseToSpaces(task));
             });
 
+            ConsoleConnection.On<string>("ConsoleOutput", async content =>
+            {
+                if (XtermConsole != null)
+                    await XtermConsole.Write(content);
+                
+                await InvokeAsync(StateHasChanged);
+            });
+
             // Connect
             await ConsoleConnection.StartAsync();
             
@@ -175,23 +203,10 @@
                 throw;
         }
     }
-
-    private async Task DoSmth()
+    
+    private async Task OnAfterConsoleInitialized()
     {
-        await AddTask("Creating storage");
-        await Task.Delay(1500);
-
-        await AddTask("Pulling docker image");
-        await Task.Delay(1500);
-
-        await AddTask("Removing container");
-        await Task.Delay(1500);
-
-        await AddTask("Creating container");
-        await Task.Delay(1500);
-
-        await AddTask("Starting container");
-        await Task.Delay(1500);
+        await XtermConsole!.Write(InitialConsoleMessage);
     }
 
     private async Task AddTask(string message)
@@ -201,7 +216,7 @@
 
         Task.Run(async () =>
         {
-            await Task.Delay(2000);
+            await Task.Delay(3000);
 
             if (CurrentTask != message)
                 return;

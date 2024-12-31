@@ -51,6 +51,10 @@ public static class ServerConsoleExtensions
                 {
                     // Ignored
                 }
+                catch (OperationCanceledException)
+                {
+                    // Ignored
+                }
                 catch (Exception e)
                 {
                     server.Logger.LogWarning("An unhandled error occured while reading from container stream: {e}", e);

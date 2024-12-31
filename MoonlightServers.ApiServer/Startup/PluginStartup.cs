@@ -19,6 +19,7 @@ public class PluginStartup : IAppStartup
         builder.Services.AutoAddServices<PluginStartup>();
         
         BundleService.BundleCss("css/MoonlightServers.min.css");
+        BundleService.BundleCss("css/XtermBlazor.min.css");
 
         return Task.CompletedTask;
     }

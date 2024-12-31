@@ -17,12 +17,24 @@ public class ServerConsoleHub : Hub
         ConsoleService = consoleService;
     }
 
+    #region Connection Handlers
+
+    public override async Task OnConnectedAsync()
+        => await ConsoleService.InitializeClient(Context);
+
+    public override async Task OnDisconnectedAsync(Exception? exception)
+        => await ConsoleService.DestroyClient(Context);
+
+    #endregion
+
+    #region Methods
+
     [HubMethodName("Authenticate")]
     public async Task Authenticate(string accessToken)
     {
         try
         {
-            await ConsoleService.Authenticate(Context, accessToken);
+            await ConsoleService.AuthenticateClient(Context, accessToken);
         }
         catch (Exception e)
         {
@@ -30,6 +42,5 @@ public class ServerConsoleHub : Hub
         }
     }
 
-    public override async Task OnDisconnectedAsync(Exception? exception)
-        => await ConsoleService.OnClientDisconnected(Context);
+    #endregion
 }
