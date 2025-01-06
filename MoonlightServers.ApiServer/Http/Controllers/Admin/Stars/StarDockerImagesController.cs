@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using MoonCore.Exceptions;
 using MoonCore.Extended.Abstractions;
 using MoonCore.Extended.Helpers;
@@ -31,11 +32,11 @@ public class StarDockerImagesController : Controller
         StarDockerImageRepository = starDockerImageRepository;
     }
     
-    private void ApplyStar(int id)
+    private async Task ApplyStar(int id)
     {
-        var star = StarRepository
+        var star = await StarRepository
             .Get()
-            .FirstOrDefault(x => x.Id == id);
+            .FirstOrDefaultAsync(x => x.Id == id);
 
         if (star == null)
             throw new HttpApiException("A star with this id could not be found", 404);
@@ -49,7 +50,7 @@ public class StarDockerImagesController : Controller
     [HttpGet("{starId:int}/dockerImages")]
     public async Task<IPagedData<StarDockerImageDetailResponse>> Get([FromRoute] int starId, [FromQuery] int page, [FromQuery] int pageSize)
     {
-        ApplyStar(starId);
+        await ApplyStar(starId);
         
         return await CrudHelper.Get(page, pageSize);
     }
@@ -57,7 +58,7 @@ public class StarDockerImagesController : Controller
     [HttpGet("{starId:int}/dockerImages/{id:int}")]
     public async Task<StarDockerImageDetailResponse> GetSingle([FromRoute] int starId, [FromRoute] int id)
     {
-        ApplyStar(starId);
+        await ApplyStar(starId);
         
         return await CrudHelper.GetSingle(id);
     }
@@ -65,12 +66,12 @@ public class StarDockerImagesController : Controller
     [HttpPost("{starId:int}/dockerImages")]
     public async Task<StarDockerImageDetailResponse> Create([FromRoute] int starId, [FromBody] CreateStarDockerImageRequest request)
     {
-        ApplyStar(starId);
+        await ApplyStar(starId);
         
         var starDockerImage = Mapper.Map<StarDockerImage>(request);
         starDockerImage.Star = Star;
 
-        var finalVariable = StarDockerImageRepository.Add(starDockerImage);
+        var finalVariable = await StarDockerImageRepository.Add(starDockerImage);
 
         return CrudHelper.MapToResult(finalVariable);
     }
@@ -79,7 +80,7 @@ public class StarDockerImagesController : Controller
     public async Task<StarDockerImageDetailResponse> Update([FromRoute] int starId, [FromRoute] int id,
         [FromBody] UpdateStarDockerImageRequest request)
     {
-        ApplyStar(starId);
+        await ApplyStar(starId);
         
         return await CrudHelper.Update(id, request);
     }
@@ -87,7 +88,7 @@ public class StarDockerImagesController : Controller
     [HttpDelete("{starId:int}/dockerImages/{id:int}")]
     public async Task Delete([FromRoute] int starId, [FromRoute] int id)
     {
-        ApplyStar(starId);
+        await ApplyStar(starId);
         
         await CrudHelper.Delete(id);
     }

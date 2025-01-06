@@ -32,11 +32,11 @@ public class StarVariablesController : Controller
         StarVariableRepository = starVariableRepository;
     }
 
-    private void ApplyStar(int id)
+    private async Task ApplyStar(int id)
     {
-        var star = StarRepository
+        var star = await StarRepository
             .Get()
-            .FirstOrDefault(x => x.Id == id);
+            .FirstOrDefaultAsync(x => x.Id == id);
 
         if (star == null)
             throw new HttpApiException("A star with this id could not be found", 404);
@@ -51,7 +51,7 @@ public class StarVariablesController : Controller
     [RequirePermission("admin.servers.stars.get")]
     public async Task<IPagedData<StarVariableDetailResponse>> Get([FromRoute] int starId, [FromQuery] int page, [FromQuery] int pageSize)
     {
-        ApplyStar(starId);
+        await ApplyStar(starId);
 
         return await CrudHelper.Get(page, pageSize);
     }
@@ -60,7 +60,7 @@ public class StarVariablesController : Controller
     [RequirePermission("admin.servers.stars.get")]
     public async Task<StarVariableDetailResponse> GetSingle([FromRoute] int starId, [FromRoute] int id)
     {
-        ApplyStar(starId);
+        await ApplyStar(starId);
         
         return await CrudHelper.GetSingle(id);
     }
@@ -69,12 +69,12 @@ public class StarVariablesController : Controller
     [RequirePermission("admin.servers.stars.create")]
     public async Task<StarVariableDetailResponse> Create([FromRoute] int starId, [FromBody] CreateStarVariableRequest request)
     {
-        ApplyStar(starId);
+        await ApplyStar(starId);
         
         var starVariable = Mapper.Map<StarVariable>(request);
         starVariable.Star = Star;
 
-        var finalVariable = StarVariableRepository.Add(starVariable);
+        var finalVariable = await StarVariableRepository.Add(starVariable);
 
         return CrudHelper.MapToResult(finalVariable);
     }
@@ -84,13 +84,13 @@ public class StarVariablesController : Controller
     public async Task<StarVariableDetailResponse> Update([FromRoute] int starId, [FromRoute] int id,
         [FromBody] UpdateStarVariableRequest request)
     {
-        ApplyStar(starId);
+        await ApplyStar(starId);
         
         var variable = await CrudHelper.GetSingleModel(id);
 
         variable = Mapper.Map(variable, request);
         
-        StarVariableRepository.Update(variable);
+        await StarVariableRepository.Update(variable);
         
         return CrudHelper.MapToResult(variable);
     }
@@ -99,7 +99,7 @@ public class StarVariablesController : Controller
     [RequirePermission("admin.servers.stars.delete")]
     public async Task Delete([FromRoute] int starId, [FromRoute] int id)
     {
-        ApplyStar(starId);
+        await ApplyStar(starId);
         
         await CrudHelper.Delete(id);
     }

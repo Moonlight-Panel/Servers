@@ -138,7 +138,7 @@ public class StarImportExportService
                 }).ToList()
             };
 
-            var finalStar = StarRepository.Add(star);
+            var finalStar = await StarRepository.Add(star);
 
             return finalStar;
         }
@@ -235,7 +235,7 @@ public class StarImportExportService
 
             #endregion
 
-            var finalStar = StarRepository.Add(star);
+            var finalStar = await StarRepository.Add(star);
 
             return finalStar;
         }
@@ -397,7 +397,7 @@ public class StarImportExportService
         star.AllowDockerImageChange = true;
         
         // Finally save it to the db
-        var finalStar = StarRepository.Add(star);
+        var finalStar = await StarRepository.Add(star);
 
         return finalStar;
     }

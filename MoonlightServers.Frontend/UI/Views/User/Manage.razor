@@ -198,7 +198,7 @@
         catch (HttpApiException e)
         {
             if (e.Status == 404)
-                NotFound = false;
+                NotFound = true;
             else
                 throw;
         }

@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using MoonCore.Attributes;
 using MoonCore.Exceptions;
 using MoonCore.Extended.Abstractions;
@@ -28,11 +29,11 @@ public class NodeAllocationsController : Controller
         AllocationRepository = allocationRepository;
     }
     
-    private void ApplyNode(int id)
+    private async Task ApplyNode(int id)
     {
-        var node = NodeRepository
+        var node = await NodeRepository
             .Get()
-            .FirstOrDefault(x => x.Id == id);
+            .FirstOrDefaultAsync(x => x.Id == id);
 
         if (node == null)
             throw new HttpApiException("A node with this id could not be found", 404);
@@ -47,7 +48,7 @@ public class NodeAllocationsController : Controller
     [RequirePermission("admin.servers.nodes.get")]
     public async Task<IPagedData<NodeAllocationDetailResponse>> Get([FromRoute] int nodeId, [FromQuery] int page, [FromQuery] int pageSize)
     {
-        ApplyNode(nodeId);
+        await ApplyNode(nodeId);
         
         return await CrudHelper.Get(page, pageSize);
     }
@@ -56,7 +57,7 @@ public class NodeAllocationsController : Controller
     [RequirePermission("admin.servers.nodes.get")]
     public async Task<NodeAllocationDetailResponse> GetSingle([FromRoute] int nodeId, [FromRoute] int id)
     {
-        ApplyNode(nodeId);
+        await ApplyNode(nodeId);
         
         return await CrudHelper.GetSingle(id);
     }
@@ -65,12 +66,12 @@ public class NodeAllocationsController : Controller
     [RequirePermission("admin.servers.nodes.create")]
     public async Task<NodeAllocationDetailResponse> Create([FromRoute] int nodeId, [FromBody] CreateNodeAllocationRequest request)
     {
-        ApplyNode(nodeId);
+        await ApplyNode(nodeId);
         
         var allocation = Mapper.Map<Allocation>(request);
         allocation.Node = Node;
 
-        var finalVariable = AllocationRepository.Add(allocation);
+        var finalVariable = await AllocationRepository.Add(allocation);
 
         return CrudHelper.MapToResult(finalVariable);
     }
@@ -78,7 +79,7 @@ public class NodeAllocationsController : Controller
     [HttpPatch("{nodeId:int}/allocations/{id:int}")]
     public async Task<NodeAllocationDetailResponse> Update([FromRoute] int nodeId, [FromRoute] int id, [FromBody] UpdateNodeAllocationRequest request)
     {
-        ApplyNode(nodeId);
+        await ApplyNode(nodeId);
         
         return await CrudHelper.Update(id, request);
     }
@@ -86,15 +87,15 @@ public class NodeAllocationsController : Controller
     [HttpDelete("{nodeId:int}/allocations/{id:int}")]
     public async Task Delete([FromRoute] int nodeId, [FromRoute] int id)
     {
-        ApplyNode(nodeId);
+        await ApplyNode(nodeId);
         
         await CrudHelper.Delete(id);
     }
 
     [HttpPost("{nodeId:int}/allocations/range")]
-    public Task CreateRange([FromRoute] int nodeId, [FromBody] CreateNodeAllocationRangeRequest rangeRequest)
+    public async Task CreateRange([FromRoute] int nodeId, [FromBody] CreateNodeAllocationRangeRequest rangeRequest)
     {
-        ApplyNode(nodeId);
+        await ApplyNode(nodeId);
         
         var existingAllocations = AllocationRepository
             .Get()
@@ -123,15 +124,13 @@ public class NodeAllocationsController : Controller
         
         // TODO: Add AddRange in database repository
         foreach (var allocation in allocations)
-            AllocationRepository.Add(allocation);
-        
-        return Task.CompletedTask;
+            await AllocationRepository.Add(allocation);
     }
 
     [HttpDelete("{nodeId:int}/allocations/all")]
-    public Task DeleteAll([FromRoute] int nodeId)
+    public async Task DeleteAll([FromRoute] int nodeId)
     {
-        ApplyNode(nodeId);
+        await ApplyNode(nodeId);
         
         var allocations = AllocationRepository
             .Get()
@@ -139,9 +138,7 @@ public class NodeAllocationsController : Controller
             .ToArray();
 
         foreach (var allocation in allocations)
-            AllocationRepository.Delete(allocation);
-        
-        return Task.CompletedTask;
+            await AllocationRepository.Remove(allocation);
     }
     
     [HttpGet("{nodeId:int}/allocations/free")]

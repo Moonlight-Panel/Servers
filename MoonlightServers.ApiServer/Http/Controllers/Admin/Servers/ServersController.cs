@@ -83,18 +83,18 @@ public class ServersController : Controller
         if (UserRepository.Get().All(x => x.Id != request.OwnerId))
             throw new HttpApiException("No user with this id found", 400);
 
-        var star = StarRepository
+        var star = await StarRepository
             .Get()
             .Include(x => x.Variables)
             .Include(x => x.DockerImages)
-            .FirstOrDefault(x => x.Id == request.StarId);
+            .FirstOrDefaultAsync(x => x.Id == request.StarId);
 
         if (star == null)
             throw new HttpApiException("No star with this id found", 400);
 
-        var node = NodeRepository
+        var node = await NodeRepository
             .Get()
-            .FirstOrDefault(x => x.Id == request.NodeId);
+            .FirstOrDefaultAsync(x => x.Id == request.NodeId);
 
         if (node == null)
             throw new HttpApiException("No node with this id found", 400);
@@ -104,11 +104,11 @@ public class ServersController : Controller
         // Fetch specified allocations from the request
         foreach (var allocationId in request.AllocationIds)
         {
-            var allocation = AllocationRepository
+            var allocation = await AllocationRepository
                 .Get()
                 .Where(x => x.Server == null)
                 .Where(x => x.Node.Id == node.Id)
-                .FirstOrDefault(x => x.Id == allocationId);
+                .FirstOrDefaultAsync(x => x.Id == allocationId);
 
             if (allocation == null)
                 continue;
@@ -121,11 +121,12 @@ public class ServersController : Controller
         {
             var amountRequiredToSatisfy = star.RequiredAllocations - allocations.Count;
 
-            var freeAllocations = AllocationRepository
+            var freeAllocations = await AllocationRepository
                 .Get()
                 .Where(x => x.Server == null)
                 .Where(x => x.Node.Id == node.Id)
-                .Take(amountRequiredToSatisfy);
+                .Take(amountRequiredToSatisfy)
+                .ToArrayAsync();
 
             allocations.AddRange(freeAllocations);
 
@@ -163,7 +164,7 @@ public class ServersController : Controller
 
         // TODO: Call node
 
-        var finalServer = ServerRepository.Add(server);
+        var finalServer = await ServerRepository.Add(server);
 
         return CrudHelper.MapToResult(finalServer);
     }
@@ -180,11 +181,11 @@ public class ServersController : Controller
         // Fetch specified allocations from the request
         foreach (var allocationId in request.AllocationIds)
         {
-            var allocation = AllocationRepository
+            var allocation = await AllocationRepository
                 .Get()
                 .Where(x => x.Server == null || x.Server.Id == server.Id)
                 .Where(x => x.Node.Id == server.Node.Id)
-                .FirstOrDefault(x => x.Id == allocationId);
+                .FirstOrDefaultAsync(x => x.Id == allocationId);
             
             // ^ This loads the allocations specified in the request.
             // Valid allocations are either free ones or ones which are already allocated to this server
@@ -223,7 +224,7 @@ public class ServersController : Controller
         
         // TODO: Call node
         
-        ServerRepository.Update(server);
+        await ServerRepository.Update(server);
 
         return CrudHelper.MapToResult(server);
     }

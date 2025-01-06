@@ -46,7 +46,7 @@ public class NodesController : Controller
 
         node.Token = Formatter.GenerateString(32);
 
-        var finalNode = NodeRepository.Add(node);
+        var finalNode = await NodeRepository.Add(node);
 
         return CrudHelper.MapToResult(finalNode);
     }

@@ -61,7 +61,7 @@ public class StarsController : Controller
         star.DefaultDockerImage = -1;
         star.ParseConfiguration = "[]";
 
-        var finalStar = StarRepository.Add(star);
+        var finalStar = await StarRepository.Add(star);
 
         return CrudHelper.MapToResult(finalStar);
     }
