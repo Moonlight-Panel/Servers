@@ -1,39 +1,45 @@
 @page "/admin/servers/nodes"
 
-@using System.Diagnostics
 @using MoonCore.Blazor.Tailwind.Alerts
-@using MoonCore.Blazor.Tailwind.MinimalCrud
 @using MoonCore.Helpers
 @using MoonCore.Models
-@using MoonCore.Blazor.Tailwind.DataTable
 @using MoonlightServers.Shared.Http.Responses.Admin.Nodes
 @using MoonCore.Blazor.Tailwind.Components
+@using MoonCore.Blazor.Tailwind.Dt
+@using MoonCore.Blazor.Tailwind.Toasts
 @using MoonlightServers.Frontend.Services
 @using MoonlightServers.Shared.Http.Responses.Admin.Nodes.Sys
 
 @inject HttpApiClient ApiClient
 @inject NodeService NodeService
 @inject AlertService AlertService
+@inject ToastService ToastService
 
 <div class="mb-3">
     <NavTabs Index="2" Names="@UiConstants.AdminNavNames" Links="@UiConstants.AdminNavLinks"/>
 </div>
 
-<MinimalCrud TItem="NodeDetailResponse" OnConfigure="OnConfigure">
-    <ChildContent>
-        <DataColumn TItem="NodeDetailResponse" Field="@(x => x.Id)" Title="Id" IsSortable="true"/>
-        <DataColumn TItem="NodeDetailResponse" Field="@(x => x.Name)" Title="Name" IsSortable="true">
-            <Template>
-                @{
-                    var url = ComponentHelper.GetRouteOfComponent<Update>(context.Id)!;
-                }
+<div class="mb-5">
+    <PageHeader Title="Nodes">
+        <a href="/admin/servers/nodes/create" class="btn btn-primary">
+            Create
+        </a>
+    </PageHeader>
+</div>
 
-                <a class="text-primary-500" href="@url">@context.Name</a>
-            </Template>
-        </DataColumn>
-        <DataColumn TItem="NodeDetailResponse" Field="@(x => x.Fqdn)" Title="Fqdn"/>
-        <DataColumn TItem="NodeDetailResponse" Field="@(x => x.Fqdn)" Title="Status">
-            <Template>
+<DataTable TItem="NodeDetailResponse" PageSize="15" LoadItemsPaginatedAsync="LoadData">
+    <Configuration>
+        <DataTableColumn TItem="NodeDetailResponse" Field="@(x => x.Id)" Name="Id"/>
+        <DataTableColumn TItem="NodeDetailResponse" Field="@(x => x.Name)" Name="Name">
+            <ColumnTemplate>
+                <a class="text-primary-500" href="/admin/servers/nodes/update/@(context.Id)">
+                    @context.Name
+                </a>
+            </ColumnTemplate>
+        </DataTableColumn>
+        <DataTableColumn TItem="NodeDetailResponse" Field="@(x => x.Fqdn)" Name="Fqdn"/>
+        <DataTableColumn TItem="NodeDetailResponse" Field="@(x => x.Fqdn)" Name="Status">
+            <ColumnTemplate>
                 <LazyLoader Load="_ => LoadNodeStatus(context.Id)">
                     @{
                         bool isFetched;
@@ -84,47 +90,78 @@
                         </span>
                     }
                 </LazyLoader>
-            </Template>
-        </DataColumn>
-        <DataColumn TItem="NodeDetailResponse"
-                    Title=""
-                    HeadCssClasses="p-2 font-semibold text-left hidden xl:table-cell"
-                    CssClasses="p-2 text-left font-normal hidden xl:table-cell">
-            <Template>
+            </ColumnTemplate>
+        </DataTableColumn>
+        <DataTableColumn TItem="NodeDetailResponse"
+                         HeaderCss="p-2 font-semibold text-left hidden xl:table-cell"
+                         ColumnCss="p-2 text-left font-normal hidden xl:table-cell">
+            <ColumnTemplate>
                 <div>
                     <i class="icon-cpu text-lg me-1 align-middle text-primary-500"></i>
                     <span class="align-middle">33% of 6 Cores</span>
                 </div>
-            </Template>
-        </DataColumn>
-        <DataColumn TItem="NodeDetailResponse"
-                    Title=""
-                    HeadCssClasses="p-2 font-semibold text-left hidden xl:table-cell"
-                    CssClasses="p-2 text-left font-normal hidden xl:table-cell">
-            <Template>
+            </ColumnTemplate>
+        </DataTableColumn>
+        <DataTableColumn TItem="NodeDetailResponse"
+                    HeaderCss="p-2 font-semibold text-left hidden xl:table-cell"
+                    ColumnCss="p-2 text-left font-normal hidden xl:table-cell">
+            <ColumnTemplate>
                 <div>
                     <i class="icon-memory-stick text-lg me-1 align-middle text-primary-500"></i>
                     <span class="align-middle">1.56GB / 64GB</span>
                 </div>
-            </Template>
-        </DataColumn>
-        <DataColumn TItem="NodeDetailResponse"
-                    Title=""
-                    HeadCssClasses="p-2 font-semibold text-left hidden xl:table-cell"
-                    CssClasses="p-2 text-left font-normal hidden xl:table-cell">
-            <Template>
+            </ColumnTemplate>
+        </DataTableColumn>
+        <DataTableColumn TItem="NodeDetailResponse"
+                         HeaderCss="p-2 font-semibold text-left hidden xl:table-cell"
+                         ColumnCss="p-2 text-left font-normal hidden xl:table-cell">
+            <ColumnTemplate>
                 <div>
                     <i class="icon-hard-drive text-lg me-1 align-middle text-primary-500"></i>
                     <span class="align-middle">78.68GB / 1TB</span>
                 </div>
-            </Template>
-        </DataColumn>
-    </ChildContent>
-</MinimalCrud>
+            </ColumnTemplate>
+        </DataTableColumn>
+        <DataTableColumn TItem="NodeDetailResponse">
+            <ColumnTemplate>
+                <div class="flex justify-end">
+                    <a href="/admin/servers/nodes/update/@(context.Id)" class="text-primary-500 mr-2 sm:mr-3">
+                        <i class="icon-pencil text-base"></i>
+                    </a>
+
+                    <a href="#" @onclick="() => Delete(context)" @onclick:preventDefault
+                       class="text-danger-500">
+                        <i class="icon-trash text-base"></i>
+                    </a>
+                </div>
+            </ColumnTemplate>
+        </DataTableColumn>
+    </Configuration>
+</DataTable>
 
 @code
 {
+    private DataTable<NodeDetailResponse> Table;
+
     private Dictionary<int, NodeSystemStatusResponse?> Responses = new();
+
+    private async Task<IPagedData<NodeDetailResponse>> LoadData(PaginationOptions options)
+        => await ApiClient.GetJson<PagedData<NodeDetailResponse>>($"api/admin/servers/nodes?page={options.Page}&pageSize={options.PerPage}");
+
+    private async Task Delete(NodeDetailResponse detailResponse)
+    {
+        await AlertService.ConfirmDanger(
+            "Node deletion",
+            $"Do you really want to delete the node '{detailResponse.Name}'",
+            async () =>
+            {
+                await ApiClient.Delete($"api/admin/servers/nodes/{detailResponse.Id}");
+                await ToastService.Success("Successfully deleted node");
+
+                await Table.Refresh();
+            }
+        );
+    }
 
     private Task LoadNodeStatus(int node)
     {
@@ -164,16 +201,5 @@
                       $" {data.RoundtripError}";
 
         await AlertService.Danger("Node error details", message);
-    }
-
-    private void OnConfigure(MinimalCrudOptions<NodeDetailResponse> options)
-    {
-        options.Title = "Nodes";
-        options.ItemLoader = async (page, pageSize) =>
-            await ApiClient.GetJson<PagedData<NodeDetailResponse>>($"api/admin/servers/nodes?page={page}&pageSize={pageSize}");
-
-        options.CreateUrl = ComponentHelper.GetRouteOfComponent<Create>();
-        options.UpdateUrl = item => ComponentHelper.GetRouteOfComponent<Update>(item.Id)!;
-        options.DeleteFunction = async item => await ApiClient.Delete($"api/admin/servers/nodes/{item.Id}");
     }
 }

@@ -1,78 +1,85 @@
 @page "/admin/servers/all"
 
-@using MoonCore.Blazor.Tailwind.MinimalCrud
-@using MoonCore.Blazor.Tailwind.DataTable
+@using MoonCore.Blazor.Tailwind.Alerts
 @using MoonCore.Helpers
 @using MoonCore.Models
 @using MoonlightServers.Shared.Http.Responses.Admin.Nodes
 @using MoonlightServers.Shared.Http.Responses.Admin.Servers
 @using MoonlightServers.Shared.Http.Responses.Admin.Stars
 @using MoonCore.Blazor.Tailwind.Components
+@using MoonCore.Blazor.Tailwind.Dt
+@using MoonCore.Blazor.Tailwind.Toasts
 
 @inject HttpApiClient ApiClient
+@inject AlertService AlertService
+@inject ToastService ToastService
 
 <div class="mb-3">
     <NavTabs Index="1" Names="@UiConstants.AdminNavNames" Links="@UiConstants.AdminNavLinks"/>
 </div>
 
-<MinimalCrud TItem="ServerDetailResponse" OnConfigure="OnConfigure">
-    <ChildContent>
-        <DataColumn TItem="ServerDetailResponse" Field="@(x => x.Id)" Title="Id" IsSortable="true"/>
-        <DataColumn TItem="ServerDetailResponse" Field="@(x => x.Name)" Title="Name"/>
-        <DataColumn TItem="ServerDetailResponse" Field="@(x => x.NodeId)" Title="Node">
-            <Template>
+<div class="mb-5">
+    <PageHeader Title="Servers">
+        <a href="/admin/servers/all/create" class="btn btn-primary">
+            Create
+        </a>
+    </PageHeader>
+</div>
+
+<DataTable @ref="Table" TItem="ServerDetailResponse" PageSize="15" LoadItemsPaginatedAsync="LoadData">
+    <Configuration>
+        <DataTableColumn TItem="ServerDetailResponse" Field="@(x => x.Id)" Name="Id"/>
+        <DataTableColumn TItem="ServerDetailResponse" Field="@(x => x.Name)" Name="Name"/>
+        <DataTableColumn TItem="ServerDetailResponse" Field="@(x => x.NodeId)">
+            <ColumnTemplate>
                 @{
                     var node = Nodes.FirstOrDefault(x => x.Id == context.NodeId);
                 }
-                
-                @if (node != null)
-                {
-                    <span>@node.Name</span>
-                }
-                else
-                {
-                    <span>N/A</span>
-                }
-            </Template>
-        </DataColumn>
-        <DataColumn TItem="ServerDetailResponse" Field="@(x => x.StarId)" Title="Star">
-            <Template>
+
+                <span>
+                    @(node?.Name ?? "N/A")
+                </span>
+            </ColumnTemplate>
+        </DataTableColumn>
+        <DataTableColumn TItem="ServerDetailResponse" Field="@(x => x.StarId)">
+            <ColumnTemplate>
                 @{
                     var star = Stars.FirstOrDefault(x => x.Id == context.StarId);
                 }
 
-                @if (star != null)
-                {
-                    <span>@star.Name</span>
-                }
-                else
-                {
-                    <span>N/A</span>
-                }
-            </Template>
-        </DataColumn>
-    </ChildContent>
-</MinimalCrud>
+                <span>
+                    @(star?.Name ?? "N/A")
+                </span>
+            </ColumnTemplate>
+        </DataTableColumn>
+        <DataTableColumn TItem="ServerDetailResponse">
+            <ColumnTemplate>
+                <div class="flex justify-end">
+                    <a href="/admin/servers/all/update/@(context.Id)" class="text-primary-500 mr-2 sm:mr-3">
+                        <i class="icon-pencil text-base"></i>
+                    </a>
+
+                    <a href="#" @onclick="() => Delete(context)" @onclick:preventDefault
+                       class="text-danger-500">
+                        <i class="icon-trash text-base"></i>
+                    </a>
+                </div>
+            </ColumnTemplate>
+        </DataTableColumn>
+    </Configuration>
+</DataTable>
 
 @code
 {
+    private DataTable<ServerDetailResponse> Table;
+    
     private List<StarDetailResponse> Stars = new();
     private List<NodeDetailResponse> Nodes = new();
-    
-    private void OnConfigure(MinimalCrudOptions<ServerDetailResponse> options)
-    {
-        options.Title = "Servers";
-        options.ItemLoader = LoadItems;
 
-        options.CreateUrl = ComponentHelper.GetRouteOfComponent<Create>();
-        options.UpdateUrl = item => ComponentHelper.GetRouteOfComponent<Update>(item.Id)!;
-        options.DeleteFunction = async item => await ApiClient.Delete($"api/admin/servers/{item.Id}");
-    }
-
-    private async Task<IPagedData<ServerDetailResponse>> LoadItems(int page, int pageSize)
+    private async Task<IPagedData<ServerDetailResponse>> LoadData(PaginationOptions options)
     {
         // Clear potential previous data
-        var data = await ApiClient.GetJson<PagedData<ServerDetailResponse>>($"api/admin/servers?page={page}&pageSize={pageSize}");
+        var data = await ApiClient.GetJson<PagedData<ServerDetailResponse>>($"api/admin/servers?page={options.Page}&pageSize={options.PerPage}");
 
         foreach (var item in data.Items)
         {
@@ -90,5 +97,20 @@
         }
 
         return data;
+    }
+    
+    private async Task Delete(ServerDetailResponse detailResponse)
+    {
+        await AlertService.ConfirmDanger(
+            "Server deletion",
+            $"Do you really want to delete the server '{detailResponse.Name}'",
+            async () =>
+            {
+                await ApiClient.Delete($"api/admin/servers/{detailResponse.Id}");
+                await ToastService.Success("Successfully deleted server");
+
+                await Table.Refresh();
+            }
+        );
     }
 }

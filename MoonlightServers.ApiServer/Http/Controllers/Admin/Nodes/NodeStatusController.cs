@@ -2,7 +2,7 @@ using System.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 using MoonCore.Exceptions;
 using MoonCore.Extended.Abstractions;
-using MoonCore.Helpers;
+using MoonCore.Extended.PermFilter;
 using MoonlightServers.ApiServer.Database.Entities;
 using MoonlightServers.ApiServer.Services;
 using MoonlightServers.Shared.Http.Responses.Admin.Nodes.Sys;
@@ -11,18 +11,19 @@ namespace MoonlightServers.ApiServer.Http.Controllers.Admin.Nodes;
 
 [ApiController]
 [Route("api/admin/servers/nodes")]
-public class NodeSystemController : Controller
+public class NodeStatusController : Controller
 {
     private readonly DatabaseRepository<Node> NodeRepository;
     private readonly NodeService NodeService;
 
-    public NodeSystemController(DatabaseRepository<Node> nodeRepository, NodeService nodeService)
+    public NodeStatusController(DatabaseRepository<Node> nodeRepository, NodeService nodeService)
     {
         NodeRepository = nodeRepository;
         NodeService = nodeService;
     }
 
     [HttpGet("{nodeId}/system/status")]
+    [RequirePermission("admin.servers.nodes.status")]
     public async Task<NodeSystemStatusResponse> GetStatus([FromRoute] int nodeId)
     {
         var node = GetNode(nodeId);

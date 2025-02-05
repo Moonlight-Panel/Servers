@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using MoonCore.Extended.Abstractions;
 using MoonCore.Extended.Helpers;
+using MoonCore.Extended.PermFilter;
 using MoonCore.Helpers;
 using MoonCore.Models;
 using MoonlightServers.ApiServer.Database.Entities;
@@ -28,18 +29,21 @@ public class NodesController : Controller
     }
 
     [HttpGet]
+    [RequirePermission("admin.servers.nodes.get")]
     public async Task<IPagedData<NodeDetailResponse>> Get([FromQuery] int page, [FromQuery] int pageSize)
     {
         return await CrudHelper.Get(page, pageSize);
     }
 
     [HttpGet("{id:int}")]
+    [RequirePermission("admin.servers.nodes.get")]
     public async Task<NodeDetailResponse> GetSingle([FromRoute] int id)
     {
         return await CrudHelper.GetSingle(id);
     }
 
     [HttpPost]
+    [RequirePermission("admin.servers.nodes.create")]
     public async Task<NodeDetailResponse> Create([FromBody] CreateNodeRequest request)
     {
         var node = Mapper.Map<Node>(request);
@@ -52,12 +56,14 @@ public class NodesController : Controller
     }
 
     [HttpPatch("{id:int}")]
+    [RequirePermission("admin.servers.nodes.update")]
     public async Task<NodeDetailResponse> Update([FromRoute] int id, [FromBody] UpdateNodeRequest request)
     {
         return await CrudHelper.Update(id, request);
     }
 
     [HttpDelete("{id:int}")]
+    [RequirePermission("admin.servers.nodes.delete")]
     public async Task Delete([FromRoute] int id)
     {
         await CrudHelper.Delete(id);

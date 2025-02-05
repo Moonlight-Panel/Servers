@@ -1,7 +1,6 @@
 @page "/admin/servers/nodes/update/{Id:int}"
 
 @using MoonCore.Blazor.Tailwind.Components
-@using MoonCore.Blazor.Tailwind.Forms
 @using MoonCore.Blazor.Tailwind.Toasts
 @using MoonCore.Helpers
 @using MoonlightServers.Shared.Http.Requests.Admin.Nodes
@@ -14,10 +13,10 @@
 
 <LazyLoader Load="Load">
     <PageHeader Title="Update Node">
-        <button @onclick="GoBack" type="button" class="btn btn-secondary">
+        <a href="/admin/servers/nodes" class="btn btn-secondary">
             <i class="icon-chevron-left mr-1"></i>
             Back
-        </button>
+        </a>
         <WButton OnClick="_ => Form.Submit()" CssClasses="btn btn-primary">
             <i class="icon-check mr-1"></i>
             Update
@@ -59,27 +58,11 @@
         Request = Mapper.Map<UpdateNodeRequest>(Node);
     }
 
-    private void OnConfigure(FormConfiguration<UpdateNodeRequest> configuration)
-    {
-        configuration.WithField(x => x.Name);
-        configuration.WithField(x => x.Fqdn);
-        configuration.WithField(x => x.HttpPort);
-        configuration.WithField(x => x.FtpPort);
-        
-        var advancedPage = configuration.WithPage("Advanced");
-        
-        advancedPage.WithField(x => x.EnableTransparentMode);
-        advancedPage.WithField(x => x.EnableDynamicFirewall);
-    }
-
     private async Task OnSubmit()
     {
         await ApiClient.Patch($"api/admin/servers/nodes/{Id}", Request);
 
         await ToastService.Success("Successfully updated Node");
-        GoBack();
+        Navigation.NavigateTo("/admin/servers/nodes");
     }
-
-    private void GoBack()
-        => Navigation.NavigateTo(ComponentHelper.GetRouteOfComponent<Index>()!);
 }

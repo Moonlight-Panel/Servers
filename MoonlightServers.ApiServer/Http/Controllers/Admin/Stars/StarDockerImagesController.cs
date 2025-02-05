@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using MoonCore.Exceptions;
 using MoonCore.Extended.Abstractions;
 using MoonCore.Extended.Helpers;
+using MoonCore.Extended.PermFilter;
 using MoonCore.Helpers;
 using MoonCore.Models;
 using MoonlightServers.ApiServer.Database.Entities;
@@ -48,6 +49,7 @@ public class StarDockerImagesController : Controller
     }
 
     [HttpGet("{starId:int}/dockerImages")]
+    [RequirePermission("admin.servers.stars.get")]
     public async Task<IPagedData<StarDockerImageDetailResponse>> Get([FromRoute] int starId, [FromQuery] int page, [FromQuery] int pageSize)
     {
         await ApplyStar(starId);
@@ -56,6 +58,7 @@ public class StarDockerImagesController : Controller
     }
 
     [HttpGet("{starId:int}/dockerImages/{id:int}")]
+    [RequirePermission("admin.servers.stars.get")]
     public async Task<StarDockerImageDetailResponse> GetSingle([FromRoute] int starId, [FromRoute] int id)
     {
         await ApplyStar(starId);
@@ -64,6 +67,7 @@ public class StarDockerImagesController : Controller
     }
 
     [HttpPost("{starId:int}/dockerImages")]
+    [RequirePermission("admin.servers.stars.create")]
     public async Task<StarDockerImageDetailResponse> Create([FromRoute] int starId, [FromBody] CreateStarDockerImageRequest request)
     {
         await ApplyStar(starId);
@@ -77,6 +81,7 @@ public class StarDockerImagesController : Controller
     }
 
     [HttpPatch("{starId:int}/dockerImages/{id:int}")]
+    [RequirePermission("admin.servers.stars.update")]
     public async Task<StarDockerImageDetailResponse> Update([FromRoute] int starId, [FromRoute] int id,
         [FromBody] UpdateStarDockerImageRequest request)
     {
@@ -86,6 +91,7 @@ public class StarDockerImagesController : Controller
     }
 
     [HttpDelete("{starId:int}/dockerImages/{id:int}")]
+    [RequirePermission("admin.servers.stars.delete")]
     public async Task Delete([FromRoute] int starId, [FromRoute] int id)
     {
         await ApplyStar(starId);

@@ -1,84 +1,110 @@
 @page "/admin/servers/stars"
 
-@using MoonCore.Blazor.Tailwind.MinimalCrud
+@using MoonCore.Blazor.Tailwind.Alerts
 @using MoonCore.Helpers
 @using MoonCore.Models
-@using MoonCore.Blazor.Tailwind.DataTable
 @using MoonlightServers.Shared.Http.Responses.Admin.Stars
 @using MoonCore.Blazor.Tailwind.Components
+@using MoonCore.Blazor.Tailwind.Dt
+@using MoonCore.Blazor.Tailwind.Services
 @using MoonCore.Blazor.Tailwind.Toasts
 @using MoonCore.Exceptions
-@using Moonlight.Client.Services
 
 @inject HttpApiClient ApiClient
 @inject DownloadService DownloadService
 @inject ToastService ToastService
+@inject AlertService AlertService
 
 <div class="mb-3">
     <NavTabs Index="3" Names="@UiConstants.AdminNavNames" Links="@UiConstants.AdminNavLinks"/>
 </div>
 
-<MinimalCrud @ref="Crud" TItem="StarDetailResponse" OnConfigure="OnConfigure">
-    <ChildContent>
-        <DataColumn TItem="StarDetailResponse" Field="@(x => x.Id)" Title="Id" IsSortable="true" />
-        <DataColumn TItem="StarDetailResponse" Field="@(x => x.Name)" Title="Name" IsSortable="true">
-            <Template>
-                @{
-                    var url = ComponentHelper.GetRouteOfComponent<Update>(context.Id)!;
-                }
-
-                <a class="text-primary-500" href="@url">@context.Name</a>
-            </Template>
-        </DataColumn>
-        <DataColumn TItem="StarDetailResponse" Field="@(x => x.Version)" Title="Version" IsSortable="true"/>
-        <DataColumn TItem="StarDetailResponse" Field="@(x => x.Author)" Title="Author"/>
-    </ChildContent>
-    <Actions>
+<div class="mb-5">
+    <PageHeader Title="Nodes">
         <InputFile id="import-file" hidden="" multiple OnChange="OnImportFiles"/>
         <label for="import-file" class="btn btn-tertiary cursor-pointer">
             <i class="icon-file-up mr-2"></i>
             Import
         </label>
-    </Actions>
-    <ItemActions>
-        @if (!string.IsNullOrEmpty(context.DonateUrl))
-        {
-            <a href="@context.DonateUrl" target="_blank" class="text-red-500 mr-3">
-                <i class="icon-heart align-middle"></i>
-                <span class="align-middle">Donate</span>
-            </a>
-        }
-
-        @if (!string.IsNullOrEmpty(context.UpdateUrl))
-        {
-            <a href="#" @onclick:preventDefault class="text-tertiary-500 mr-3">
-                <i class="icon-refresh-cw align-middle"></i>
-                <span class="align-middle">Update</span>
-            </a>
-        }
-
-        <a href="#" @onclick="() => Export(context)" @onclick:preventDefault class="text-success-500 mr-3">
-            <i class="icon-download align-middle"></i>
-            <span class="align-middle">Export</span>
+        
+        <a href="/admin/servers/nodes/create" class="btn btn-primary">
+            Create
         </a>
-    </ItemActions>
-</MinimalCrud>
+    </PageHeader>
+</div>
+
+<DataTable @ref="Table" TItem="StarDetailResponse" LoadItemsPaginatedAsync="LoadData">
+    <Configuration>
+        <DataTableColumn TItem="StarDetailResponse" Field="@(x => x.Id)" Name="Id" />
+        <DataTableColumn TItem="StarDetailResponse" Field="@(x => x.Name)" Name="Name">
+            <ColumnTemplate>
+                <a class="text-primary-500" href="/admin/servers/stars/update/@(context.Id)">
+                    @context.Name
+                </a>
+            </ColumnTemplate>
+        </DataTableColumn>
+        <DataTableColumn TItem="StarDetailResponse" Field="@(x => x.Version)" Name="Version" />
+        <DataTableColumn TItem="StarDetailResponse" Field="@(x => x.Author)" Name="Author" />
+        <DataTableColumn TItem="StarDetailResponse">
+            <ColumnTemplate>
+                <div class="flex justify-end">
+                    @if (!string.IsNullOrEmpty(context.DonateUrl))
+                    {
+                        <a href="@context.DonateUrl" target="_blank" class="text-red-500 mr-3">
+                            <i class="icon-heart align-middle"></i>
+                            <span class="align-middle">Donate</span>
+                        </a>
+                    }
+
+                    @if (!string.IsNullOrEmpty(context.UpdateUrl))
+                    {
+                        <a href="#" @onclick:preventDefault class="text-tertiary-500 mr-3">
+                            <i class="icon-refresh-cw align-middle"></i>
+                            <span class="align-middle">Update</span>
+                        </a>
+                    }
+
+                    <a href="#" @onclick="() => Export(context)" @onclick:preventDefault class="text-success-500 mr-3">
+                        <i class="icon-download align-middle"></i>
+                        <span class="align-middle">Export</span>
+                    </a>
+                    
+                    <a href="/admin/servers/stars/update/@(context.Id)" class="text-primary-500 mr-2 sm:mr-3">
+                        <i class="icon-pencil text-base"></i>
+                    </a>
+
+                    <a href="#" @onclick="() => Delete(context)" @onclick:preventDefault
+                       class="text-danger-500">
+                        <i class="icon-trash text-base"></i>
+                    </a>
+                </div>
+            </ColumnTemplate>
+        </DataTableColumn>
+    </Configuration>
+</DataTable>
 
 @code
 {
-    private MinimalCrud<StarDetailResponse> Crud;
-    
-    private void OnConfigure(MinimalCrudOptions<StarDetailResponse> options)
+    private DataTable<StarDetailResponse> Table;
+
+    private async Task<IPagedData<StarDetailResponse>> LoadData(PaginationOptions options)
+     => await ApiClient.GetJson<PagedData<StarDetailResponse>>($"api/admin/servers/stars?page={options.Page}&pageSize={options.PerPage}");
+
+    private async Task Delete(StarDetailResponse detailResponse)
     {
-        options.Title = "Stars";
-        options.ItemLoader = async (page, pageSize) =>
-            await ApiClient.GetJson<PagedData<StarDetailResponse>>($"api/admin/servers/stars?page={page}&pageSize={pageSize}");
+        await AlertService.ConfirmDanger(
+            "Star deletion",
+            $"Do you really want to delete the star '{detailResponse.Name}'",
+            async () =>
+            {
+                await ApiClient.Delete($"api/admin/servers/stars/{detailResponse.Id}");
+                await ToastService.Success("Successfully deleted star");
 
-        options.CreateUrl = ComponentHelper.GetRouteOfComponent<Create>();
-        options.UpdateUrl = item => ComponentHelper.GetRouteOfComponent<Update>(item.Id)!;
-        options.DeleteFunction = async item => await ApiClient.Delete($"api/admin/servers/stars/{item.Id}");
+                await Table.Refresh();
+            }
+        );
     }
-
+    
     private async Task Export(StarDetailResponse star)
     {
         var json = await ApiClient.GetString($"api/admin/servers/stars/{star.Id}/export");
@@ -124,7 +150,7 @@
                 await ToastService.Danger($"Failed to import '{file.Name}': {e.Title}");
             }
         }
-        
-        await Crud.Refresh(isSilent: false, bypassCache: true);
+
+        await Table.Refresh();
     }
 }

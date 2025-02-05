@@ -9,14 +9,14 @@ public class CreateNodeRequest
     
     [Required(ErrorMessage = "You need to provide a fqdn")]
     public string Fqdn { get; set; }
-    
+
     [Required(ErrorMessage = "You need to provide a http port")]
     [Range(1, 65535, ErrorMessage = "You need to provide a valid http port")]
-    public int HttpPort { get; set; }
-    
+    public int HttpPort { get; set; } = 8080;
+
     [Required(ErrorMessage = "You need to provide a ftp port")]
     [Range(1, 65535, ErrorMessage = "You need to provide a valid ftp port")]
-    public int FtpPort { get; set; }
+    public int FtpPort { get; set; } = 2021;
     
     public bool EnableTransparentMode { get; set; }
     public bool EnableDynamicFirewall { get; set; }

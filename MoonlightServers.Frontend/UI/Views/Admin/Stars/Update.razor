@@ -1,7 +1,6 @@
 @page "/admin/servers/stars/update/{Id:int}"
 
 @using MoonCore.Blazor.Tailwind.Components
-@using MoonCore.Blazor.Tailwind.Forms
 @using MoonCore.Blazor.Tailwind.Toasts
 @using MoonCore.Helpers
 @using MoonlightServers.Shared.Http.Requests.Admin.Stars
@@ -14,10 +13,10 @@
 
 <LazyLoader Load="Load">
     <PageHeader Title="Update Star">
-        <button @onclick="GoBack" type="button" class="btn btn-secondary">
+        <a href="/admin/servers/stars" class="btn btn-secondary">
             <i class="icon-chevron-left mr-1"></i>
             Back
-        </button>
+        </a>
         <WButton OnClick="_ => Form.Submit()" CssClasses="btn btn-primary">
             <i class="icon-check mr-1"></i>
             Update
@@ -75,52 +74,11 @@
         Request = Mapper.Map<UpdateStarRequest>(Detail);
     }
 
-    private void OnConfigure(FormConfiguration<UpdateStarRequest> configuration)
-    {
-        var generalPage = configuration.WithPage("General");
-
-        generalPage.WithField(x => x.Name);
-        generalPage.WithField(x => x.Version);
-        generalPage.WithField(x => x.Author);
-        generalPage.WithField(x => x.DonateUrl);
-        generalPage.WithField(x => x.UpdateUrl);
-
-        var startStopStatusPage = configuration.WithPage("Start, Stop & Status");
-
-        startStopStatusPage.WithField(x => x.StartupCommand);
-        startStopStatusPage.WithField(x => x.StopCommand);
-        startStopStatusPage.WithField(x => x.OnlineDetection);
-
-        var installationPage = configuration.WithPage("Installation");
-
-        installationPage.WithField(x => x.InstallShell);
-        installationPage.WithField(x => x.InstallDockerImage);
-
-        installationPage.WithField(x => x.InstallScript, fieldConfiguration =>
-        {
-            fieldConfiguration.Columns = 6;
-        });
-
-        var parseConfigurationPage = configuration.WithPage("Parse configuration");
-
-        parseConfigurationPage.WithField(x => x.ParseConfiguration);
-
-        var variablesPage = configuration.WithPage("Variables");
-
-        var miscPage = configuration.WithPage("Miscellaneous");
-
-        miscPage.WithField(x => x.AllowDockerImageChange);
-        miscPage.WithField(x => x.RequiredAllocations);
-    }
-
     private async Task OnSubmit()
     {
         await ApiClient.Patch($"api/admin/servers/stars/{Id}", Request);
 
         await ToastService.Success("Successfully updated Star");
-        GoBack();
+        Navigation.NavigateTo("/admin/servers/stars");
     }
-
-    private void GoBack()
-        => Navigation.NavigateTo(ComponentHelper.GetRouteOfComponent<Index>()!);
 }

@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using MoonCore.Attributes;
+using MoonCore.Extended.PermFilter;
 using MoonCore.Exceptions;
 using MoonCore.Extended.Abstractions;
 using MoonCore.Extensions;
@@ -31,14 +31,15 @@ public class ServersController : Controller
     [RequirePermission("meta.authenticated")]
     public async Task<PagedData<ServerDetailResponse>> GetAll([FromQuery] int page, [FromQuery] int pageSize)
     {
-        var user = User.AsIdentity<User>();
+        var userIdClaim = User.Claims.First(x => x.Type == "userId");
+        var userId = int.Parse(userIdClaim.Value);
 
         var query = ServerRepository
             .Get()
             .Include(x => x.Allocations)
             .Include(x => x.Star)
             .Include(x => x.Node)
-            .Where(x => x.OwnerId == user.Id);
+            .Where(x => x.OwnerId == userId);
 
         var count = await query.CountAsync();
         var items = await query.Skip(page * pageSize).Take(pageSize).ToArrayAsync();
@@ -177,7 +178,8 @@ public class ServersController : Controller
     private async Task<Server> GetServerWithPermCheck(int serverId,
         Func<IQueryable<Server>, IQueryable<Server>>? queryModifier = null)
     {
-        var user = User.AsIdentity<User>();
+        var userIdClaim = User.Claims.First(x => x.Type == "userId");
+        var userId = int.Parse(userIdClaim.Value);
 
         var query = ServerRepository
             .Get()
@@ -192,7 +194,7 @@ public class ServersController : Controller
         if (server == null)
             throw new HttpApiException("No server with this id found", 404);
 
-        if (server.OwnerId == user.Id) // The current user is the owner
+        if (server.OwnerId == userId) // The current user is the owner
             return server;
 
         if (User.HasPermission("admin.servers.get")) // The current user is an admin

@@ -1,7 +1,6 @@
 @page "/admin/servers/all/create"
 
 @using MoonCore.Blazor.Tailwind.Components
-@using MoonCore.Blazor.Tailwind.Forms
 @using MoonCore.Blazor.Tailwind.Toasts
 @using MoonCore.Helpers
 @using MoonlightServers.Shared.Http.Requests.Admin.Servers
@@ -12,10 +11,10 @@
 @inject ToastService ToastService
 
 <PageHeader Title="Create Server">
-    <button @onclick="GoBack" type="button" class="btn btn-secondary">
+    <a href="/admin/servers/all" class="btn btn-secondary">
         <i class="icon-chevron-left mr-1"></i>
         Back
-    </button>
+    </a>
     <WButton OnClick="_ => Form.Submit()" CssClasses="btn btn-primary">
         <i class="icon-check mr-1"></i>
         Create
@@ -56,9 +55,6 @@
         await ApiClient.Post("api/admin/servers", Request);
 
         await ToastService.Success("Successfully created Server");
-        GoBack();
+        Navigation.NavigateTo("/admin/servers/all");
     }
-
-    private void GoBack()
-        => Navigation.NavigateTo(ComponentHelper.GetRouteOfComponent<Index>()!);
 }

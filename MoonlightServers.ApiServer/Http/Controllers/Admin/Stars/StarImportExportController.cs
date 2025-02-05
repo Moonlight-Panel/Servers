@@ -1,6 +1,6 @@
 using System.Text;
 using Microsoft.AspNetCore.Mvc;
-using MoonCore.Attributes;
+using MoonCore.Extended.PermFilter;
 using MoonCore.Exceptions;
 using MoonCore.Helpers;
 using MoonlightServers.ApiServer.Services;

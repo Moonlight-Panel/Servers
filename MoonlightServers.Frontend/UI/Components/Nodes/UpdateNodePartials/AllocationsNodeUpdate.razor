@@ -1,6 +1,6 @@
 @using MoonCore.Blazor.Tailwind.Alerts
 @using MoonlightServers.Shared.Http.Responses.Admin.Nodes
-@using MoonCore.Blazor.Tailwind.DataTable
+@using MoonCore.Blazor.Tailwind.Dt
 @using MoonCore.Blazor.Tailwind.Modals
 @using MoonCore.Blazor.Tailwind.Toasts
 @using MoonCore.Helpers
@@ -31,15 +31,12 @@
         </div>
     </div>
     <div class="col-span-1 md:col-span-2 -mb-3">
-        <ItemDataTable @ref="Table"
-                       TItem="NodeAllocationDetailResponse"
-                       Title=""
-                       ItemLoader="Load">
-            <ChildContent>
-                <DataColumn TItem="NodeAllocationDetailResponse" Field="@(x => x.IpAddress)" Title="IP Address"/>
-                <DataColumn TItem="NodeAllocationDetailResponse" Field="@(x => x.Port)" Title="Port"/>
-                <DataColumn TItem="NodeAllocationDetailResponse" Title="">
-                    <Template>
+        <DataTable @ref="Table" TItem="NodeAllocationDetailResponse" LoadItemsPaginatedAsync="LoadData">
+            <Configuration>
+                <DataTableColumn TItem="NodeAllocationDetailResponse" Field="@(x => x.IpAddress)" Name="IP Address"/>
+                <DataTableColumn TItem="NodeAllocationDetailResponse" Field="@(x => x.Port)" Name="Port"/>
+                <DataTableColumn TItem="NodeAllocationDetailResponse">
+                    <ColumnTemplate>
                         <div class="flex justify-end items-center">
                             <a @onclick="() => UpdateAllocation(context)" @onclick:preventDefault href="#"
                                class="text-primary-500 mr-2 sm:mr-3">
@@ -50,10 +47,10 @@
                                 <i class="icon-trash text-base"></i>
                             </a>
                         </div>
-                    </Template>
-                </DataColumn>
-            </ChildContent>
-        </ItemDataTable>
+                    </ColumnTemplate>
+                </DataTableColumn>
+            </Configuration>
+        </DataTable>
     </div>
 </div>
 
@@ -61,12 +58,12 @@
 {
     [Parameter] public NodeDetailResponse Node { get; set; }
 
-    private ItemDataTable<NodeAllocationDetailResponse> Table;
+    private DataTable<NodeAllocationDetailResponse> Table;
 
-    private async Task<IPagedData<NodeAllocationDetailResponse>> Load(int page, int pageSize)
+    private async Task<IPagedData<NodeAllocationDetailResponse>> LoadData(PaginationOptions options)
     {
         return await ApiClient.GetJson<PagedData<NodeAllocationDetailResponse>>(
-            $"api/admin/servers/nodes/{Node.Id}/allocations?page={page}&pageSize={pageSize}"
+            $"api/admin/servers/nodes/{Node.Id}/allocations?page={options.Page}&pageSize={options.PerPage}"
         );
     }
 
@@ -77,7 +74,7 @@
             await ApiClient.Post($"api/admin/servers/nodes/{Node.Id}/allocations/range", request);
 
             await ToastService.Success("Successfully created allocations");
-            await Table.Refresh(isSilent: false, bypassCache: true);
+            await Table.Refresh();
         };
 
         await ModalService.Launch<CreateMultipleAllocationModal>(parameters =>
@@ -93,7 +90,7 @@
             await ApiClient.Post($"api/admin/servers/nodes/{Node.Id}/allocations", request);
 
             await ToastService.Success("Successfully created allocation");
-            await Table.Refresh(isSilent: false, bypassCache: true);
+            await Table.Refresh();
         };
 
         await ModalService.Launch<CreateAllocationModal>(parameters => { parameters.Add("OnSubmit", onSubmit); });
@@ -106,7 +103,7 @@
             await ApiClient.Patch($"api/admin/servers/nodes/{Node.Id}/allocations/{allocation.Id}", request);
 
             await ToastService.Success("Successfully updated allocation");
-            await Table.Refresh(isSilent: false, bypassCache: true);
+            await Table.Refresh();
         };
 
         await ModalService.Launch<UpdateAllocationModal>(parameters =>
@@ -126,7 +123,7 @@
                 await ApiClient.Delete($"api/admin/servers/nodes/{Node.Id}/allocations/{allocation.Id}");
 
                 await ToastService.Success("Successfully deleted allocation");
-                await Table.Refresh(isSilent: false, bypassCache: true);
+                await Table.Refresh();
             }
         );
     }
@@ -141,7 +138,7 @@
                 await ApiClient.Delete($"api/admin/servers/nodes/{Node.Id}/allocations/all");
 
                 await ToastService.Success("Successfully deleted allocations");
-                await Table.Refresh(isSilent: false, bypassCache: true);
+                await Table.Refresh();
             }
         );
     }
