@@ -30,7 +30,7 @@
     <Configuration>
         <DataTableColumn TItem="ServerDetailResponse" Field="@(x => x.Id)" Name="Id"/>
         <DataTableColumn TItem="ServerDetailResponse" Field="@(x => x.Name)" Name="Name"/>
-        <DataTableColumn TItem="ServerDetailResponse" Field="@(x => x.NodeId)">
+        <DataTableColumn TItem="ServerDetailResponse" Field="@(x => x.NodeId)" Name="Node">
             <ColumnTemplate>
                 @{
                     var node = Nodes.FirstOrDefault(x => x.Id == context.NodeId);
@@ -41,7 +41,7 @@
                 </span>
             </ColumnTemplate>
         </DataTableColumn>
-        <DataTableColumn TItem="ServerDetailResponse" Field="@(x => x.StarId)">
+        <DataTableColumn TItem="ServerDetailResponse" Field="@(x => x.StarId)" Name="Star">
             <ColumnTemplate>
                 @{
                     var star = Stars.FirstOrDefault(x => x.Id == context.StarId);
