@@ -249,8 +249,8 @@ public class Startup
 
     private Task RegisterServers()
     {
-        WebApplicationBuilder.Services.AddHostedService<ApplicationStateService>(
-            sp => sp.GetRequiredService<ApplicationStateService>()
+        WebApplicationBuilder.Services.AddHostedService(
+            sp => sp.GetRequiredService<ServerService>()
         );
 
         return Task.CompletedTask;
@@ -263,7 +263,7 @@ public class Startup
 
     #endregion
 
-    #region Maps
+    #region Hubs
 
     private Task RegisterSignalR()
     {
@@ -273,7 +273,7 @@ public class Startup
 
     private Task MapHubs()
     {
-        WebApplication.MapHub<ServerConsoleHub>("api/servers/console");
+        WebApplication.MapHub<ServerWebSocketHub>("api/servers/ws");
 
         return Task.CompletedTask;
     }
@@ -286,7 +286,7 @@ public class Startup
     {
         //TODO: IMPORTANT: CHANGE !!!
         WebApplicationBuilder.Services.AddCors(x =>
-            x.AddDefaultPolicy(builder => 
+            x.AddDefaultPolicy(builder =>
                 builder.AllowAnyHeader().AllowAnyOrigin().AllowAnyMethod().Build()
             )
         );

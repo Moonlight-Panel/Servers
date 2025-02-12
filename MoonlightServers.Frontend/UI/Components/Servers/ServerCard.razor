@@ -11,23 +11,23 @@
 
     if (IsLoaded && !IsFailed)
     {
-        gradient = Status.PowerState switch
+        gradient = Status.State switch
         {
-            ServerPowerState.Installing => "from-primary-600/20",
-            ServerPowerState.Offline => "from-danger-600/20",
-            ServerPowerState.Starting => "from-warning-600/20",
-            ServerPowerState.Stopping => "from-warning-600/20",
-            ServerPowerState.Online => "from-success-600/20",
+            ServerState.Installing => "from-primary-600/20",
+            ServerState.Offline => "from-danger-600/20",
+            ServerState.Starting => "from-warning-600/20",
+            ServerState.Stopping => "from-warning-600/20",
+            ServerState.Online => "from-success-600/20",
             _ => "from-gray-600/20"
         };
         
-        border = Status.PowerState switch
+        border = Status.State switch
         {
-            ServerPowerState.Installing => "border-primary-600",
-            ServerPowerState.Offline => "border-danger-600",
-            ServerPowerState.Starting => "border-warning-600",
-            ServerPowerState.Stopping => "border-warning-600",
-            ServerPowerState.Online => "border-success-600",
+            ServerState.Installing => "border-primary-600",
+            ServerState.Offline => "border-danger-600",
+            ServerState.Starting => "border-warning-600",
+            ServerState.Stopping => "border-warning-600",
+            ServerState.Online => "border-success-600",
             _ => "border-gray-600"
         };
     }
@@ -49,7 +49,7 @@
             @if (
                 IsLoaded &&
                 !IsFailed &&
-                Status.PowerState is ServerPowerState.Starting or ServerPowerState.Stopping or ServerPowerState.Online
+                Status.State is ServerState.Starting or ServerState.Stopping or ServerState.Online
             )
             {
                 <div class="bg-gray-900 bg-opacity-45 py-1 px-2 rounded-lg flex flex-row">
@@ -98,7 +98,7 @@
                         <div class="ms-3">Unreachable</div>
                     </div>
                 }
-                else if (IsLoaded && !IsFailed && Status.PowerState is ServerPowerState.Offline)
+                else if (IsLoaded && !IsFailed && Status.State is ServerState.Offline)
                 {
                     <div class="bg-gray-900 bg-opacity-45 py-1 px-2 rounded-lg flex flex-row text-danger-500">
                         <div>
@@ -108,7 +108,7 @@
                         <div class="ms-3">Offline</div>
                     </div>
                 }
-                else if (IsLoaded && !IsFailed && Status.PowerState is ServerPowerState.Installing)
+                else if (IsLoaded && !IsFailed && Status.State is ServerState.Installing)
                 {
                     <div class="bg-gray-900 bg-opacity-45 py-1 px-2 rounded-lg flex flex-row text-primary-500">
                         <div>

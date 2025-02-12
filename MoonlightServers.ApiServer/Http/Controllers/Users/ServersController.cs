@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using MoonCore.Extended.PermFilter;
@@ -28,7 +29,7 @@ public class ServersController : Controller
     }
 
     [HttpGet]
-    [RequirePermission("meta.authenticated")]
+    [Authorize]
     public async Task<PagedData<ServerDetailResponse>> GetAll([FromQuery] int page, [FromQuery] int pageSize)
     {
         var userIdClaim = User.Claims.First(x => x.Type == "userId");
@@ -69,7 +70,7 @@ public class ServersController : Controller
     }
 
     [HttpGet("{serverId:int}")]
-    [RequirePermission("meta.authenticated")]
+    [Authorize]
     public async Task<ServerDetailResponse> Get([FromRoute] int serverId)
     {
         var server = await GetServerWithPermCheck(
@@ -96,7 +97,7 @@ public class ServersController : Controller
     }
 
     [HttpGet("{serverId:int}/status")]
-    [RequirePermission("meta.authenticated")]
+    [Authorize]
     public async Task<ServerStatusResponse> GetStatus([FromRoute] int serverId)
     {
         var server = await GetServerWithPermCheck(serverId);
@@ -111,7 +112,7 @@ public class ServersController : Controller
 
             return new ServerStatusResponse()
             {
-                PowerState = data.State.ToServerPowerState()
+                State = data.State.ToServerPowerState()
             };
         }
         catch (HttpRequestException e)
@@ -120,9 +121,9 @@ public class ServersController : Controller
         }
     }
     
-    [HttpGet("{serverId:int}/console")]
-    [RequirePermission("meta.authenticated")]
-    public async Task<ServerConsoleResponse> GetConsole([FromRoute] int serverId)
+    [HttpGet("{serverId:int}/ws")]
+    [Authorize]
+    public async Task<ServerWebSocketResponse> GetWebSocket([FromRoute] int serverId)
     {
         var server = await GetServerWithPermCheck(serverId);
 
@@ -130,7 +131,7 @@ public class ServersController : Controller
 
         var accessToken = NodeService.CreateAccessToken(server.Node, parameters =>
         {
-            parameters.Add("type", "console");
+            parameters.Add("type", "websocket");
             parameters.Add("serverId", server.Id);
         }, TimeSpan.FromMinutes(10));
         
@@ -141,9 +142,9 @@ public class ServersController : Controller
         else
             url += "http://";
 
-        url += $"{server.Node.Fqdn}:{server.Node.HttpPort}/api/servers/console";
+        url += $"{server.Node.Fqdn}:{server.Node.HttpPort}/api/servers/ws";
 
-        return new ServerConsoleResponse()
+        return new ServerWebSocketResponse()
         {
             Target = url,
             AccessToken = accessToken
@@ -151,7 +152,7 @@ public class ServersController : Controller
     }
     
     [HttpGet("{serverId:int}/logs")]
-    [RequirePermission("meta.authenticated")]
+    [Authorize]
     public async Task<ServerLogsResponse> GetLogs([FromRoute] int serverId)
     {
         var server = await GetServerWithPermCheck(serverId);
@@ -168,6 +169,42 @@ public class ServersController : Controller
             {
                 Messages = data.Messages
             };
+        }
+        catch (HttpRequestException e)
+        {
+            throw new HttpApiException("Unable to access the node the server is running on", 502);
+        }
+    }
+    
+    [HttpPost("{serverId:int}/start")]
+    [Authorize]
+    public async Task Start([FromRoute] int serverId)
+    {
+        var server = await GetServerWithPermCheck(serverId);
+
+        using var apiClient = await NodeService.CreateApiClient(server.Node);
+
+        try
+        {
+            await apiClient.Post($"api/servers/{server.Id}/start");
+        }
+        catch (HttpRequestException e)
+        {
+            throw new HttpApiException("Unable to access the node the server is running on", 502);
+        }
+    }
+    
+    [HttpPost("{serverId:int}/stop")]
+    [Authorize]
+    public async Task Stop([FromRoute] int serverId)
+    {
+        var server = await GetServerWithPermCheck(serverId);
+
+        using var apiClient = await NodeService.CreateApiClient(server.Node);
+
+        try
+        {
+            await apiClient.Post($"api/servers/{server.Id}/stop");
         }
         catch (HttpRequestException e)
         {

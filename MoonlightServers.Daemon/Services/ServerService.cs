@@ -2,29 +2,30 @@ using Docker.DotNet;
 using Docker.DotNet.Models;
 using MoonCore.Attributes;
 using MoonCore.Models;
-using MoonlightServers.Daemon.Extensions.ServerExtensions;
-using MoonlightServers.Daemon.Models;
+using MoonlightServers.Daemon.Abstractions;
 using MoonlightServers.Daemon.Models.Cache;
-using MoonlightServers.DaemonShared.Enums;
 using MoonlightServers.DaemonShared.PanelSide.Http.Responses;
 
 namespace MoonlightServers.Daemon.Services;
 
 [Singleton]
-public class ServerService
+public class ServerService : IHostedLifecycleService
 {
     private readonly List<Server> Servers = new();
     private readonly ILogger<ServerService> Logger;
     private readonly RemoteService RemoteService;
     private readonly IServiceProvider ServiceProvider;
+    private readonly ILoggerFactory LoggerFactory;
     private bool IsInitialized = false;
     private CancellationTokenSource Cancellation = new();
 
-    public ServerService(RemoteService remoteService, ILogger<ServerService> logger, IServiceProvider serviceProvider)
+    public ServerService(RemoteService remoteService, ILogger<ServerService> logger, IServiceProvider serviceProvider,
+        ILoggerFactory loggerFactory)
     {
         RemoteService = remoteService;
         Logger = logger;
         ServiceProvider = serviceProvider;
+        LoggerFactory = loggerFactory;
     }
 
     public async Task Initialize() //TODO: Add initialize call from panel
@@ -39,7 +40,7 @@ public class ServerService
 
         // Loading models and converting them
         Logger.LogInformation("Fetching servers from panel");
-        var apiClient = await RemoteService.CreateHttpClient();
+        using var apiClient = await RemoteService.CreateHttpClient();
 
         var servers = await PagedData<ServerDataResponse>.All(async (page, pageSize) =>
             await apiClient.GetJson<PagedData<ServerDataResponse>>(
@@ -69,9 +70,8 @@ public class ServerService
 
         Logger.LogInformation("Initializing {count} servers", servers.Length);
 
-        foreach (var configuration in configurations)
-            await InitializeServer(configuration);
-        
+        await InitializeServerRange(configurations); // TODO: Initialize them multi threaded (maybe)
+
         // Attach to docker events
         await AttachToDockerEvents();
     }
@@ -83,11 +83,13 @@ public class ServerService
         lock (Servers)
             servers = Servers.ToArray();
 
-        Logger.LogTrace("Canceling server sub tasks");
-        
+        //
+        Logger.LogTrace("Canceling server tasks");
+
         foreach (var server in servers)
-            await server.Cancellation.CancelAsync();
-        
+            await server.CancelTasks();
+
+        // 
         Logger.LogTrace("Canceling own tasks");
         await Cancellation.CancelAsync();
     }
@@ -104,27 +106,29 @@ public class ServerService
                 try
                 {
                     Logger.LogTrace("Attached to docker events");
-                
+
                     await dockerClient.System.MonitorEventsAsync(new ContainerEventsParameters(),
                         new Progress<Message>(async message =>
                         {
-                            if(message.Action != "die")
+                            if (message.Action != "die")
                                 return;
 
                             Server? server;
 
                             lock (Servers)
-                                server = Servers.FirstOrDefault(x => x.ContainerId == message.ID);
+                                server = Servers.FirstOrDefault(x => x.RuntimeContainerId == message.ID);
 
                             // TODO: Maybe implement a lookup for containers which id isn't set in the cache
-                            
-                            if(server == null)
+
+                            if (server == null)
                                 return;
 
-                            await server.StateMachine.TransitionTo(ServerState.Offline);
+                            await server.NotifyContainerDied();
                         }), Cancellation.Token);
                 }
-                catch(TaskCanceledException){} // Can be ignored
+                catch (TaskCanceledException)
+                {
+                } // Can be ignored
                 catch (Exception e)
                 {
                     Logger.LogError("An unhandled error occured while attaching to docker events: {e}", e);
@@ -132,45 +136,48 @@ public class ServerService
             }
         });
     }
-    
-    private async Task InitializeServer(ServerConfiguration configuration)
+
+    private async Task InitializeServerRange(ServerConfiguration[] serverConfigurations)
     {
-        Logger.LogTrace("Initializing server '{id}'", configuration.Id);
+        var dockerClient = ServiceProvider.GetRequiredService<DockerClient>();
 
-        var loggerFactory = ServiceProvider.GetRequiredService<ILoggerFactory>();
-        
-        var server = new Server()
+        var existingContainers = await dockerClient.Containers.ListContainersAsync(new()
         {
-            Configuration = configuration,
-            StateMachine = new(ServerState.Offline),
-            ServiceProvider = ServiceProvider,
-            Logger = loggerFactory.CreateLogger($"Server {configuration.Id}"),
-            Console = new(),
-            Cancellation = new()
-        };
+            All = true,
+            Limit = null,
+            Filters = new Dictionary<string, IDictionary<string, bool>>()
+            {
+                {
+                    "label",
+                    new Dictionary<string, bool>()
+                    {
+                        {
+                            "Software=Moonlight-Panel",
+                            true
+                        }
+                    }
+                }
+            }
+        });
 
-        server.StateMachine.OnError += (state, exception) =>
-        {
-            server.Logger.LogError("Encountered an unhandled error while transitioning to {state}: {e}",
-                state,
-                exception
-            );
-        };
+        foreach (var configuration in serverConfigurations)
+            await InitializeServer(configuration, existingContainers);
+    }
 
-        server.StateMachine.OnTransitioned += state =>
-        {
-            server.Logger.LogInformation("State: {state}", state);
-            return Task.CompletedTask;
-        };
+    private async Task InitializeServer(
+        ServerConfiguration serverConfiguration,
+        IList<ContainerListResponse> existingContainers
+    )
+    {
+        Logger.LogTrace("Initializing server '{id}'", serverConfiguration.Id);
 
-        server.StateMachine.AddTransition(ServerState.Offline, ServerState.Starting, ServerState.Offline, async () =>
-            await server.StateMachineHandler_Start()
+        var server = new Server(
+            LoggerFactory.CreateLogger($"Server {serverConfiguration.Id}"),
+            ServiceProvider,
+            serverConfiguration
         );
-        
-        server.StateMachine.AddTransition(ServerState.Starting, ServerState.Offline);
-        server.StateMachine.AddTransition(ServerState.Online, ServerState.Offline);
-        server.StateMachine.AddTransition(ServerState.Stopping, ServerState.Offline);
-        server.StateMachine.AddTransition(ServerState.Installing, ServerState.Offline);
+
+        await server.Initialize(existingContainers);
 
         lock (Servers)
             Servers.Add(server);
@@ -179,6 +186,46 @@ public class ServerService
     public Server? GetServer(int id)
     {
         lock (Servers)
-            return Servers.FirstOrDefault(x => x.Configuration.Id == id);
+            return Servers.FirstOrDefault(x => x.Id == id);
     }
+
+    #region Lifecycle
+
+    public Task StartAsync(CancellationToken cancellationToken)
+        => Task.CompletedTask;
+
+    public Task StopAsync(CancellationToken cancellationToken)
+        => Task.CompletedTask;
+
+    public async Task StartedAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            await Initialize();
+        }
+        catch (Exception e)
+        {
+            Logger.LogCritical("Unable to initialize servers. Is the panel online? Error: {e}", e);
+        }
+    }
+
+    public Task StartingAsync(CancellationToken cancellationToken)
+     => Task.CompletedTask;
+
+    public Task StoppedAsync(CancellationToken cancellationToken)
+     => Task.CompletedTask;
+
+    public async Task StoppingAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            await Stop();
+        }
+        catch (Exception e)
+        {
+            Logger.LogCritical("Unable to stop server handling: {e}", e);
+        }
+    }
+
+    #endregion
 }

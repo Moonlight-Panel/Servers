@@ -372,11 +372,16 @@ public class StarImportExportService
 
             foreach (var pConfigFind in pConfig.Value.GetProperty("find").EnumerateObject())
             {
-                pc.Entries.Add(new ParseConfiguration.ParseConfigurationEntry()
+                var entry = new ParseConfiguration.ParseConfigurationEntry()
                 {
                     Key = pConfigFind.Name,
                     Value = pConfigFind.Value.GetString() ?? "Parse error"
-                });
+                };
+
+                // Fix up special variables
+                entry.Value = entry.Value.Replace("server.allocations.default.port", "SERVER_PORT");
+                
+                pc.Entries.Add(entry);
             }
             
             resultPcs.Add(pc);

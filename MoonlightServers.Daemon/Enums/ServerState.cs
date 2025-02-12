@@ -1,6 +1,6 @@
-namespace MoonlightServers.Shared.Enums;
+namespace MoonlightServers.Daemon.Enums;
 
-public enum ServerPowerState
+public enum ServerState
 {
     Offline = 0,
     Starting = 1,

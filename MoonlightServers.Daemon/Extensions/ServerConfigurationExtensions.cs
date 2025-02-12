@@ -1,15 +1,15 @@
 using Docker.DotNet.Models;
 using Mono.Unix.Native;
 using MoonCore.Helpers;
-using MoonlightServers.Daemon.Models;
+using MoonlightServers.Daemon.Models.Cache;
 
-namespace MoonlightServers.Daemon.Extensions.ServerExtensions;
+namespace MoonlightServers.Daemon.Extensions;
 
-public static class ServerConfigExtensions
+public static class ServerConfigurationExtensions
 {
-    public static CreateContainerParameters GetRuntimeContainerParameters(this Server server)
+    public static CreateContainerParameters ToRuntimeCreateParameters(this ServerConfiguration configuration, string hostPath, string containerName)
     {
-        var parameters = server.GetSharedContainerParameters();
+        var parameters = configuration.ToSharedCreateParameters();
         
         #region Security
 
@@ -29,20 +29,20 @@ public static class ServerConfigExtensions
 
         #region Name
 
-        parameters.Name = server.RuntimeContainerName;
-        parameters.Hostname = server.RuntimeContainerName;
+        parameters.Name = containerName;
+        parameters.Hostname = containerName;
 
         #endregion
 
         #region Docker Image
 
-        parameters.Image = server.Configuration.DockerImage;
+        parameters.Image = configuration.DockerImage;
 
         #endregion
 
         #region Environment
 
-        parameters.Env = server.ConstructEnv()
+        parameters.Env = configuration.ToEnvironmentVariables()
             .Select(x => $"{x.Key}={x.Value}")
             .ToList();
 
@@ -56,7 +56,7 @@ public static class ServerConfigExtensions
 
         #region User
 
-        var userId = Syscall.getuid();
+        var userId = Syscall.getuid(); // TODO: Extract to external service?
 
         if (userId == 0)
         {
@@ -78,7 +78,7 @@ public static class ServerConfigExtensions
         
         parameters.HostConfig.Mounts.Add(new()
         {
-            Source = server.RuntimeVolumePath,
+            Source = hostPath,
             Target = "/home/container",
             ReadOnly = false,
             Type = "bind"
@@ -93,7 +93,7 @@ public static class ServerConfigExtensions
             parameters.ExposedPorts = new Dictionary<string, EmptyStruct>();
             parameters.HostConfig.PortBindings = new Dictionary<string, IList<PortBinding>>();
 
-            foreach (var allocation in server.Configuration.Allocations)
+            foreach (var allocation in configuration.Allocations)
             {
                 parameters.ExposedPorts.Add($"{allocation.Port}/tcp", new());
                 parameters.ExposedPorts.Add($"{allocation.Port}/udp", new());
@@ -122,8 +122,8 @@ public static class ServerConfigExtensions
 
         return parameters;
     }
-    
-    public static CreateContainerParameters GetSharedContainerParameters(this Server server)
+
+    private static CreateContainerParameters ToSharedCreateParameters(this ServerConfiguration configuration)
     {
         var parameters = new CreateContainerParameters()
         {
@@ -142,7 +142,7 @@ public static class ServerConfigExtensions
 
         #region CPU
 
-        parameters.HostConfig.CPUQuota = server.Configuration.Cpu * 1000;
+        parameters.HostConfig.CPUQuota = configuration.Cpu * 1000;
         parameters.HostConfig.CPUPeriod = 100000;
         parameters.HostConfig.CPUShares = 1024;
 
@@ -150,7 +150,7 @@ public static class ServerConfigExtensions
 
         #region Memory & Swap
 
-        var memoryLimit = server.Configuration.Memory;
+        var memoryLimit = configuration.Memory;
 
         // The overhead multiplier gives the container a little bit more memory to prevent crashes
         var memoryOverhead = memoryLimit + (memoryLimit * 0.05f); // TODO: Config
@@ -183,6 +183,8 @@ public static class ServerConfigExtensions
 
         #region DNS
 
+        // TODO: Read hosts dns settings?
+        
         parameters.HostConfig.DNS = /*config.Docker.DnsServers.Any() ? config.Docker.DnsServers :*/ new List<string>()
         {
             "1.1.1.1",
@@ -215,27 +217,25 @@ public static class ServerConfigExtensions
         parameters.Labels = new Dictionary<string, string>();
         
         parameters.Labels.Add("Software", "Moonlight-Panel");
-        parameters.Labels.Add("ServerId", server.Configuration.Id.ToString());
+        parameters.Labels.Add("ServerId", configuration.Id.ToString());
 
         #endregion
 
         return parameters;
     }
     
-    public static Dictionary<string, string> ConstructEnv(this Server server)
+    public static Dictionary<string, string> ToEnvironmentVariables(this ServerConfiguration configuration)
     {
-        var config = server.Configuration;
-        
         var result = new Dictionary<string, string>
         {
             //TODO: Add timezone, add server ip
-            { "STARTUP", config.StartupCommand },
-            { "SERVER_MEMORY", config.Memory.ToString() }
+            { "STARTUP", configuration.StartupCommand },
+            { "SERVER_MEMORY", configuration.Memory.ToString() }
         };
 
-        if (config.Allocations.Length > 0)
+        if (configuration.Allocations.Length > 0)
         {
-            var mainAllocation = config.Allocations.First();
+            var mainAllocation = configuration.Allocations.First();
             
             result.Add("SERVER_IP", mainAllocation.IpAddress);
             result.Add("SERVER_PORT", mainAllocation.Port.ToString());
@@ -243,14 +243,14 @@ public static class ServerConfigExtensions
         
         // Handle allocation variables
         var i = 1;
-        foreach (var allocation in config.Allocations)
+        foreach (var allocation in configuration.Allocations)
         {
             result.Add($"ML_PORT_{i}", allocation.Port.ToString());
             i++;
         }
 
         // Copy variables as env vars
-        foreach (var variable in config.Variables)
+        foreach (var variable in configuration.Variables)
             result.Add(variable.Key, variable.Value);
 
         return result;

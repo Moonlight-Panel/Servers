@@ -429,3 +429,6 @@ core.min.css
 # Build script for nuget packages
 finalPackages/
 nupkgs/
+
+# Local daemon tests
+**/data/volumes/**

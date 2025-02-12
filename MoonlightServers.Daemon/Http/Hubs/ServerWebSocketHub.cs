@@ -1,29 +1,26 @@
 using Microsoft.AspNetCore.SignalR;
-using MoonlightServers.Daemon.Helpers;
-using MoonlightServers.Daemon.Models;
 using MoonlightServers.Daemon.Services;
-using MoonlightServers.DaemonShared.Enums;
 
 namespace MoonlightServers.Daemon.Http.Hubs;
 
-public class ServerConsoleHub : Hub
+public class ServerWebSocketHub : Hub
 {
-    private readonly ILogger<ServerConsoleHub> Logger;
-    private readonly ServerConsoleService ConsoleService;
+    private readonly ILogger<ServerWebSocketHub> Logger;
+    private readonly ServerWebSocketService WebSocketService;
 
-    public ServerConsoleHub(ILogger<ServerConsoleHub> logger, ServerConsoleService consoleService)
+    public ServerWebSocketHub(ILogger<ServerWebSocketHub> logger, ServerWebSocketService webSocketService)
     {
         Logger = logger;
-        ConsoleService = consoleService;
+        WebSocketService = webSocketService;
     }
 
     #region Connection Handlers
 
     public override async Task OnConnectedAsync()
-        => await ConsoleService.InitializeClient(Context);
+        => await WebSocketService.InitializeClient(Context);
 
     public override async Task OnDisconnectedAsync(Exception? exception)
-        => await ConsoleService.DestroyClient(Context);
+        => await WebSocketService.DestroyClient(Context);
 
     #endregion
 
@@ -34,7 +31,7 @@ public class ServerConsoleHub : Hub
     {
         try
         {
-            await ConsoleService.AuthenticateClient(Context, accessToken);
+            await WebSocketService.AuthenticateClient(Context, accessToken);
         }
         catch (Exception e)
         {

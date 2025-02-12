@@ -1,17 +1,16 @@
 using System.Text;
 using Docker.DotNet;
 using Docker.DotNet.Models;
-using MoonlightServers.Daemon.Models;
 
-namespace MoonlightServers.Daemon.Extensions.ServerExtensions;
+namespace MoonlightServers.Daemon.Abstractions;
 
-public static class ServerConsoleExtensions
+public partial class Server
 {
-    public static async Task Attach(this Server server)
+    private async Task AttachConsole(string containerId)
     {
-        var dockerClient = server.ServiceProvider.GetRequiredService<DockerClient>();
+        var dockerClient = ServiceProvider.GetRequiredService<DockerClient>();
 
-        var stream = await dockerClient.Containers.AttachContainerAsync(server.ContainerId, true,
+        var stream = await dockerClient.Containers.AttachContainerAsync(containerId, true,
             new ContainerAttachParameters()
             {
                 Stderr = true,
@@ -19,12 +18,13 @@ public static class ServerConsoleExtensions
                 Stdout = true,
                 Stream = true
             },
-            server.Cancellation.Token
+            Cancellation.Token
         );
 
+        // Reading
         Task.Run(async () =>
         {
-            while (!server.Cancellation.Token.IsCancellationRequested)
+            while (!Cancellation.Token.IsCancellationRequested)
             {
                 try
                 {
@@ -34,10 +34,10 @@ public static class ServerConsoleExtensions
                         buffer,
                         0,
                         buffer.Length,
-                        server.Cancellation.Token
+                        Cancellation.Token
                     );
-                    
-                    if(readResult.EOF)
+
+                    if (readResult.EOF)
                         break;
 
                     var resizedBuffer = new byte[readResult.Count];
@@ -45,7 +45,7 @@ public static class ServerConsoleExtensions
                     buffer = new byte[buffer.Length];
 
                     var decodedText = Encoding.UTF8.GetString(resizedBuffer);
-                    await server.Console.WriteToOutput(decodedText);
+                    await Console.WriteToOutput(decodedText);
                 }
                 catch (TaskCanceledException)
                 {
@@ -57,9 +57,24 @@ public static class ServerConsoleExtensions
                 }
                 catch (Exception e)
                 {
-                    server.Logger.LogWarning("An unhandled error occured while reading from container stream: {e}", e);
+                    Logger.LogWarning("An unhandled error occured while reading from container stream: {e}", e);
                 }
             }
         });
+
+        // Writing
+        Console.OnInput += async content =>
+        {
+            var contentBuffer = Encoding.UTF8.GetBytes(content);
+            await stream.WriteAsync(contentBuffer, 0, contentBuffer.Length, Cancellation.Token);
+        };
     }
+
+    private async Task LogToConsole(string message)
+    {
+        await Console.WriteToOutput($"\x1b[38;5;16;48;5;135m\x1b[39m\x1b[1m Moonlight \x1b[0m {message}\n\r");
+    }
+
+    public Task<string[]> GetConsoleMessages()
+        => Task.FromResult(Console.Messages);
 }

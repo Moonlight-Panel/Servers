@@ -6,15 +6,15 @@ using MoonlightServers.Daemon.Http.Hubs;
 namespace MoonlightServers.Daemon.Services;
 
 [Singleton]
-public class ServerConsoleService
+public class ServerWebSocketService
 {
-    private readonly ILogger<ServerConsoleService> Logger;
+    private readonly ILogger<ServerWebSocketService> Logger;
     private readonly IServiceProvider ServiceProvider;
 
-    private readonly Dictionary<string, ServerConsoleConnection> Connections = new();
+    private readonly Dictionary<string, ServerWebSocketConnection> Connections = new();
 
-    public ServerConsoleService(
-        ILogger<ServerConsoleService> logger,
+    public ServerWebSocketService(
+        ILogger<ServerWebSocketService> logger,
         IServiceProvider serviceProvider
     )
     {
@@ -24,11 +24,11 @@ public class ServerConsoleService
 
     public async Task InitializeClient(HubCallerContext context)
     {
-        var connection = new ServerConsoleConnection(
+        var connection = new ServerWebSocketConnection(
             ServiceProvider.GetRequiredService<ServerService>(),
-            ServiceProvider.GetRequiredService<ILogger<ServerConsoleConnection>>(),
+            ServiceProvider.GetRequiredService<ILogger<ServerWebSocketConnection>>(),
             ServiceProvider.GetRequiredService<AccessTokenHelper>(),
-            ServiceProvider.GetRequiredService<IHubContext<ServerConsoleHub>>()
+            ServiceProvider.GetRequiredService<IHubContext<ServerWebSocketHub>>()
         );
 
         lock (Connections)
@@ -39,7 +39,7 @@ public class ServerConsoleService
 
     public async Task AuthenticateClient(HubCallerContext context, string accessToken)
     {
-        ServerConsoleConnection? connection;
+        ServerWebSocketConnection? connection;
 
         lock (Connections)
             connection = Connections.GetValueOrDefault(context.ConnectionId);
@@ -52,7 +52,7 @@ public class ServerConsoleService
 
     public async Task DestroyClient(HubCallerContext context)
     {
-        ServerConsoleConnection? connection;
+        ServerWebSocketConnection? connection;
 
         lock (Connections)
             connection = Connections.GetValueOrDefault(context.ConnectionId);

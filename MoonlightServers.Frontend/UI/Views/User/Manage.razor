@@ -15,9 +15,11 @@
 <LazyLoader Load="Load">
     @if (NotFound)
     {
-        <div class="flex flex-col justify-center text-center"><img class="h-48 mt-5 mb-3" src="/svg/notfound.svg"
-                                                                   alt="Not found illustration">
-            <h3 class="mt-2 font-semibold text-white text-lg">Server not found</h3>
+        <div class="flex flex-col justify-center text-center">
+            <img class="h-48 mt-5 mb-3" src="/svg/notfound.svg" alt="Not found illustration">
+            <h3 class="mt-2 font-semibold text-white text-lg">
+                Server not found
+            </h3>
             <p class="mt-1 text-gray-300">
                 The server you requested does not exist
             </p>
@@ -28,17 +30,17 @@
         <div class="card card-body justify-between py-2.5 px-5 flex-row">
             <div class="flex flex-row items-center">
                 @{
-                    var bgColor = PowerState switch
+                    var bgColor = State switch
                     {
-                        ServerPowerState.Installing => "bg-primary-500",
-                        ServerPowerState.Offline => "bg-danger-500",
-                        ServerPowerState.Starting => "bg-warning-500",
-                        ServerPowerState.Stopping => "bg-warning-500",
-                        ServerPowerState.Online => "bg-success-500",
+                        ServerState.Installing => "bg-primary-500",
+                        ServerState.Offline => "bg-danger-500",
+                        ServerState.Starting => "bg-warning-500",
+                        ServerState.Stopping => "bg-warning-500",
+                        ServerState.Online => "bg-success-500",
                         _ => "bg-gray-500"
                     };
                 }
-                
+
                 <div class="p-2.5 rounded-full @bgColor me-3"></div>
 
                 <div class="flex flex-col">
@@ -57,29 +59,39 @@
                 </div>
             </div>
             <div class="flex flex-row items-center">
-                @if (!string.IsNullOrEmpty(CurrentTask))
-                {
-                    <div class="hidden md:flex me-8 items-center text-gray-600">
-                        <i class="icon-loader me-1.5 animate-spin text-lg align-middle"></i>
-                        <span class="text-base align-middle">
-                            @CurrentTask
-                        </span>
-                    </div>
-                }
-
                 <div class="flex gap-x-1.5">
-                    <button class="btn btn-success">
-                        <i class="icon-play me-1 align-middle"></i>
-                        <span class="align-middle">Start</span>
-                    </button>
+                    @if (State == ServerState.Offline)
+                    {
+                        <WButton CssClasses="btn btn-success" OnClick="_ => Start()">
+                            <i class="icon-play me-1 align-middle"></i>
+                            <span class="align-middle">Start</span>
+                        </WButton>
+                    }
+                    else
+                    {
+                        <button type="button" class="btn btn-success" disabled="disabled">
+                            <i class="icon-play me-1 align-middle"></i>
+                            <span class="align-middle">Start</span>
+                        </button>
+                    }
                     <button type="button" class="btn btn-primary">
                         <i class="icon-rotate-ccw me-1 align-middle"></i>
                         <span class="align-middle">Restart</span>
                     </button>
-                    <button type="button" class="btn btn-danger">
-                        <i class="icon-squircle me-1 align-middle"></i>
-                        <span class="align-middle">Stop</span>
-                    </button>
+                    @if (State == ServerState.Starting || State == ServerState.Online)
+                    {
+                        <WButton CssClasses="btn btn-danger" OnClick="_ => Stop()">
+                            <i class="icon-squircle me-1 align-middle"></i>
+                            <span class="align-middle">Stop</span>
+                        </WButton>
+                    }
+                    else
+                    {
+                        <button type="button" class="btn btn-danger" disabled="disabled">
+                            <i class="icon-squircle me-1 align-middle"></i>
+                            <span class="align-middle">Stop</span>
+                        </button>
+                    }
                 </div>
             </div>
         </div>
@@ -87,31 +99,45 @@
         <div class="mt-5 mx-2 relative">
             <ul class="relative text-sm font-medium flex flex-nowrap -mx-4 sm:-mx-6 lg:-mx-8 overflow-x-scroll no-scrollbar">
 
-                <li class="mr-6 last:mr-0 first:pl-4 sm:first:pl-6 lg:first:pl-8 last:pr-4 sm:last:pr-6 lg:last:pr-8"><a
-                                                                                                                          href="/admin/servers/all"
-                                                                                                                          class="block pb-3 text-white whitespace-nowrap border-b-2 border-primary-500">Console</a></li>
-                
-                <li class="mr-6 last:mr-0 first:pl-4 sm:first:pl-6 lg:first:pl-8 last:pr-4 sm:last:pr-6 lg:last:pr-8"><a
-                                                                                                                          href="/admin/servers"
-                                                                                                                          class="block pb-3 text-gray-400 hover:text-white whitespace-nowrap hover:border-b-2 hover:border-primary-500">Files</a>
+                <li class="mr-6 last:mr-0 first:pl-4 sm:first:pl-6 lg:first:pl-8 last:pr-4 sm:last:pr-6 lg:last:pr-8">
+                    <a
+                        href="/admin/servers/all"
+                        class="block pb-3 text-white whitespace-nowrap border-b-2 border-primary-500">Console</a>
                 </li>
-                <li class="mr-6 last:mr-0 first:pl-4 sm:first:pl-6 lg:first:pl-8 last:pr-4 sm:last:pr-6 lg:last:pr-8"><a
-                                                                                                                          href="/admin/servers/nodes"
-                                                                                                                          class="block pb-3 text-gray-400 hover:text-white whitespace-nowrap hover:border-b-2 hover:border-primary-500">Backups</a>
+
+                <li class="mr-6 last:mr-0 first:pl-4 sm:first:pl-6 lg:first:pl-8 last:pr-4 sm:last:pr-6 lg:last:pr-8">
+                    <a
+                        href="/admin/servers"
+                        class="block pb-3 text-gray-400 hover:text-white whitespace-nowrap hover:border-b-2 hover:border-primary-500">
+                        Files
+                    </a>
                 </li>
-                <li class="mr-6 last:mr-0 first:pl-4 sm:first:pl-6 lg:first:pl-8 last:pr-4 sm:last:pr-6 lg:last:pr-8"><a
-                                                                                                                          href="/admin/servers/stars"
-                                                                                                                          class="block pb-3 text-gray-400 hover:text-white whitespace-nowrap hover:border-b-2 hover:border-primary-500">Networking</a>
+                <li class="mr-6 last:mr-0 first:pl-4 sm:first:pl-6 lg:first:pl-8 last:pr-4 sm:last:pr-6 lg:last:pr-8">
+                    <a
+                        href="/admin/servers/nodes"
+                        class="block pb-3 text-gray-400 hover:text-white whitespace-nowrap hover:border-b-2 hover:border-primary-500">
+                        Backups
+                    </a>
                 </li>
-                <li class="mr-6 last:mr-0 first:pl-4 sm:first:pl-6 lg:first:pl-8 last:pr-4 sm:last:pr-6 lg:last:pr-8"><a
-                                                                                                                          href="/admin/servers/manager"
-                                                                                                                          class="block pb-3 text-gray-400 hover:text-white whitespace-nowrap hover:border-b-2 hover:border-primary-500">Variables</a>
+                <li class="mr-6 last:mr-0 first:pl-4 sm:first:pl-6 lg:first:pl-8 last:pr-4 sm:last:pr-6 lg:last:pr-8">
+                    <a
+                        href="/admin/servers/stars"
+                        class="block pb-3 text-gray-400 hover:text-white whitespace-nowrap hover:border-b-2 hover:border-primary-500">
+                        Networking
+                    </a>
+                </li>
+                <li class="mr-6 last:mr-0 first:pl-4 sm:first:pl-6 lg:first:pl-8 last:pr-4 sm:last:pr-6 lg:last:pr-8">
+                    <a
+                        href="/admin/servers/manager"
+                        class="block pb-3 text-gray-400 hover:text-white whitespace-nowrap hover:border-b-2 hover:border-primary-500">
+                        Variables
+                    </a>
                 </li>
             </ul>
         </div>
-        
+
         <div class="mt-3 h-44">
-            <XtermConsole @ref="XtermConsole" OnAfterInitialized="OnAfterConsoleInitialized" />
+            <XtermConsole @ref="XtermConsole" OnAfterInitialized="OnAfterConsoleInitialized"/>
         </div>
     }
 </LazyLoader>
@@ -122,13 +148,12 @@
 
     private ServerDetailResponse Server;
     private bool NotFound = false;
-    private ServerPowerState PowerState;
+    private ServerState State;
     private string InitialConsoleMessage; // TODO: When moving to a single component, fail safe when failed to load
 
-    private string CurrentTask = "";
     private XtermConsole? XtermConsole;
-    
-    private HubConnection ConsoleConnection;
+
+    private HubConnection WebSocketConnection;
 
     private async Task Load(LazyLoader _)
     {
@@ -144,7 +169,7 @@
                 $"api/servers/{ServerId}/status"
             );
 
-            PowerState = status.PowerState;
+            State = status.State;
 
             // Load initial messages
             var initialLogs = await ApiClient.GetJson<ServerLogsResponse>(
@@ -155,45 +180,40 @@
 
             foreach (var message in initialLogs.Messages)
                 InitialConsoleMessage += message;
-            
-            // Load console meta
-            var consoleDetails = await ApiClient.GetJson<ServerConsoleResponse>(
-                $"api/servers/{ServerId}/console"
+
+            // Load websocket meta
+            var websocketDetails = await ApiClient.GetJson<ServerWebSocketResponse>(
+                $"api/servers/{ServerId}/ws"
             );
 
             // Build signal r
-            ConsoleConnection = new HubConnectionBuilder()
-                .WithUrl(consoleDetails.Target)
+            WebSocketConnection = new HubConnectionBuilder()
+                .WithUrl(websocketDetails.Target)
                 .Build();
 
             // Define handlers
-            ConsoleConnection.On<string>("PowerStateChanged", async powerStateStr =>
+            WebSocketConnection.On<string>("StateChanged", async stateStr =>
             {
-                if(!Enum.TryParse(powerStateStr, out ServerPowerState receivedState))
+                if (!Enum.TryParse(stateStr, out ServerState receivedState))
                     return;
 
-                PowerState = receivedState;
+                State = receivedState;
                 await InvokeAsync(StateHasChanged);
             });
-            
-            ConsoleConnection.On<string>("TaskNotify", async task =>
-            {
-                await AddTask(Formatter.ConvertCamelCaseToSpaces(task));
-            });
 
-            ConsoleConnection.On<string>("ConsoleOutput", async content =>
+            WebSocketConnection.On<string>("ConsoleOutput", async content =>
             {
                 if (XtermConsole != null)
                     await XtermConsole.Write(content);
-                
+
                 await InvokeAsync(StateHasChanged);
             });
 
             // Connect
-            await ConsoleConnection.StartAsync();
-            
+            await WebSocketConnection.StartAsync();
+
             // Authenticate
-            await ConsoleConnection.SendAsync("Authenticate", consoleDetails.AccessToken);
+            await WebSocketConnection.SendAsync("Authenticate", websocketDetails.AccessToken);
         }
         catch (HttpApiException e)
         {
@@ -203,34 +223,27 @@
                 throw;
         }
     }
-    
+
     private async Task OnAfterConsoleInitialized()
     {
         await XtermConsole!.Write(InitialConsoleMessage);
     }
 
-    private async Task AddTask(string message)
+    private async Task Start()
     {
-        CurrentTask = message;
-        await InvokeAsync(StateHasChanged);
+        await ApiClient.Post($"api/servers/{Server.Id}/start");
+    }
 
-        Task.Run(async () =>
-        {
-            await Task.Delay(3000);
-
-            if (CurrentTask != message)
-                return;
-
-            CurrentTask = "";
-            await InvokeAsync(StateHasChanged);
-        });
+    private async Task Stop()
+    {
+        await ApiClient.Post($"api/servers/{Server.Id}/stop");
     }
 
     public async ValueTask DisposeAsync()
     {
-        if (ConsoleConnection.State == HubConnectionState.Connected)
-            await ConsoleConnection.StopAsync();
-        
-        await ConsoleConnection.DisposeAsync();
+        if (WebSocketConnection.State == HubConnectionState.Connected)
+            await WebSocketConnection.StopAsync();
+
+        await WebSocketConnection.DisposeAsync();
     }
 }

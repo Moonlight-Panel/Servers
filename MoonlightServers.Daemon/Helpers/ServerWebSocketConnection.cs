@@ -1,28 +1,29 @@
 using Microsoft.AspNetCore.SignalR;
+using MoonlightServers.Daemon.Abstractions;
+using MoonlightServers.Daemon.Enums;
 using MoonlightServers.Daemon.Http.Hubs;
 using MoonlightServers.Daemon.Models;
 using MoonlightServers.Daemon.Services;
-using MoonlightServers.DaemonShared.Enums;
 
 namespace MoonlightServers.Daemon.Helpers;
 
-public class ServerConsoleConnection
+public class ServerWebSocketConnection
 {
     private readonly ServerService ServerService;
-    private readonly ILogger<ServerConsoleConnection> Logger;
+    private readonly ILogger<ServerWebSocketConnection> Logger;
     private readonly AccessTokenHelper AccessTokenHelper;
-    private readonly IHubContext<ServerConsoleHub> HubContext;
+    private readonly IHubContext<ServerWebSocketHub> HubContext;
 
     private int ServerId = -1;
     private Server Server;
     private bool IsInitialized = false;
     private string ConnectionId;
 
-    public ServerConsoleConnection(
+    public ServerWebSocketConnection(
         ServerService serverService,
-        ILogger<ServerConsoleConnection> logger,
+        ILogger<ServerWebSocketConnection> logger,
         AccessTokenHelper accessTokenHelper,
-        IHubContext<ServerConsoleHub> hubContext
+        IHubContext<ServerWebSocketHub> hubContext
     )
     {
         ServerService = serverService;
@@ -64,7 +65,7 @@ public class ServerConsoleConnection
         // Validate access token type
         var type = accessData["type"].GetString()!;
 
-        if (type != "console")
+        if (type != "websocket")
         {
             Logger.LogDebug("Received invalid access token: Invalid type '{type}'", type);
             
@@ -78,7 +79,7 @@ public class ServerConsoleConnection
 
         var serverId = accessData["serverId"].GetInt32();
         
-        // Check that the access token isn't or another server
+        // Check that the access token isn't for another server
         if (ServerId != -1 && ServerId == serverId)
         {
             Logger.LogDebug("Received invalid access token: Server id not valid for this session. Current server id: {serverId}", ServerId);
@@ -117,31 +118,27 @@ public class ServerConsoleConnection
         IsInitialized = true;
         
         // Setup event handlers
-        Server.StateMachine.OnTransitioned += HandlePowerStateChange;
-        Server.OnTaskAdded += HandleTaskAdded;
-        Server.Console.OnOutput += HandleConsoleOutput;
+        Server.OnConsoleOutput += HandleConsoleOutput;
+        Server.OnStateChanged += HandleStateChange;
         
         Logger.LogTrace("Authenticated and initialized server console connection '{id}'", context.ConnectionId);
     }
 
     public Task Destroy(HubCallerContext context)
     {
-        Server.StateMachine.OnTransitioned -= HandlePowerStateChange;
-        Server.OnTaskAdded -= HandleTaskAdded;
-        
         Logger.LogTrace("Destroyed server console connection '{id}'", context.ConnectionId);
+        
+        Server.OnConsoleOutput -= HandleConsoleOutput;
+        Server.OnStateChanged -= HandleStateChange;
         
         return Task.CompletedTask;
     }
 
     #region Event Handlers
-
-    private async Task HandlePowerStateChange(ServerState serverState)
-     => await HubContext.Clients.Client(ConnectionId).SendAsync("PowerStateChanged", serverState.ToString());
     
-    private async Task HandleTaskAdded(string task)
-        => await HubContext.Clients.Client(ConnectionId).SendAsync("TaskNotify", task);
-
+    private async Task HandleStateChange(ServerState state)
+        => await HubContext.Clients.Client(ConnectionId).SendAsync("StateChanged", state.ToString());
+    
     private async Task HandleConsoleOutput(string line)
         => await HubContext.Clients.Client(ConnectionId).SendAsync("ConsoleOutput", line);
 

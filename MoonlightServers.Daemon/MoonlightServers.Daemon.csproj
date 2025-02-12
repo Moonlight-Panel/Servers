@@ -9,9 +9,10 @@
     <ItemGroup>
         <PackageReference Include="Docker.DotNet" Version="3.125.15" />
         <PackageReference Include="Microsoft.AspNetCore.SignalR" Version="1.1.0" />
-        <PackageReference Include="MoonCore" Version="1.8.1" />
-        <PackageReference Include="MoonCore.Extended" Version="1.2.4" />
+        <PackageReference Include="MoonCore" Version="1.8.2" />
+        <PackageReference Include="MoonCore.Extended" Version="1.2.7" />
         <PackageReference Include="MoonCore.Unix" Version="1.0.0" />
+        <PackageReference Include="Stateless" Version="5.17.0" />
         <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2"/>
     </ItemGroup>
 
@@ -24,13 +25,19 @@
     </ItemGroup>
 
     <ItemGroup>
-      <_ContentIncludedByDefault Remove="storage\volumes\11\banned-ips.json" />
-      <_ContentIncludedByDefault Remove="storage\volumes\11\banned-players.json" />
-      <_ContentIncludedByDefault Remove="storage\volumes\11\ops.json" />
-      <_ContentIncludedByDefault Remove="storage\volumes\11\plugins\spark\config.json" />
-      <_ContentIncludedByDefault Remove="storage\volumes\11\usercache.json" />
-      <_ContentIncludedByDefault Remove="storage\volumes\11\version_history.json" />
-      <_ContentIncludedByDefault Remove="storage\volumes\11\whitelist.json" />
+      <Compile Remove="data\**" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <EmbeddedResource Remove="data\**" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Content Remove="data\**" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <None Remove="data\**" />
     </ItemGroup>
 
 </Project>
