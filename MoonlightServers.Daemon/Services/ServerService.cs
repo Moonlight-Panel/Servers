@@ -116,7 +116,7 @@ public class ServerService : IHostedLifecycleService
                             Server? server;
 
                             lock (Servers)
-                                server = Servers.FirstOrDefault(x => x.RuntimeContainerId == message.ID);
+                                server = Servers.FirstOrDefault(x => x.RuntimeContainerId == message.ID || x.InstallationContainerId == message.ID);
 
                             // TODO: Maybe implement a lookup for containers which id isn't set in the cache
 

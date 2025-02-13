@@ -35,11 +35,11 @@ public partial class Server
         var appConfiguration = ServiceProvider.GetRequiredService<AppConfiguration>();
 
         var hostPath = PathBuilder.Dir(
-            appConfiguration.Storage.Volumes,
+            appConfiguration.Storage.Install,
             Configuration.Id.ToString()
         );
         
-        await LogToConsole("Creating storage");
+        await LogToConsole("Creating installation storage");
 
         // Create volume if missing
         if (!Directory.Exists(hostPath))

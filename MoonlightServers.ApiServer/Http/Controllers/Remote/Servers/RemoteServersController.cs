@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using MoonCore.Exceptions;
 using MoonCore.Extended.Abstractions;
 using MoonCore.Models;
 using MoonlightServers.ApiServer.Database.Entities;
@@ -94,6 +95,25 @@ public class RemoteServersController : Controller
             PageSize = pageSize,
             TotalItems = total,
             TotalPages = total == 0 ? 0 : total / pageSize
+        };
+    }
+
+    [HttpGet("{id:int}/install")]
+    public async Task<ServerInstallDataResponse> GetInstall([FromRoute] int id)
+    {
+        var server = await ServerRepository
+            .Get()
+            .Include(x => x.Star)
+            .FirstOrDefaultAsync(x => x.Id == id);
+
+        if (server == null)
+            throw new HttpApiException("No server with this id found", 404);
+
+        return new ServerInstallDataResponse()
+        {
+            Script = server.Star.InstallScript,
+            DockerImage = server.Star.InstallDockerImage,
+            Shell = server.Star.InstallShell
         };
     }
 }

@@ -7,10 +7,11 @@ namespace MoonlightServers.Daemon.Extensions;
 
 public static class ServerConfigurationExtensions
 {
-    public static CreateContainerParameters ToRuntimeCreateParameters(this ServerConfiguration configuration, string hostPath, string containerName)
+    public static CreateContainerParameters ToRuntimeCreateParameters(this ServerConfiguration configuration,
+        string hostPath, string containerName)
     {
         var parameters = configuration.ToSharedCreateParameters();
-        
+
         #region Security
 
         parameters.HostConfig.CapDrop = new List<string>()
@@ -75,7 +76,7 @@ public static class ServerConfigurationExtensions
         #region Mounts
 
         parameters.HostConfig.Mounts = new List<Mount>();
-        
+
         parameters.HostConfig.Mounts.Add(new()
         {
             Source = hostPath,
@@ -85,7 +86,7 @@ public static class ServerConfigurationExtensions
         });
 
         #endregion
-        
+
         #region Port Bindings
 
         if (true) // TODO: Add network toggle
@@ -106,7 +107,7 @@ public static class ServerConfigurationExtensions
                         HostIP = allocation.IpAddress
                     }
                 });
-            
+
                 parameters.HostConfig.PortBindings.Add($"{allocation.Port}/udp", new List<PortBinding>
                 {
                     new()
@@ -119,6 +120,63 @@ public static class ServerConfigurationExtensions
         }
 
         #endregion
+
+        return parameters;
+    }
+
+    public static CreateContainerParameters ToInstallationCreateParameters(
+        this ServerConfiguration configuration,
+        string runtimeHostPath,
+        string installationHostPath,
+        string containerName,
+        string installDockerImage,
+        string installShell
+    )
+    {
+        var parameters = configuration.ToSharedCreateParameters();
+
+        // - Name
+        parameters.Name = containerName;
+        parameters.Hostname = containerName;
+        
+        // - Image
+        parameters.Image = installDockerImage;
+        
+        // - Env
+        parameters.Env = configuration
+            .ToEnvironmentVariables()
+            .Select(x => $"{x.Key}={x.Value}")
+            .ToList();
+        
+        // -- Working directory
+        parameters.WorkingDir = "/mnt/server";
+        
+        // - User
+        // Note: Some images might not work if we set a user here
+        parameters.User = "0:0";
+
+        // -- Mounts
+        parameters.HostConfig.Mounts = new List<Mount>();
+        
+        parameters.HostConfig.Mounts.Add(new()
+        {
+            Source = runtimeHostPath,
+            Target = "/mnt/server",
+            ReadOnly = false,
+            Type = "bind"
+        });
+        
+        parameters.HostConfig.Mounts.Add(new()
+        {
+            Source = installationHostPath,
+            Target = "/mnt/install",
+            ReadOnly = false,
+            Type = "bind"
+        });
+
+        parameters.Cmd = [installShell, "/mnt/install/install.sh"];
+
+        parameters.HostConfig.AutoRemove = true;
 
         return parameters;
     }
@@ -158,7 +216,7 @@ public static class ServerConfigurationExtensions
         long swapLimit = -1;
 
         /*
-        
+
         // If swap is enabled globally and not disabled on this server, set swap
         if (!configuration.Limits.DisableSwap && config.Server.EnableSwap)
             swapLimit = (long)(memoryOverhead + memoryOverhead * config.Server.SwapMultiplier);
@@ -168,7 +226,8 @@ public static class ServerConfigurationExtensions
         // Finalize limits by converting and updating the host config
         parameters.HostConfig.Memory = ByteConverter.FromMegaBytes((long)memoryOverhead, 1000).Bytes;
         parameters.HostConfig.MemoryReservation = ByteConverter.FromMegaBytes(memoryLimit, 1000).Bytes;
-        parameters.HostConfig.MemorySwap = swapLimit == -1 ? swapLimit : ByteConverter.FromMegaBytes(swapLimit, 1000).Bytes;
+        parameters.HostConfig.MemorySwap =
+            swapLimit == -1 ? swapLimit : ByteConverter.FromMegaBytes(swapLimit, 1000).Bytes;
 
         #endregion
 
@@ -184,7 +243,7 @@ public static class ServerConfigurationExtensions
         #region DNS
 
         // TODO: Read hosts dns settings?
-        
+
         parameters.HostConfig.DNS = /*config.Docker.DnsServers.Any() ? config.Docker.DnsServers :*/ new List<string>()
         {
             "1.1.1.1",
@@ -213,9 +272,9 @@ public static class ServerConfigurationExtensions
         #endregion
 
         #region Labels
-        
+
         parameters.Labels = new Dictionary<string, string>();
-        
+
         parameters.Labels.Add("Software", "Moonlight-Panel");
         parameters.Labels.Add("ServerId", configuration.Id.ToString());
 
@@ -223,7 +282,7 @@ public static class ServerConfigurationExtensions
 
         return parameters;
     }
-    
+
     public static Dictionary<string, string> ToEnvironmentVariables(this ServerConfiguration configuration)
     {
         var result = new Dictionary<string, string>
@@ -236,11 +295,11 @@ public static class ServerConfigurationExtensions
         if (configuration.Allocations.Length > 0)
         {
             var mainAllocation = configuration.Allocations.First();
-            
+
             result.Add("SERVER_IP", mainAllocation.IpAddress);
             result.Add("SERVER_PORT", mainAllocation.Port.ToString());
         }
-        
+
         // Handle allocation variables
         var i = 1;
         foreach (var allocation in configuration.Allocations)

@@ -380,6 +380,7 @@ public class StarImportExportService
 
                 // Fix up special variables
                 entry.Value = entry.Value.Replace("server.allocations.default.port", "SERVER_PORT");
+                entry.Value = entry.Value.Replace("server.build.default.port", "SERVER_PORT");
                 
                 pc.Entries.Add(entry);
             }

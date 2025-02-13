@@ -37,4 +37,15 @@ public class ServerPowerController : Controller
 
         await server.Stop();
     }
+    
+    [HttpPost("{serverId:int}/install")]
+    public async Task Install(int serverId, [FromQuery] bool runAsync = true)
+    {
+        var server = ServerService.GetServer(serverId);
+
+        if (server == null)
+            throw new HttpApiException("No server with this id found", 404);
+
+        await server.Install();
+    }
 }

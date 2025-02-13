@@ -30,6 +30,8 @@ public partial class Server
 
             await LogToConsole("Removing container");
             await dockerClient.Containers.RemoveContainerAsync(container.ID, new());
+
+            RuntimeContainerId = null;
         }
         catch (DockerContainerNotFoundException){}
         

@@ -53,7 +53,8 @@ public partial class Server
             .OnEntryAsync(InternalStop);
 
         StateMachine.Configure(ServerState.Installing)
-            .Permit(ServerTrigger.NotifyInstallContainerDied, ServerState.Offline);
+            .Permit(ServerTrigger.NotifyContainerDied, ServerState.Offline)
+            .OnEntryAsync(InternalInstall);
 
         return Task.CompletedTask;
     }
