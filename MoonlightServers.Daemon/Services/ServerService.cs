@@ -115,15 +115,27 @@ public class ServerService : IHostedLifecycleService
 
                             Server? server;
 
-                            lock (Servers)
-                                server = Servers.FirstOrDefault(x => x.RuntimeContainerId == message.ID || x.InstallationContainerId == message.ID);
-
                             // TODO: Maybe implement a lookup for containers which id isn't set in the cache
 
-                            if (server == null)
-                                return;
+                            // Check if it's a runtime container
+                            lock (Servers)
+                                server = Servers.FirstOrDefault(x => x.RuntimeContainerId == message.ID);
 
-                            await server.NotifyContainerDied();
+                            if (server != null)
+                            {
+                                await server.NotifyRuntimeContainerDied();
+                                return;
+                            }
+                            
+                            // Check if it's an installation container
+                            lock (Servers)
+                                server = Servers.FirstOrDefault(x => x.InstallationContainerId == message.ID);
+                            
+                            if (server != null)
+                            {
+                                await server.NotifyInstallationContainerDied();
+                                return;
+                            }
                         }), Cancellation.Token);
                 }
                 catch (TaskCanceledException)
@@ -210,10 +222,10 @@ public class ServerService : IHostedLifecycleService
     }
 
     public Task StartingAsync(CancellationToken cancellationToken)
-     => Task.CompletedTask;
+        => Task.CompletedTask;
 
     public Task StoppedAsync(CancellationToken cancellationToken)
-     => Task.CompletedTask;
+        => Task.CompletedTask;
 
     public async Task StoppingAsync(CancellationToken cancellationToken)
     {

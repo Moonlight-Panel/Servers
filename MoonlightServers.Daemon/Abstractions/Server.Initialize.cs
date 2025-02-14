@@ -1,6 +1,7 @@
 using System.Text.RegularExpressions;
 using Docker.DotNet.Models;
 using MoonlightServers.Daemon.Enums;
+using MoonlightServers.Daemon.Extensions;
 using Stateless;
 
 namespace MoonlightServers.Daemon.Abstractions;
@@ -38,23 +39,27 @@ public partial class Server
             .Permit(ServerTrigger.Reinstall, ServerState.Installing);
 
         StateMachine.Configure(ServerState.Starting)
-            .Permit(ServerTrigger.NotifyContainerDied, ServerState.Offline)
+            .Permit(ServerTrigger.NotifyRuntimeContainerDied, ServerState.Offline)
             .Permit(ServerTrigger.NotifyOnline, ServerState.Online)
             .Permit(ServerTrigger.Stop, ServerState.Stopping)
-            .OnEntryAsync(InternalStart);
+            .OnEntryAsync(InternalStart)
+            .OnExitFromAsync(ServerTrigger.NotifyRuntimeContainerDied, InternalCrash);
 
         StateMachine.Configure(ServerState.Online)
-            .Permit(ServerTrigger.NotifyContainerDied, ServerState.Offline)
-            .Permit(ServerTrigger.Stop, ServerState.Stopping);
+            .Permit(ServerTrigger.NotifyRuntimeContainerDied, ServerState.Offline)
+            .Permit(ServerTrigger.Stop, ServerState.Stopping)
+            .OnExitFromAsync(ServerTrigger.NotifyRuntimeContainerDied, InternalCrash);
 
         StateMachine.Configure(ServerState.Stopping)
-            .Permit(ServerTrigger.NotifyContainerDied, ServerState.Offline)
+            .Permit(ServerTrigger.NotifyRuntimeContainerDied, ServerState.Offline)
             .Permit(ServerTrigger.Kill, ServerState.Offline)
-            .OnEntryAsync(InternalStop);
+            .OnEntryAsync(InternalStop)
+            .OnExitFromAsync(ServerTrigger.NotifyRuntimeContainerDied, InternalFinishStop);
 
         StateMachine.Configure(ServerState.Installing)
-            .Permit(ServerTrigger.NotifyContainerDied, ServerState.Offline)
-            .OnEntryAsync(InternalInstall);
+            .Permit(ServerTrigger.NotifyInstallationContainerDied, ServerState.Offline)
+            .OnEntryAsync(InternalInstall)
+            .OnExitAsync(InternalFinishInstall);
 
         return Task.CompletedTask;
     }

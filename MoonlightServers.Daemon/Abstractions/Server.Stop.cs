@@ -10,4 +10,9 @@ public partial class Server
     {
         await Console.WriteToInput($"{Configuration.StopCommand}\n\r");
     }
+
+    private async Task InternalFinishStop()
+    {
+        await Destroy();
+    }
 }

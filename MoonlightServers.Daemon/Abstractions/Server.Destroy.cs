@@ -35,13 +35,19 @@ public partial class Server
         }
         catch (DockerContainerNotFoundException){}
         
-        // Canceling server tasks & listeners
-        await CancelTasks();
-        
-        // and recreating cancellation token
-        Cancellation = new();
+        // Canceling server tasks & listeners and start new ones
+        await ResetTasks();
     }
 
+    public async Task ResetTasks()
+    {
+        // Note: This will keep the docker container running, it will just cancel the server cancellation token
+        // and recreate the token
+        await CancelTasks();
+        
+        Cancellation = new();
+    }
+    
     public async Task CancelTasks()
     {
         // Note: This will keep the docker container running, it will just cancel the server cancellation token

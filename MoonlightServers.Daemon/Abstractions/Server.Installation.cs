@@ -1,4 +1,5 @@
 using Docker.DotNet;
+using Docker.DotNet.Models;
 using MoonCore.Helpers;
 using MoonlightServers.Daemon.Enums;
 using MoonlightServers.Daemon.Extensions;
@@ -36,7 +37,8 @@ public partial class Server
         var runtimeHostPath = await EnsureRuntimeVolume();
         
         // Write installation script to path
-        await File.WriteAllTextAsync(PathBuilder.File(installationHostPath, "install.sh"), installData.Script.Replace("\n\r", "\n") + "\n\n");
+        var content = installData.Script.Replace("\r\n", "\n");
+        await File.WriteAllTextAsync(PathBuilder.File(installationHostPath, "install.sh"), content);
         
         // Creating container configuration
         var parameters = Configuration.ToInstallationCreateParameters(
@@ -49,11 +51,67 @@ public partial class Server
 
         var dockerClient = ServiceProvider.GetRequiredService<DockerClient>();
 
+        // Ensure we can actually spawn the container
+        
+        try
+        {
+            var existingContainer = await dockerClient.Containers.InspectContainerAsync(InstallationContainerName);
+            
+            // Perform automatic cleanup / restore
+            
+            if (existingContainer.State.Running)
+                await dockerClient.Containers.KillContainerAsync(existingContainer.ID, new());
+            
+            await dockerClient.Containers.RemoveContainerAsync(existingContainer.ID, new());
+        }
+        catch (DockerContainerNotFoundException)
+        {
+            // Ignored
+        }
+
+        // Spawn the container
+        
         var container = await dockerClient.Containers.CreateContainerAsync(parameters);
         InstallationContainerId = container.ID;
 
         await AttachConsole(InstallationContainerId);
 
         await dockerClient.Containers.StartContainerAsync(InstallationContainerId, new());
+    }
+
+    private async Task InternalFinishInstall()
+    {
+        var dockerClient = ServiceProvider.GetRequiredService<DockerClient>();
+        
+        ContainerInspectResponse? container;
+
+        try
+        {
+            container = await dockerClient.Containers.InspectContainerAsync(InstallationContainerId, CancellationToken.None);
+        }
+        catch (DockerContainerNotFoundException)
+        {
+            container = null;
+        }
+        
+        if(container == null)
+            return;
+
+        var exitCode = container.State.ExitCode;
+
+        await LogToConsole($"Installation finished with exit code: {exitCode}");
+        
+        if (exitCode != 0)
+        {
+            // TODO: Report installation failure
+        }
+
+        await LogToConsole("Removing container");
+        //await dockerClient.Containers.RemoveContainerAsync(InstallationContainerId, new());
+        InstallationContainerId = null;
+        
+        await ResetTasks();
+
+        await RemoveInstallationVolume();
     }
 }

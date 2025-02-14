@@ -72,7 +72,7 @@ public partial class Server
 
     private async Task LogToConsole(string message)
     {
-        await Console.WriteToOutput($"\x1b[38;5;16;48;5;135m\x1b[39m\x1b[1m Moonlight \x1b[0m {message}\n\r");
+        await Console.WriteToOutput($"\x1b[38;5;16;48;5;135m\x1b[39m\x1b[1m Moonlight \x1b[0m\x1b[38;5;250m\x1b[3m {message}\x1b[0m\n\r");
     }
 
     public Task<string[]> GetConsoleMessages()

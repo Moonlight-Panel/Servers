@@ -176,8 +176,6 @@ public static class ServerConfigurationExtensions
 
         parameters.Cmd = [installShell, "/mnt/install/install.sh"];
 
-        parameters.HostConfig.AutoRemove = true;
-
         return parameters;
     }
 

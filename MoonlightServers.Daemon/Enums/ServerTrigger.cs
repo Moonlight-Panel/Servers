@@ -8,5 +8,6 @@ public enum ServerTrigger
     Kill = 3,
     Reinstall = 4,
     NotifyOnline = 5,
-    NotifyContainerDied = 6
+    NotifyRuntimeContainerDied = 6,
+    NotifyInstallationContainerDied = 7
 }
