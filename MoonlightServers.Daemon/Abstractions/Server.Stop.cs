@@ -8,7 +8,15 @@ public partial class Server
 
     private async Task InternalStop()
     {
-        await Console.WriteToInput($"{Configuration.StopCommand}\n\r");
+        try
+        {
+            await Console.WriteToInput($"{Configuration.StopCommand}\n\r");
+        }
+        catch (Exception e)
+        {
+            Logger.LogError("An error occured while performing stop trigger: {e}", e);
+            await StateMachine.FireAsync(ServerTrigger.NotifyInternalError);
+        }
     }
 
     private async Task InternalFinishStop()

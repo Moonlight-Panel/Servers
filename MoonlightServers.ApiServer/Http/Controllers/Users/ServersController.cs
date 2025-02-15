@@ -211,6 +211,24 @@ public class ServersController : Controller
             throw new HttpApiException("Unable to access the node the server is running on", 502);
         }
     }
+    
+    [HttpPost("{serverId:int}/kill")]
+    [Authorize]
+    public async Task Kill([FromRoute] int serverId)
+    {
+        var server = await GetServerWithPermCheck(serverId);
+
+        using var apiClient = await NodeService.CreateApiClient(server.Node);
+
+        try
+        {
+            await apiClient.Post($"api/servers/{server.Id}/kill");
+        }
+        catch (HttpRequestException e)
+        {
+            throw new HttpApiException("Unable to access the node the server is running on", 502);
+        }
+    }
 
     private async Task<Server> GetServerWithPermCheck(int serverId,
         Func<IQueryable<Server>, IQueryable<Server>>? queryModifier = null)

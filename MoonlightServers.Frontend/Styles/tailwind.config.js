@@ -119,6 +119,9 @@ module.exports = {
                     950: '#0e121c',
                 }
             },
+            textColor:{
+                diffcolor: 'rgb(var(--color-diffcolor, var(--color-light)))'
+            },
             animation: {
                 'shimmer': 'shimmer 2s linear infinite',
             }

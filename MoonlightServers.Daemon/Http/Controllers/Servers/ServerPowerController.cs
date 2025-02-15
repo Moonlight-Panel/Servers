@@ -17,7 +17,7 @@ public class ServerPowerController : Controller
     }
     
     [HttpPost("{serverId:int}/start")]
-    public async Task Start(int serverId, [FromQuery] bool runAsync = true)
+    public async Task Start(int serverId)
     {
         var server = ServerService.GetServer(serverId);
 
@@ -28,7 +28,7 @@ public class ServerPowerController : Controller
     }
     
     [HttpPost("{serverId:int}/stop")]
-    public async Task Stop(int serverId, [FromQuery] bool runAsync = true)
+    public async Task Stop(int serverId)
     {
         var server = ServerService.GetServer(serverId);
 
@@ -39,7 +39,7 @@ public class ServerPowerController : Controller
     }
     
     [HttpPost("{serverId:int}/install")]
-    public async Task Install(int serverId, [FromQuery] bool runAsync = true)
+    public async Task Install(int serverId)
     {
         var server = ServerService.GetServer(serverId);
 
@@ -47,5 +47,16 @@ public class ServerPowerController : Controller
             throw new HttpApiException("No server with this id found", 404);
 
         await server.Install();
+    }
+    
+    [HttpPost("{serverId:int}/kill")]
+    public async Task Kill(int serverId)
+    {
+        var server = ServerService.GetServer(serverId);
+
+        if (server == null)
+            throw new HttpApiException("No server with this id found", 404);
+
+        await server.Kill();
     }
 }

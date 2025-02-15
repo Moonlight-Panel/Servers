@@ -9,5 +9,6 @@ public enum ServerTrigger
     Reinstall = 4,
     NotifyOnline = 5,
     NotifyRuntimeContainerDied = 6,
-    NotifyInstallationContainerDied = 7
+    NotifyInstallationContainerDied = 7,
+    NotifyInternalError = 8
 }

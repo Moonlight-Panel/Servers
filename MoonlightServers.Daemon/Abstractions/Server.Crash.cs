@@ -31,4 +31,11 @@ public partial class Server
         
         await Destroy();
     }
+
+    public async Task InternalError()
+    {
+        await LogToConsole("An unhandled error occured performing action");
+        
+        Logger.LogInformation("Reporting or smth");
+    }
 }

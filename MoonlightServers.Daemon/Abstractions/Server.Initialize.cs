@@ -35,31 +35,36 @@ public partial class Server
 
         // Setup transitions
         StateMachine.Configure(ServerState.Offline)
-            .Permit(ServerTrigger.Start, ServerState.Starting)
-            .Permit(ServerTrigger.Reinstall, ServerState.Installing);
+            .Permit(ServerTrigger.Start, ServerState.Starting) // Allow to start
+            .Permit(ServerTrigger.Reinstall, ServerState.Installing) // Allow to install
+            .OnEntryFromAsync(ServerTrigger.NotifyInternalError, InternalError); // Handle unhandled errors
 
         StateMachine.Configure(ServerState.Starting)
-            .Permit(ServerTrigger.NotifyRuntimeContainerDied, ServerState.Offline)
-            .Permit(ServerTrigger.NotifyOnline, ServerState.Online)
-            .Permit(ServerTrigger.Stop, ServerState.Stopping)
-            .OnEntryAsync(InternalStart)
-            .OnExitFromAsync(ServerTrigger.NotifyRuntimeContainerDied, InternalCrash);
+            .Permit(ServerTrigger.Stop, ServerState.Stopping) // Allow stopping
+            .Permit(ServerTrigger.NotifyOnline, ServerState.Online) // Allow the server to report as online
+            .Permit(ServerTrigger.NotifyRuntimeContainerDied, ServerState.Offline) // Allow server to handle container death
+            .Permit(ServerTrigger.NotifyInternalError, ServerState.Offline) // Error handling for the action below
+            .OnEntryAsync(InternalStart) // Perform start action
+            .OnExitFromAsync(ServerTrigger.NotifyRuntimeContainerDied, InternalCrash); // Define a runtime container death as a crash
 
         StateMachine.Configure(ServerState.Online)
-            .Permit(ServerTrigger.NotifyRuntimeContainerDied, ServerState.Offline)
-            .Permit(ServerTrigger.Stop, ServerState.Stopping)
-            .OnExitFromAsync(ServerTrigger.NotifyRuntimeContainerDied, InternalCrash);
+            .Permit(ServerTrigger.Stop, ServerState.Stopping) // Allow stopping
+            .Permit(ServerTrigger.NotifyRuntimeContainerDied, ServerState.Offline) // Allow server to handle container death
+            .OnExitFromAsync(ServerTrigger.NotifyRuntimeContainerDied, InternalCrash); // Define a runtime container death as a crash
 
         StateMachine.Configure(ServerState.Stopping)
-            .Permit(ServerTrigger.NotifyRuntimeContainerDied, ServerState.Offline)
-            .Permit(ServerTrigger.Kill, ServerState.Offline)
-            .OnEntryAsync(InternalStop)
-            .OnExitFromAsync(ServerTrigger.NotifyRuntimeContainerDied, InternalFinishStop);
+            .PermitReentry(ServerTrigger.Kill) // Allow killing, will return to stopping to trigger kill and handle the death correctly
+            .Permit(ServerTrigger.NotifyRuntimeContainerDied, ServerState.Offline) // Allow server to handle container death
+            .Permit(ServerTrigger.NotifyInternalError, ServerState.Offline) // Error handling for the actions below
+            .OnEntryFromAsync(ServerTrigger.Stop, InternalStop) // Perform stop action
+            .OnEntryFromAsync(ServerTrigger.Kill, InternalKill) // Perform kill action
+            .OnExitFromAsync(ServerTrigger.NotifyRuntimeContainerDied, InternalFinishStop); // Define a runtime container death as a successful stop
 
         StateMachine.Configure(ServerState.Installing)
-            .Permit(ServerTrigger.NotifyInstallationContainerDied, ServerState.Offline)
-            .OnEntryAsync(InternalInstall)
-            .OnExitAsync(InternalFinishInstall);
+            .Permit(ServerTrigger.NotifyInstallationContainerDied, ServerState.Offline) // Allow server to handle container death
+            .Permit(ServerTrigger.NotifyInternalError, ServerState.Offline) // Error handling for the action below
+            .OnEntryAsync(InternalInstall) // Perform install action
+            .OnExitFromAsync(ServerTrigger.NotifyInstallationContainerDied, InternalFinishInstall); // Define the death of the installation container as successful
 
         return Task.CompletedTask;
     }

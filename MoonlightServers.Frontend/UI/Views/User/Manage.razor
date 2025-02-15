@@ -74,16 +74,38 @@
                             <span class="align-middle">Start</span>
                         </button>
                     }
-                    <button type="button" class="btn btn-primary">
-                        <i class="icon-rotate-ccw me-1 align-middle"></i>
-                        <span class="align-middle">Restart</span>
-                    </button>
-                    @if (State == ServerState.Starting || State == ServerState.Online)
+                    
+                    @if (State == ServerState.Online)
                     {
-                        <WButton CssClasses="btn btn-danger" OnClick="_ => Stop()">
-                            <i class="icon-squircle me-1 align-middle"></i>
-                            <span class="align-middle">Stop</span>
-                        </WButton>
+                        <button type="button" class="btn btn-primary">
+                            <i class="icon-rotate-ccw me-1 align-middle"></i>
+                            <span class="align-middle">Restart</span>
+                        </button>
+                    }
+                    else
+                    {
+                        <button type="button" class="btn btn-primary" disabled="disabled">
+                            <i class="icon-rotate-ccw me-1 align-middle"></i>
+                            <span class="align-middle">Restart</span>
+                        </button>
+                    }
+                    
+                    @if (State == ServerState.Starting || State == ServerState.Online || State == ServerState.Stopping)
+                    {
+                        if (State == ServerState.Stopping)
+                        {
+                            <WButton CssClasses="btn btn-danger" OnClick="_ => Kill()">
+                                <i class="icon-bomb me-1 align-middle"></i>
+                                <span class="align-middle">Kill</span>
+                            </WButton>
+                        }
+                        else
+                        {
+                            <WButton CssClasses="btn btn-danger" OnClick="_ => Stop()">
+                                <i class="icon-squircle me-1 align-middle"></i>
+                                <span class="align-middle">Stop</span>
+                            </WButton>
+                        }
                     }
                     else
                     {
@@ -230,14 +252,13 @@
     }
 
     private async Task Start()
-    {
-        await ApiClient.Post($"api/servers/{Server.Id}/start");
-    }
+        => await ApiClient.Post($"api/servers/{Server.Id}/start");
 
     private async Task Stop()
-    {
-        await ApiClient.Post($"api/servers/{Server.Id}/stop");
-    }
+        => await ApiClient.Post($"api/servers/{Server.Id}/stop");
+    
+    private async Task Kill()
+        => await ApiClient.Post($"api/servers/{Server.Id}/kill");
 
     public async ValueTask DisposeAsync()
     {

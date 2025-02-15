@@ -14,69 +14,79 @@ public partial class Server
 
     private async Task InternalInstall()
     {
-        // TODO: Consider if checking for existing install containers is actually useful, because
-        // when the daemon is starting and a installation is still ongoing it will reattach anyways
-        // and the container has the auto remove flag enabled by default (maybe also consider this for the normal runtime container)
-        
-        await LogToConsole("Fetching installation configuration");
-        
-        // Fetching remote configuration
-        var remoteService = ServiceProvider.GetRequiredService<RemoteService>();
-        using var remoteHttpClient = await remoteService.CreateHttpClient();
-
-        var installData = await remoteHttpClient.GetJson<ServerInstallDataResponse>($"api/servers/remote/servers/{Configuration.Id}/install");
-        
-        var dockerImageService = ServiceProvider.GetRequiredService<DockerImageService>();
-
-        // We call an external service for that, as we want to have a central management point of images
-        // for analytics and automatic deletion
-        await dockerImageService.Ensure(installData.DockerImage, async message => { await LogToConsole(message); });
-        
-        // Ensuring storage configuration
-        var installationHostPath = await EnsureInstallationVolume();
-        var runtimeHostPath = await EnsureRuntimeVolume();
-        
-        // Write installation script to path
-        var content = installData.Script.Replace("\r\n", "\n");
-        await File.WriteAllTextAsync(PathBuilder.File(installationHostPath, "install.sh"), content);
-        
-        // Creating container configuration
-        var parameters = Configuration.ToInstallationCreateParameters(
-            runtimeHostPath,
-            installationHostPath,
-            InstallationContainerName,
-            installData.DockerImage,
-            installData.Shell
-        );
-
-        var dockerClient = ServiceProvider.GetRequiredService<DockerClient>();
-
-        // Ensure we can actually spawn the container
-        
         try
         {
-            var existingContainer = await dockerClient.Containers.InspectContainerAsync(InstallationContainerName);
+            // TODO: Consider if checking for existing install containers is actually useful, because
+            // when the daemon is starting and a installation is still ongoing it will reattach anyways
+            // and the container has the auto remove flag enabled by default (maybe also consider this for the normal runtime container)
+
+            await LogToConsole("Fetching installation configuration");
+
+            // Fetching remote configuration
+            var remoteService = ServiceProvider.GetRequiredService<RemoteService>();
+            using var remoteHttpClient = await remoteService.CreateHttpClient();
+
+            var installData =
+                await remoteHttpClient.GetJson<ServerInstallDataResponse>(
+                    $"api/servers/remote/servers/{Configuration.Id}/install");
+
+            var dockerImageService = ServiceProvider.GetRequiredService<DockerImageService>();
+
+            // We call an external service for that, as we want to have a central management point of images
+            // for analytics and automatic deletion
+            await dockerImageService.Ensure(installData.DockerImage, async message => { await LogToConsole(message); });
+
+            // Ensuring storage configuration
+            var installationHostPath = await EnsureInstallationVolume();
+            var runtimeHostPath = await EnsureRuntimeVolume();
+
+            // Write installation script to path
+            var content = installData.Script.Replace("\r\n", "\n");
+            await File.WriteAllTextAsync(PathBuilder.File(installationHostPath, "install.sh"), content);
+
+            // Creating container configuration
+            var parameters = Configuration.ToInstallationCreateParameters(
+                runtimeHostPath,
+                installationHostPath,
+                InstallationContainerName,
+                installData.DockerImage,
+                installData.Shell
+            );
+
+            var dockerClient = ServiceProvider.GetRequiredService<DockerClient>();
+
+            // Ensure we can actually spawn the container
+
+            try
+            {
+                var existingContainer = await dockerClient.Containers.InspectContainerAsync(InstallationContainerName);
+
+                // Perform automatic cleanup / restore
+
+                if (existingContainer.State.Running)
+                    await dockerClient.Containers.KillContainerAsync(existingContainer.ID, new());
+
+                await dockerClient.Containers.RemoveContainerAsync(existingContainer.ID, new());
+            }
+            catch (DockerContainerNotFoundException)
+            {
+                // Ignored
+            }
             
-            // Perform automatic cleanup / restore
-            
-            if (existingContainer.State.Running)
-                await dockerClient.Containers.KillContainerAsync(existingContainer.ID, new());
-            
-            await dockerClient.Containers.RemoveContainerAsync(existingContainer.ID, new());
+            // Spawn the container
+
+            var container = await dockerClient.Containers.CreateContainerAsync(parameters);
+            InstallationContainerId = container.ID;
+
+            await AttachConsole(InstallationContainerId);
+
+            await dockerClient.Containers.StartContainerAsync(InstallationContainerId, new());
         }
-        catch (DockerContainerNotFoundException)
+        catch (Exception e)
         {
-            // Ignored
+            Logger.LogError("An error occured while performing install trigger: {e}", e);
+            await StateMachine.FireAsync(ServerTrigger.NotifyInternalError);
         }
-
-        // Spawn the container
-        
-        var container = await dockerClient.Containers.CreateContainerAsync(parameters);
-        InstallationContainerId = container.ID;
-
-        await AttachConsole(InstallationContainerId);
-
-        await dockerClient.Containers.StartContainerAsync(InstallationContainerId, new());
     }
 
     private async Task InternalFinishInstall()
