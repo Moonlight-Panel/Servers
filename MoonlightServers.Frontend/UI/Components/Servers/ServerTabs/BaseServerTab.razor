@@ -1,0 +1,13 @@
+@using Microsoft.AspNetCore.SignalR.Client
+@using MoonlightServers.Frontend.UI.Views.User
+@using MoonlightServers.Shared.Enums
+@using MoonlightServers.Shared.Http.Responses.Users.Servers
+
+@code
+{
+    [Parameter] public ServerDetailResponse Server { get; set; }
+    [Parameter] public ServerState State { get; set; }
+    [Parameter] public string InitialConsoleMessage { get; set; }
+    [Parameter] public HubConnection HubConnection { get; set; }
+    [Parameter] public Manage Parent { get; set; }
+}

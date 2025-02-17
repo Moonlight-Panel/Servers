@@ -1,0 +1,30 @@
+@using Microsoft.AspNetCore.SignalR.Client
+
+@inherits BaseServerTab
+
+<div class="h-44">
+    <XtermConsole @ref="XtermConsole" OnAfterInitialized="OnAfterConsoleInitialized"/>
+</div>
+
+@code
+{
+    private XtermConsole? XtermConsole;
+
+    protected override Task OnInitializedAsync()
+    {
+        // We are already connected to the hub at this point
+
+        HubConnection.On<string>("ConsoleOutput", async content =>
+        {
+            if(XtermConsole != null)
+                await XtermConsole.Write(content);
+        });
+        
+        return Task.CompletedTask;
+    }
+
+    private async Task OnAfterConsoleInitialized()
+    {
+        await XtermConsole!.Write(InitialConsoleMessage);
+    }
+}

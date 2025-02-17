@@ -7,6 +7,7 @@
 @using MoonCore.Helpers
 @using MoonlightServers.Shared.Enums
 @using MoonlightServers.Frontend.UI.Components
+@using MoonlightServers.Frontend.UI.Components.Servers.ServerTabs
 
 @inject HttpApiClient ApiClient
 
@@ -117,49 +118,17 @@
                 </div>
             </div>
         </div>
+        
+        <div class="mt-5">
+            <Tabs NavStyle="true">
+                <Tab Name="Console">
+                    <ConsoleTab Parent="this" Server="Server" State="State" HubConnection="HubConnection" InitialConsoleMessage="@InitialConsoleMessage" />
+                </Tab>
 
-        <div class="mt-5 mx-2 relative">
-            <ul class="relative text-sm font-medium flex flex-nowrap -mx-4 sm:-mx-6 lg:-mx-8 overflow-x-scroll no-scrollbar">
-
-                <li class="mr-6 last:mr-0 first:pl-4 sm:first:pl-6 lg:first:pl-8 last:pr-4 sm:last:pr-6 lg:last:pr-8">
-                    <a
-                        href="/admin/servers/all"
-                        class="block pb-3 text-white whitespace-nowrap border-b-2 border-primary-500">Console</a>
-                </li>
-
-                <li class="mr-6 last:mr-0 first:pl-4 sm:first:pl-6 lg:first:pl-8 last:pr-4 sm:last:pr-6 lg:last:pr-8">
-                    <a
-                        href="/admin/servers"
-                        class="block pb-3 text-gray-400 hover:text-white whitespace-nowrap hover:border-b-2 hover:border-primary-500">
-                        Files
-                    </a>
-                </li>
-                <li class="mr-6 last:mr-0 first:pl-4 sm:first:pl-6 lg:first:pl-8 last:pr-4 sm:last:pr-6 lg:last:pr-8">
-                    <a
-                        href="/admin/servers/nodes"
-                        class="block pb-3 text-gray-400 hover:text-white whitespace-nowrap hover:border-b-2 hover:border-primary-500">
-                        Backups
-                    </a>
-                </li>
-                <li class="mr-6 last:mr-0 first:pl-4 sm:first:pl-6 lg:first:pl-8 last:pr-4 sm:last:pr-6 lg:last:pr-8">
-                    <a
-                        href="/admin/servers/stars"
-                        class="block pb-3 text-gray-400 hover:text-white whitespace-nowrap hover:border-b-2 hover:border-primary-500">
-                        Networking
-                    </a>
-                </li>
-                <li class="mr-6 last:mr-0 first:pl-4 sm:first:pl-6 lg:first:pl-8 last:pr-4 sm:last:pr-6 lg:last:pr-8">
-                    <a
-                        href="/admin/servers/manager"
-                        class="block pb-3 text-gray-400 hover:text-white whitespace-nowrap hover:border-b-2 hover:border-primary-500">
-                        Variables
-                    </a>
-                </li>
-            </ul>
-        </div>
-
-        <div class="mt-3 h-44">
-            <XtermConsole @ref="XtermConsole" OnAfterInitialized="OnAfterConsoleInitialized"/>
+                <Tab Name="Testy">
+                    
+                </Tab>
+            </Tabs>
         </div>
     }
 </LazyLoader>
@@ -171,11 +140,9 @@
     private ServerDetailResponse Server;
     private bool NotFound = false;
     private ServerState State;
-    private string InitialConsoleMessage; // TODO: When moving to a single component, fail safe when failed to load
+    private string InitialConsoleMessage;
 
-    private XtermConsole? XtermConsole;
-
-    private HubConnection WebSocketConnection;
+    private HubConnection HubConnection;
 
     private async Task Load(LazyLoader _)
     {
@@ -209,12 +176,12 @@
             );
 
             // Build signal r
-            WebSocketConnection = new HubConnectionBuilder()
+            HubConnection = new HubConnectionBuilder()
                 .WithUrl(websocketDetails.Target)
                 .Build();
 
             // Define handlers
-            WebSocketConnection.On<string>("StateChanged", async stateStr =>
+            HubConnection.On<string>("StateChanged", async stateStr =>
             {
                 if (!Enum.TryParse(stateStr, out ServerState receivedState))
                     return;
@@ -223,19 +190,18 @@
                 await InvokeAsync(StateHasChanged);
             });
 
-            WebSocketConnection.On<string>("ConsoleOutput", async content =>
+            HubConnection.On<string>("ConsoleOutput", async content =>
             {
-                if (XtermConsole != null)
-                    await XtermConsole.Write(content);
-
+                // Update initial message
+                InitialConsoleMessage += content;
                 await InvokeAsync(StateHasChanged);
             });
 
             // Connect
-            await WebSocketConnection.StartAsync();
+            await HubConnection.StartAsync();
 
             // Authenticate
-            await WebSocketConnection.SendAsync("Authenticate", websocketDetails.AccessToken);
+            await HubConnection.SendAsync("Authenticate", websocketDetails.AccessToken);
         }
         catch (HttpApiException e)
         {
@@ -244,11 +210,6 @@
             else
                 throw;
         }
-    }
-
-    private async Task OnAfterConsoleInitialized()
-    {
-        await XtermConsole!.Write(InitialConsoleMessage);
     }
 
     private async Task Start()
@@ -262,9 +223,9 @@
 
     public async ValueTask DisposeAsync()
     {
-        if (WebSocketConnection.State == HubConnectionState.Connected)
-            await WebSocketConnection.StopAsync();
+        if (HubConnection.State == HubConnectionState.Connected)
+            await HubConnection.StopAsync();
 
-        await WebSocketConnection.DisposeAsync();
+        await HubConnection.DisposeAsync();
     }
 }
