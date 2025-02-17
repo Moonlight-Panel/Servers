@@ -153,7 +153,16 @@ public static class ServerConfigurationExtensions
         
         // - User
         // Note: Some images might not work if we set a user here
-        parameters.User = "0:0";
+        
+        var userId = Syscall.getuid();
+
+        // If we are root, we are able to change owner permissions after the installation
+        // so we run the installation as root, otherwise we need to run it as our current user,
+        // so we are able to access the files created by the installer
+        if (userId == 0)
+            parameters.User = "0:0";
+        else
+            parameters.User = $"{userId}:{userId}";        
 
         // -- Mounts
         parameters.HostConfig.Mounts = new List<Mount>();
