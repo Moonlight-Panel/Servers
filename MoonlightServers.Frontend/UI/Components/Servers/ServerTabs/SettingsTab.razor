@@ -1,0 +1,40 @@
+@using MoonCore.Blazor.Tailwind.Alerts
+@using MoonCore.Helpers
+@using MoonCore.Blazor.Tailwind.Components
+@using MoonlightServers.Shared.Enums
+
+@inherits BaseServerTab
+
+@inject HttpApiClient HttpApiClient
+@inject AlertService AlertService
+
+<div class="grid grid-cols-1 md:col-span-2 lg:grid-cols-3">
+    <div class="col-span-1 card card-body">
+        @if (State != ServerState.Offline)
+        {
+            <button class="btn btn-primary" disabled="disabled">
+                <i class="align-middle icon-hammer me-1"></i>
+                <span class="align-middle">Reinstall</span>
+            </button>
+        }
+        else
+        {
+            <WButton CssClasses="btn btn-primary" OnClick="Reinstall">
+                <i class="align-middle icon-hammer me-1"></i>
+                <span class="align-middle">Reinstall</span>
+            </WButton>
+        }
+    </div>
+</div>
+
+@code
+{
+    private async Task Reinstall(WButton _)
+    {
+        await AlertService.ConfirmDanger(
+            "Server installation",
+            "Do you really want to reinstall the server? This can potentially lead to loss of data",
+            () => HttpApiClient.Post($"api/servers/{Server.Id}/install")
+        );
+    }
+}

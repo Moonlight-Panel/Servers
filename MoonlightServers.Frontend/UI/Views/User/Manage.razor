@@ -5,11 +5,14 @@
 @using MoonCore.Blazor.Tailwind.Components
 @using MoonCore.Exceptions
 @using MoonCore.Helpers
+@using MoonlightServers.Frontend.Interfaces
+@using MoonlightServers.Frontend.Models
 @using MoonlightServers.Shared.Enums
 @using MoonlightServers.Frontend.UI.Components
 @using MoonlightServers.Frontend.UI.Components.Servers.ServerTabs
 
 @inject HttpApiClient ApiClient
+@inject IServerTabProvider[] TabProviders
 
 @implements IAsyncDisposable
 
@@ -75,7 +78,7 @@
                             <span class="align-middle">Start</span>
                         </button>
                     }
-                    
+
                     @if (State == ServerState.Online)
                     {
                         <button type="button" class="btn btn-primary">
@@ -90,7 +93,7 @@
                             <span class="align-middle">Restart</span>
                         </button>
                     }
-                    
+
                     @if (State == ServerState.Starting || State == ServerState.Online || State == ServerState.Stopping)
                     {
                         if (State == ServerState.Stopping)
@@ -118,16 +121,26 @@
                 </div>
             </div>
         </div>
-        
-        <div class="mt-5">
-            <Tabs NavStyle="true">
-                <Tab Name="Console">
-                    <ConsoleTab Parent="this" Server="Server" State="State" HubConnection="HubConnection" InitialConsoleMessage="@InitialConsoleMessage" />
-                </Tab>
 
-                <Tab Name="Testy">
-                    
-                </Tab>
+        <div class="mt-3">
+            <Tabs>
+                @foreach (var tab in Tabs)
+                {
+                    <Tab Name="@tab.Name">
+                        @{
+                            var rf = ComponentHelper.FromType(tab.ComponentType, parameters =>
+                            {
+                                parameters.Add("Server", Server);
+                                parameters.Add("State", State);
+                                parameters.Add("InitialConsoleMessage", InitialConsoleMessage);
+                                parameters.Add("HubConnection", HubConnection);
+                                parameters.Add("Parent", this);
+                            });
+                        }
+
+                        @rf
+                    </Tab>
+                }
             </Tabs>
         </div>
     }
@@ -136,6 +149,8 @@
 @code
 {
     [Parameter] public int ServerId { get; set; }
+
+    private List<ServerTab> Tabs = new();
 
     private ServerDetailResponse Server;
     private bool NotFound = false;
@@ -152,6 +167,10 @@
             Server = await ApiClient.GetJson<ServerDetailResponse>(
                 $"api/servers/{ServerId}"
             );
+
+            // Load server tabs
+            foreach (var serverTabProvider in TabProviders)
+                Tabs.AddRange(await serverTabProvider.GetTabs(Server));
 
             // Load initial status for first render
             var status = await ApiClient.GetJson<ServerStatusResponse>(
@@ -217,7 +236,7 @@
 
     private async Task Stop()
         => await ApiClient.Post($"api/servers/{Server.Id}/stop");
-    
+
     private async Task Kill()
         => await ApiClient.Post($"api/servers/{Server.Id}/kill");
 
