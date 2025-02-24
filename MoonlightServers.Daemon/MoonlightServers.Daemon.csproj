@@ -9,9 +9,9 @@
     <ItemGroup>
         <PackageReference Include="Docker.DotNet" Version="3.125.15" />
         <PackageReference Include="Microsoft.AspNetCore.SignalR" Version="1.1.0" />
-        <PackageReference Include="MoonCore" Version="1.8.2" />
-        <PackageReference Include="MoonCore.Extended" Version="1.2.7" />
-        <PackageReference Include="MoonCore.Unix" Version="1.0.0" />
+        <PackageReference Include="MoonCore" Version="1.8.3" />
+        <PackageReference Include="MoonCore.Extended" Version="1.2.8" />
+        <PackageReference Include="MoonCore.Unix" Version="1.0.2" />
         <PackageReference Include="Stateless" Version="5.17.0" />
         <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2"/>
     </ItemGroup>

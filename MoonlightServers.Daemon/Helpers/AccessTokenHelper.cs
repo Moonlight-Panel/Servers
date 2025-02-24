@@ -1,4 +1,8 @@
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Text;
 using System.Text.Json;
+using Microsoft.IdentityModel.Tokens;
 using MoonCore.Attributes;
 using MoonCore.Extended.Helpers;
 using MoonlightServers.Daemon.Configuration;
@@ -15,8 +19,33 @@ public class AccessTokenHelper
         Configuration = configuration;
     }
 
-    public bool Process(string accessToken, out Dictionary<string, JsonElement> data)
+// TODO: Improve
+    public bool Process(string accessToken, out Claim[] claims)
     {
-        return JwtHelper.TryVerifyAndDecodePayload(Configuration.Security.Token, accessToken, out data);
+        var jwtSecurityTokenHandler = new JwtSecurityTokenHandler();
+
+        try
+        {
+            var data = jwtSecurityTokenHandler.ValidateToken(accessToken, new()
+            {
+                ClockSkew = TimeSpan.Zero,
+                ValidateLifetime = true,
+                ValidateAudience = false,
+                ValidateIssuer = false,
+                ValidateActor = false,
+                IssuerSigningKey = new SymmetricSecurityKey(
+                    Encoding.UTF8.GetBytes(Configuration.Security.Token)
+                )
+            }, out var _);
+
+            claims = data.Claims.ToArray();
+
+            return true;
+        }
+        catch (Exception e)
+        {
+            claims = [];
+            return false;
+        }
     }
 }

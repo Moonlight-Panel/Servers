@@ -1,28 +1,24 @@
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using MoonCore.Extensions;
-using MoonCore.PluginFramework.Extensions;
 using Moonlight.Client.Interfaces;
+using MoonlightServers.Frontend.Implementations;
 using MoonlightServers.Frontend.Interfaces;
 
 namespace MoonlightServers.Frontend.Startup;
 
-public class PluginStartup : IAppStartup
+public class PluginStartup : IPluginStartup
 {
-    public Task BuildApp(WebAssemblyHostBuilder builder)
+    public Task BuildApplication(WebAssemblyHostBuilder builder)
     {
+        builder.Services.AddSingleton<ISidebarItemProvider, SidebarImplementation>();
+        builder.Services.AddSingleton<IServerTabProvider, DefaultServerTabProvider>();
+        
         builder.Services.AutoAddServices<PluginStartup>();
-
-        builder.Services.AddInterfaces(configuration =>
-        {
-            configuration.AddAssembly(GetType().Assembly);
-
-            configuration.AddInterface<IServerTabProvider>();
-        });
         
         return Task.CompletedTask;
     }
 
-    public Task ConfigureApp(WebAssemblyHost app)
+    public Task ConfigureApplication(WebAssemblyHost app)
     {
         return Task.CompletedTask;
     }

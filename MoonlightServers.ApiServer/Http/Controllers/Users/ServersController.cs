@@ -5,6 +5,7 @@ using MoonCore.Extended.PermFilter;
 using MoonCore.Exceptions;
 using MoonCore.Extended.Abstractions;
 using MoonCore.Extensions;
+using MoonCore.Helpers;
 using MoonCore.Models;
 using Moonlight.ApiServer.Database.Entities;
 using MoonlightServers.ApiServer.Database.Entities;
@@ -198,7 +199,9 @@ public class ServersController : Controller
         if (server.OwnerId == userId) // The current user is the owner
             return server;
 
-        if (User.HasPermission("admin.servers.get")) // The current user is an admin
+        var permissions = User.Claims.First(x => x.Type == "permissions").Value.Split(";", StringSplitOptions.RemoveEmptyEntries);
+        
+        if (PermissionHelper.HasPermission(permissions, "admin.servers.get")) // The current user is an admin
             return server;
 
         throw new HttpApiException("No server with this id found", 404);

@@ -12,7 +12,7 @@
 @using MoonlightServers.Frontend.UI.Components.Servers.ServerTabs
 
 @inject HttpApiClient ApiClient
-@inject IServerTabProvider[] TabProviders
+@inject IEnumerable<IServerTabProvider> TabProviders
 
 @implements IAsyncDisposable
 

@@ -35,7 +35,7 @@ public partial class Server
     public async Task InternalError()
     {
         await LogToConsole("An unhandled error occured performing action");
-        
+        // TODO:
         Logger.LogInformation("Reporting or smth");
     }
 }

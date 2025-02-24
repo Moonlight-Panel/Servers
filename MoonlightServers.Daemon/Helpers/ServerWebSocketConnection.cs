@@ -50,7 +50,7 @@ public class ServerWebSocketConnection
         }
 
         // Validate access token data
-        if (!accessData.ContainsKey("type") || !accessData.ContainsKey("serverId"))
+        if (accessData.All(x => x.Type != "type") || accessData.All(x => x.Type != "serverId"))
         {
             Logger.LogDebug("Received invalid access token: Required parameters are missing");
             
@@ -63,7 +63,7 @@ public class ServerWebSocketConnection
         }
 
         // Validate access token type
-        var type = accessData["type"].GetString()!;
+        var type = accessData.First(x => x.Type == "type").Value;
 
         if (type != "websocket")
         {
@@ -77,7 +77,7 @@ public class ServerWebSocketConnection
             return;
         }
 
-        var serverId = accessData["serverId"].GetInt32();
+        var serverId = int.Parse(accessData.First(x => x.Type == "serverId").Value);
         
         // Check that the access token isn't for another server
         if (ServerId != -1 && ServerId == serverId)
