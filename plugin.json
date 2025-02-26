@@ -1,0 +1,18 @@
+{
+  "id": "servers",
+  "name": "Servers",
+  "author": "Moonlight-Panel/Servers contributors",
+  "assemblies": {
+    "apiServer": ["MoonlightServers.ApiServer.dll"],
+    "client": ["MoonlightServers.Client.dll"]
+  },
+  "bundledStyles": [
+    "css/MoonlightServers.min.css",
+    "css/XtermBlazor.min.css"
+  ],
+  "scripts": [
+    "js/XtermBlazor.min.js",
+    "js/addon-fit.js",
+    "js/moonlightServers.js"
+  ]
+}

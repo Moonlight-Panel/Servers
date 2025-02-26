@@ -5,25 +5,26 @@ namespace MoonlightServers.Frontend.Implementations;
 
 public class SidebarImplementation : ISidebarItemProvider
 {
-    public SidebarItem[] Get()
+    public void ModifySidebar(List<SidebarItem> items)
     {
-        return
-        [
-            new SidebarItem()
-            {
-                Name = "Servers",
-                Path = "/servers",
-                Icon = "icon-server",
-                Priority = 4
-            },
-            new SidebarItem()
-            {
-                Name = "Servers",
-                Path = "/admin/servers",
-                Icon = "icon-server",
-                Group = "Admin",
-                Priority = 4
-            }
-        ];
+        items.AddRange(
+            [
+                new SidebarItem()
+                {
+                    Name = "Servers",
+                    Path = "/servers",
+                    Icon = "icon-server",
+                    Priority = 4
+                },
+                new SidebarItem()
+                {
+                    Name = "Servers",
+                    Path = "/admin/servers",
+                    Icon = "icon-server",
+                    Group = "Admin",
+                    Priority = 4
+                }
+            ]
+        );
     }
 }
