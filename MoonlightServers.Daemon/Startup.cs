@@ -1,6 +1,7 @@
 using System.Text.Json;
 using Docker.DotNet;
 using MoonCore.Configuration;
+using MoonCore.EnvConfiguration;
 using MoonCore.Extended.Extensions;
 using MoonCore.Extensions;
 using MoonCore.Helpers;
@@ -17,8 +18,6 @@ public class Startup
 
     // Configuration
     private AppConfiguration Configuration;
-    private ConfigurationService ConfigurationService;
-    private ConfigurationOptions ConfigurationOptions;
 
     // Logging
     private ILoggerProvider[] LoggerProviders;
@@ -119,42 +118,31 @@ public class Startup
 
     #region Configurations
 
-    private Task SetupAppConfiguration()
+    private async Task SetupAppConfiguration()
     {
-        ConfigurationService = new ConfigurationService();
+        var configurationBuilder = new ConfigurationBuilder();
+        
+        // Ensure configuration file exists
+        var jsonFilePath = PathBuilder.File(Directory.GetCurrentDirectory(), "storage", "app.json");
 
-        // Setup options
-        ConfigurationOptions = new ConfigurationOptions();
+        if (!File.Exists(jsonFilePath))
+            await File.WriteAllTextAsync(jsonFilePath, JsonSerializer.Serialize(new AppConfiguration()));
 
-        ConfigurationOptions.AddConfiguration<AppConfiguration>("app");
-        ConfigurationOptions.Path = PathBuilder.Dir("storage");
-        ConfigurationOptions.EnvironmentPrefix = "WebAppTemplate".ToUpper();
+        configurationBuilder.AddJsonFile(
+            jsonFilePath
+        );
+        
+        configurationBuilder.AddEnvironmentVariables(prefix: "MOONLIGHT_", separator: "_");
 
-        // Create minimal logger
-        var loggerFactory = new LoggerFactory();
-
-        loggerFactory.AddMoonCore(configuration =>
-        {
-            configuration.Console.Enable = true;
-            configuration.Console.EnableAnsiMode = true;
-            configuration.FileLogging.Enable = false;
-        });
-
-        var logger = loggerFactory.CreateLogger<ConfigurationService>();
+        var configurationRoot = configurationBuilder.Build();
 
         // Retrieve configuration
-        Configuration = ConfigurationService.GetConfiguration<AppConfiguration>(
-            ConfigurationOptions,
-            logger
-        );
-
-        return Task.CompletedTask;
+        Configuration = configurationRoot.Get<AppConfiguration>()!;
     }
 
     private Task RegisterAppConfiguration()
     {
-        ConfigurationService.RegisterInDi(ConfigurationOptions, WebApplicationBuilder.Services);
-        WebApplicationBuilder.Services.AddSingleton(ConfigurationService);
+        WebApplicationBuilder.Services.AddSingleton(Configuration);
 
         return Task.CompletedTask;
     }

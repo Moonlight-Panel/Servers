@@ -9,11 +9,10 @@
       "applicationUrl": "http://localhost:5269",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development",
-        "MOONLIGHT_APP_PUBLICURL": "http://localhost:5269",
+        "MOONLIGHT_PUBLICURL": "http://localhost:5269",
         "HTTP_PROXY": "",
         "HTTPS_PROXY": ""
-      },
-      "commandLineArgs": "--frontend-asset js/XtermBlazor.min.js --frontend-asset js/moonlightServers.js --frontend-asset js/addon-fit.js"
+      }
     }
   }
 }
