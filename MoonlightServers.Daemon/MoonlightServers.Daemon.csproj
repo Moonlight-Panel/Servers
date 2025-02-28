@@ -18,6 +18,7 @@
 
     <ItemGroup>
       <Folder Include="Http\Middleware\" />
+      <Folder Include="storage\volumes\" />
     </ItemGroup>
 
     <ItemGroup>
@@ -38,6 +39,16 @@
 
     <ItemGroup>
       <None Remove="data\**" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <_ContentIncludedByDefault Remove="storage\volumes\2\banned-ips.json" />
+      <_ContentIncludedByDefault Remove="storage\volumes\2\banned-players.json" />
+      <_ContentIncludedByDefault Remove="storage\volumes\2\ops.json" />
+      <_ContentIncludedByDefault Remove="storage\volumes\2\plugins\spark\config.json" />
+      <_ContentIncludedByDefault Remove="storage\volumes\2\usercache.json" />
+      <_ContentIncludedByDefault Remove="storage\volumes\2\version_history.json" />
+      <_ContentIncludedByDefault Remove="storage\volumes\2\whitelist.json" />
     </ItemGroup>
 
 </Project>

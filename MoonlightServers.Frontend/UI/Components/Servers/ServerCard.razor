@@ -159,7 +159,7 @@
         try
         {
             Status = await ApiClient.GetJson<ServerStatusResponse>(
-                $"api/servers/{Server.Id}/status"
+                $"api/client/servers/{Server.Id}/status"
             );
         }
         catch (Exception e)

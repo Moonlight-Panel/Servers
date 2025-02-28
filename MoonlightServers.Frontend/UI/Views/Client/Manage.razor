@@ -165,7 +165,7 @@
         {
             // Load meta data
             Server = await ApiClient.GetJson<ServerDetailResponse>(
-                $"api/servers/{ServerId}"
+                $"api/client/servers/{ServerId}"
             );
 
             // Load server tabs
@@ -174,14 +174,14 @@
 
             // Load initial status for first render
             var status = await ApiClient.GetJson<ServerStatusResponse>(
-                $"api/servers/{ServerId}/status"
+                $"api/client/servers/{ServerId}/status"
             );
 
             State = status.State;
 
             // Load initial messages
             var initialLogs = await ApiClient.GetJson<ServerLogsResponse>(
-                $"api/servers/{ServerId}/logs"
+                $"api/client/servers/{ServerId}/logs"
             );
 
             InitialConsoleMessage = "";
@@ -191,7 +191,7 @@
 
             // Load websocket meta
             var websocketDetails = await ApiClient.GetJson<ServerWebSocketResponse>(
-                $"api/servers/{ServerId}/ws"
+                $"api/client/servers/{ServerId}/ws"
             );
 
             // Build signal r
@@ -232,13 +232,13 @@
     }
 
     private async Task Start()
-        => await ApiClient.Post($"api/servers/{Server.Id}/start");
+        => await ApiClient.Post($"api/client/servers/{Server.Id}/start");
 
     private async Task Stop()
-        => await ApiClient.Post($"api/servers/{Server.Id}/stop");
+        => await ApiClient.Post($"api/client/servers/{Server.Id}/stop");
 
     private async Task Kill()
-        => await ApiClient.Post($"api/servers/{Server.Id}/kill");
+        => await ApiClient.Post($"api/client/servers/{Server.Id}/kill");
 
     public async ValueTask DisposeAsync()
     {

@@ -34,7 +34,7 @@
         await AlertService.ConfirmDanger(
             "Server installation",
             "Do you really want to reinstall the server? This can potentially lead to loss of data",
-            () => HttpApiClient.Post($"api/servers/{Server.Id}/install")
+            () => HttpApiClient.Post($"api/client/servers/{Server.Id}/install")
         );
     }
 }

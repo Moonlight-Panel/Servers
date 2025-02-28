@@ -3,16 +3,15 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using MoonCore.Exceptions;
 using MoonCore.Extended.Abstractions;
-using MoonCore.Extensions;
 using MoonCore.Helpers;
 using MoonlightServers.ApiServer.Database.Entities;
 using MoonlightServers.ApiServer.Services;
 
-namespace MoonlightServers.ApiServer.Http.Controllers.Users;
+namespace MoonlightServers.ApiServer.Http.Controllers.Client;
 
 [ApiController]
 [Authorize]
-[Route("api/servers")]
+[Route("api/client/servers")]
 public class ServerPowerController : Controller
 {
     private readonly DatabaseRepository<Server> ServerRepository;

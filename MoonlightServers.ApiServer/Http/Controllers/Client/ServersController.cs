@@ -1,23 +1,20 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using MoonCore.Extended.PermFilter;
 using MoonCore.Exceptions;
 using MoonCore.Extended.Abstractions;
-using MoonCore.Extensions;
 using MoonCore.Helpers;
 using MoonCore.Models;
-using Moonlight.ApiServer.Database.Entities;
 using MoonlightServers.ApiServer.Database.Entities;
 using MoonlightServers.ApiServer.Extensions;
 using MoonlightServers.ApiServer.Services;
 using MoonlightServers.Shared.Http.Responses.User.Allocations;
 using MoonlightServers.Shared.Http.Responses.Users.Servers;
 
-namespace MoonlightServers.ApiServer.Http.Controllers.Users;
+namespace MoonlightServers.ApiServer.Http.Controllers.Client;
 
 [ApiController]
-[Route("api/servers")]
+[Route("api/client/servers")]
 public class ServersController : Controller
 {
     private readonly DatabaseRepository<Server> ServerRepository;
