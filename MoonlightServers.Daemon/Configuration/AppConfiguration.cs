@@ -22,6 +22,7 @@ public class AppConfiguration
     public class SecurityData
     {
         public string Token { get; set; }
+        public string TokenId { get; set; }
     }
     
     public class StorageData

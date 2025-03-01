@@ -1,0 +1,13 @@
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+
+namespace MoonlightServers.ApiServer.Http.Controllers.Remote.Nodes;
+
+[ApiController]
+[Route("api/remote/server/node")]
+[Authorize(AuthenticationSchemes = "serverNodeAuthentication")]
+public class NodeTripController : Controller
+{
+    [HttpGet("trip")]
+    public Task Get() => Task.CompletedTask;
+}

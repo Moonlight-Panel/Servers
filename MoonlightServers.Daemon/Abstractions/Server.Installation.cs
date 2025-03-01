@@ -24,11 +24,7 @@ public partial class Server
 
             // Fetching remote configuration
             var remoteService = ServiceProvider.GetRequiredService<RemoteService>();
-            using var remoteHttpClient = await remoteService.CreateHttpClient();
-
-            var installData =
-                await remoteHttpClient.GetJson<ServerInstallDataResponse>(
-                    $"api/servers/remote/servers/{Configuration.Id}/install");
+            var installData = await remoteService.GetServerInstallation(Configuration.Id);
 
             var dockerImageService = ServiceProvider.GetRequiredService<DockerImageService>();
 

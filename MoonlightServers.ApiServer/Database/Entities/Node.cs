@@ -14,6 +14,7 @@ public class Node
     // Connection details
     public string Fqdn { get; set; }
     public string Token { get; set; }
+    public string TokenId { get; set; }
     public int HttpPort { get; set; }
     public int FtpPort { get; set; }
     public bool UseSsl { get; set; }

@@ -40,12 +40,9 @@ public class ServerService : IHostedLifecycleService
 
         // Loading models and converting them
         Logger.LogInformation("Fetching servers from panel");
-        using var apiClient = await RemoteService.CreateHttpClient();
 
         var servers = await PagedData<ServerDataResponse>.All(async (page, pageSize) =>
-            await apiClient.GetJson<PagedData<ServerDataResponse>>(
-                $"api/servers/remote/servers?page={page}&pageSize={pageSize}"
-            )
+            await RemoteService.GetServers(page, pageSize)
         );
 
         var configurations = servers.Select(x => new ServerConfiguration()

@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using MoonCore.Exceptions;
@@ -6,35 +7,45 @@ using MoonCore.Models;
 using MoonlightServers.ApiServer.Database.Entities;
 using MoonlightServers.DaemonShared.PanelSide.Http.Responses;
 
-namespace MoonlightServers.ApiServer.Http.Controllers.Remote.Servers;
+namespace MoonlightServers.ApiServer.Http.Controllers.Remote;
 
 [ApiController]
-[Route("api/servers/remote/servers")]
-public class RemoteServersController : Controller
+[Route("api/remote/servers")]
+[Authorize(AuthenticationSchemes = "serverNodeAuthentication")]
+public class ServersController : Controller
 {
     private readonly DatabaseRepository<Server> ServerRepository;
-    private readonly ILogger<RemoteServersController> Logger;
+    private readonly DatabaseRepository<Node> NodeRepository;
+    private readonly ILogger<ServersController> Logger;
 
-    public RemoteServersController(
+    public ServersController(
         DatabaseRepository<Server> serverRepository,
-        ILogger<RemoteServersController> logger
-    )
+        DatabaseRepository<Node> nodeRepository,
+        ILogger<ServersController> logger)
     {
         ServerRepository = serverRepository;
+        NodeRepository = nodeRepository;
         Logger = logger;
     }
 
     [HttpGet]
     public async Task<PagedData<ServerDataResponse>> Get([FromQuery] int page, [FromQuery] int pageSize)
     {
+        // Load the node via the token id
+        var tokenId = User.Claims.First(x => x.Type == "iss").Value;
+
+        var node = await NodeRepository
+            .Get()
+            .FirstAsync(x => x.TokenId == tokenId);
+        
         var total = await ServerRepository
             .Get()
-            .Where(x => x.Node.Id == 1)
+            .Where(x => x.Node.Id == node.Id)
             .CountAsync();
 
         var servers = await ServerRepository
             .Get()
-            .Where(x => x.Node.Id == 1)
+            .Where(x => x.Node.Id == node.Id)
             .Include(x => x.Star)
             .ThenInclude(x => x.DockerImages)
             .Include(x => x.Variables)
@@ -48,12 +59,14 @@ public class RemoteServersController : Controller
         foreach (var server in servers)
         {
             var dockerImage = server.Star.DockerImages
-                .FirstOrDefault(x => x.Id == server.DockerImageIndex);
+                .Skip(server.DockerImageIndex)
+                .FirstOrDefault();
 
             if (dockerImage == null)
             {
                 dockerImage = server.Star.DockerImages
-                    .FirstOrDefault(x => x.Id == server.Star.DefaultDockerImage);
+                    .Skip(server.Star.DefaultDockerImage)
+                    .FirstOrDefault();
             }
 
             if (dockerImage == null)
@@ -101,8 +114,18 @@ public class RemoteServersController : Controller
     [HttpGet("{id:int}/install")]
     public async Task<ServerInstallDataResponse> GetInstall([FromRoute] int id)
     {
+        // Load the node via the token id
+        var tokenId = User.Claims.First(x => x.Type == "iss").Value;
+
+        var node = await NodeRepository
+            .Get()
+            .FirstAsync(x => x.TokenId == tokenId);
+        
+        // Load the server with the star data attached. We filter by the node to ensure the node can only access
+        // servers linked to it
         var server = await ServerRepository
             .Get()
+            .Where(x => x.Node.Id == node.Id)
             .Include(x => x.Star)
             .FirstOrDefaultAsync(x => x.Id == id);
 
