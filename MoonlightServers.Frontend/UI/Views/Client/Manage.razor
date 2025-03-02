@@ -7,11 +7,12 @@
 @using MoonCore.Helpers
 @using MoonlightServers.Frontend.Interfaces
 @using MoonlightServers.Frontend.Models
+@using MoonlightServers.Frontend.Services
 @using MoonlightServers.Shared.Enums
 @using MoonlightServers.Frontend.UI.Components
 @using MoonlightServers.Frontend.UI.Components.Servers.ServerTabs
 
-@inject HttpApiClient ApiClient
+@inject ServerService ServerService
 @inject IEnumerable<IServerTabProvider> TabProviders
 
 @implements IAsyncDisposable
@@ -164,25 +165,19 @@
         try
         {
             // Load meta data
-            Server = await ApiClient.GetJson<ServerDetailResponse>(
-                $"api/client/servers/{ServerId}"
-            );
+            Server = await ServerService.GetServer(ServerId);
 
             // Load server tabs
             foreach (var serverTabProvider in TabProviders)
                 Tabs.AddRange(await serverTabProvider.GetTabs(Server));
 
             // Load initial status for first render
-            var status = await ApiClient.GetJson<ServerStatusResponse>(
-                $"api/client/servers/{ServerId}/status"
-            );
+            var status = await ServerService.GetStatus(ServerId);
 
             State = status.State;
 
             // Load initial messages
-            var initialLogs = await ApiClient.GetJson<ServerLogsResponse>(
-                $"api/client/servers/{ServerId}/logs"
-            );
+            var initialLogs = await ServerService.GetLogs(ServerId);
 
             InitialConsoleMessage = "";
 
@@ -190,9 +185,7 @@
                 InitialConsoleMessage += message;
 
             // Load websocket meta
-            var websocketDetails = await ApiClient.GetJson<ServerWebSocketResponse>(
-                $"api/client/servers/{ServerId}/ws"
-            );
+            var websocketDetails = await ServerService.GetWebSocket(ServerId);
 
             // Build signal r
             HubConnection = new HubConnectionBuilder()
@@ -232,13 +225,13 @@
     }
 
     private async Task Start()
-        => await ApiClient.Post($"api/client/servers/{Server.Id}/start");
+        => await ServerService.Start(ServerId);
 
     private async Task Stop()
-        => await ApiClient.Post($"api/client/servers/{Server.Id}/stop");
+        => await ServerService.Stop(ServerId);
 
     private async Task Kill()
-        => await ApiClient.Post($"api/client/servers/{Server.Id}/kill");
+        => await ServerService.Kill(ServerId);
 
     public async ValueTask DisposeAsync()
     {

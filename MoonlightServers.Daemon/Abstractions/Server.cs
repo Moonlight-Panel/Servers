@@ -49,4 +49,7 @@ public partial class Server
         RuntimeContainerName = $"moonlight-runtime-{Configuration.Id}";
         InstallationContainerName = $"moonlight-install-{Configuration.Id}";
     }
+
+    public void UpdateConfiguration(ServerConfiguration configuration)
+        => Configuration = configuration;
 }

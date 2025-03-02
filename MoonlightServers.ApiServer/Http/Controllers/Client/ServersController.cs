@@ -3,8 +3,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using MoonCore.Exceptions;
 using MoonCore.Extended.Abstractions;
-using MoonCore.Helpers;
 using MoonCore.Models;
+using Moonlight.ApiServer.Database.Entities;
 using MoonlightServers.ApiServer.Database.Entities;
 using MoonlightServers.ApiServer.Extensions;
 using MoonlightServers.ApiServer.Services;
@@ -17,13 +17,17 @@ namespace MoonlightServers.ApiServer.Http.Controllers.Client;
 [Route("api/client/servers")]
 public class ServersController : Controller
 {
+    private readonly ServerService ServerService;
     private readonly DatabaseRepository<Server> ServerRepository;
+    private readonly DatabaseRepository<User> UserRepository;
     private readonly NodeService NodeService;
 
-    public ServersController(DatabaseRepository<Server> serverRepository, NodeService nodeService)
+    public ServersController(DatabaseRepository<Server> serverRepository, NodeService nodeService, ServerService serverService, DatabaseRepository<User> userRepository)
     {
         ServerRepository = serverRepository;
         NodeService = nodeService;
+        ServerService = serverService;
+        UserRepository = userRepository;
     }
 
     [HttpGet]
@@ -71,13 +75,22 @@ public class ServersController : Controller
     [Authorize]
     public async Task<ServerDetailResponse> Get([FromRoute] int serverId)
     {
-        var server = await GetServerWithPermCheck(
-            serverId,
-            query =>
-                query
-                    .Include(x => x.Allocations)
-                    .Include(x => x.Star)
-        );
+        var server = await ServerRepository
+            .Get()
+            .Include(x => x.Allocations)
+            .Include(x => x.Star)
+            .Include(x => x.Node)
+            .FirstOrDefaultAsync(x => x.Id == serverId);
+        
+        if(server == null)
+            throw new HttpApiException("No server with this id found", 404);
+        
+        var userIdClaim = User.Claims.First(x => x.Type == "userId");
+        var userId = int.Parse(userIdClaim.Value);
+        var user = await UserRepository.Get().FirstAsync(x => x.Id == userId);
+        
+        if(!ServerService.IsAllowedToAccess(user, server))
+            throw new HttpApiException("No server with this id found", 404);
 
         return new ServerDetailResponse()
         {
@@ -98,32 +111,20 @@ public class ServersController : Controller
     [Authorize]
     public async Task<ServerStatusResponse> GetStatus([FromRoute] int serverId)
     {
-        var server = await GetServerWithPermCheck(serverId);
+        var server = await GetServerById(serverId);
+        var status = await ServerService.GetStatus(server);
 
-        var apiClient = await NodeService.CreateApiClient(server.Node);
-
-        try
+        return new ServerStatusResponse()
         {
-            var data = await apiClient.GetJson<DaemonShared.DaemonSide.Http.Responses.Servers.ServerStatusResponse>(
-                $"api/servers/{server.Id}/status"
-            );
-
-            return new ServerStatusResponse()
-            {
-                State = data.State.ToServerPowerState()
-            };
-        }
-        catch (HttpRequestException e)
-        {
-            throw new HttpApiException("Unable to access the node the server is running on", 502);
-        }
+            State = status.State.ToServerPowerState()
+        };
     }
     
     [HttpGet("{serverId:int}/ws")]
     [Authorize]
     public async Task<ServerWebSocketResponse> GetWebSocket([FromRoute] int serverId)
     {
-        var server = await GetServerWithPermCheck(serverId);
+        var server = await GetServerById(serverId);
 
         // TODO: Handle transparent node proxy
 
@@ -135,11 +136,7 @@ public class ServersController : Controller
         
         var url = "";
 
-        if (server.Node.UseSsl)
-            url += "https://";
-        else
-            url += "http://";
-
+        url += server.Node.UseSsl ? "https://" : "http://";
         url += $"{server.Node.Fqdn}:{server.Node.HttpPort}/api/servers/ws";
 
         return new ServerWebSocketResponse()
@@ -153,54 +150,33 @@ public class ServersController : Controller
     [Authorize]
     public async Task<ServerLogsResponse> GetLogs([FromRoute] int serverId)
     {
-        var server = await GetServerWithPermCheck(serverId);
+        var server = await GetServerById(serverId);
 
-        var apiClient = await NodeService.CreateApiClient(server.Node);
-
-        try
+        var logs = await ServerService.GetLogs(server);
+        
+        return new ServerLogsResponse()
         {
-            var data = await apiClient.GetJson<DaemonShared.DaemonSide.Http.Responses.Servers.ServerLogsResponse>(
-                $"api/servers/{server.Id}/logs"
-            );
-
-            return new ServerLogsResponse()
-            {
-                Messages = data.Messages
-            };
-        }
-        catch (HttpRequestException e)
-        {
-            throw new HttpApiException("Unable to access the node the server is running on", 502);
-        }
+            Messages = logs.Messages
+        };
     }
 
-    private async Task<Server> GetServerWithPermCheck(int serverId,
-        Func<IQueryable<Server>, IQueryable<Server>>? queryModifier = null)
+    private async Task<Server> GetServerById(int serverId)
     {
+        var server = await ServerRepository
+            .Get()
+            .Include(x => x.Node)
+            .FirstOrDefaultAsync(x => x.Id == serverId);
+        
+        if(server == null)
+            throw new HttpApiException("No server with this id found", 404);
+        
         var userIdClaim = User.Claims.First(x => x.Type == "userId");
         var userId = int.Parse(userIdClaim.Value);
-
-        var query = ServerRepository
-            .Get()
-            .Include(x => x.Node) as IQueryable<Server>;
-
-        if (queryModifier != null)
-            query = queryModifier.Invoke(query);
-
-        var server = await query
-            .FirstOrDefaultAsync(x => x.Id == serverId);
-
-        if (server == null)
+        var user = await UserRepository.Get().FirstAsync(x => x.Id == userId);
+        
+        if(!ServerService.IsAllowedToAccess(user, server))
             throw new HttpApiException("No server with this id found", 404);
 
-        if (server.OwnerId == userId) // The current user is the owner
-            return server;
-
-        var permissions = User.Claims.First(x => x.Type == "permissions").Value.Split(";", StringSplitOptions.RemoveEmptyEntries);
-        
-        if (PermissionHelper.HasPermission(permissions, "admin.servers.get")) // The current user is an admin
-            return server;
-
-        throw new HttpApiException("No server with this id found", 404);
+        return server;
     }
 }

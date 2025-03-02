@@ -1,5 +1,8 @@
+using System.Text;
 using System.Text.Json;
 using Docker.DotNet;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
 using MoonCore.Configuration;
 using MoonCore.EnvConfiguration;
 using MoonCore.Extended.Extensions;
@@ -41,6 +44,7 @@ public class Startup
         await RegisterAppConfiguration();
         await RegisterLogging();
         await RegisterBase();
+        await RegisterAuth();
         await RegisterDocker();
         await RegisterServers();
         await RegisterSignalR();
@@ -49,6 +53,7 @@ public class Startup
         await BuildWebApplication();
 
         await UseBase();
+        await UseAuth();
         await UseCors();
         await UseBaseMiddleware();
 
@@ -285,6 +290,42 @@ public class Startup
     private Task UseCors()
     {
         WebApplication.UseCors();
+        return Task.CompletedTask;
+    }
+
+    #endregion
+
+    #region Authentication
+
+    private Task RegisterAuth()
+    {
+        WebApplicationBuilder.Services
+            .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+            .AddJwtBearer(options =>
+            {
+                options.TokenValidationParameters = new()
+                {
+                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(
+                        Configuration.Security.Token
+                    )),
+                    ValidateIssuerSigningKey = true,
+                    ValidateLifetime = true,
+                    ValidateAudience = false,
+                    ValidateIssuer = false,
+                    ClockSkew = TimeSpan.Zero
+                };
+            });
+        
+        WebApplicationBuilder.Services.AddAuthorization();
+        
+        return Task.CompletedTask;
+    }
+    
+    private Task UseAuth()
+    {
+        WebApplication.UseAuthentication();
+        WebApplication.UseAuthorization();
+        
         return Task.CompletedTask;
     }
 

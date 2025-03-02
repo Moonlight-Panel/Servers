@@ -14,27 +14,6 @@ namespace MoonlightServers.ApiServer.Services;
 [Singleton]
 public class NodeService
 {
-    public async Task<HttpApiClient> CreateApiClient(Node node)
-    {
-        var url = "";
-
-        if (node.UseSsl)
-            url += "https://";
-        else
-            url += "http://";
-
-        url += $"{node.Fqdn}:{node.HttpPort}/";
-
-        var httpClient = new HttpClient()
-        {
-            BaseAddress = new Uri(url)
-        };
-
-        httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {node.Token}");
-
-        return new HttpApiClient(httpClient);
-    }
-
     public string CreateAccessToken(Node node, Action<Dictionary<string, object>> parameters, TimeSpan duration)
     {
         var claims = new Dictionary<string, object>();
@@ -63,7 +42,7 @@ public class NodeService
 
     public async Task<SystemStatusResponse> GetSystemStatus(Node node)
     {
-        using var apiClient = await CreateApiClient(node);
+        using var apiClient = CreateApiClient(node);
         return await apiClient.GetJson<SystemStatusResponse>("api/system/status");
     }
 
@@ -71,20 +50,65 @@ public class NodeService
 
     public async Task<StatisticsApplicationResponse> GetApplicationStatistics(Node node)
     {
-        using var apiClient = await CreateApiClient(node);
+        using var apiClient = CreateApiClient(node);
         return await apiClient.GetJson<StatisticsApplicationResponse>("api/statistics/application");
     }
 
     public async Task<StatisticsHostResponse> GetHostStatistics(Node node)
     {
-        using var apiClient = await CreateApiClient(node);
+        using var apiClient = CreateApiClient(node);
         return await apiClient.GetJson<StatisticsHostResponse>("api/statistics/host");
     }
 
     public async Task<StatisticsDockerResponse> GetDockerStatistics(Node node)
     {
-        using var apiClient = await CreateApiClient(node);
+        using var apiClient = CreateApiClient(node);
         return await apiClient.GetJson<StatisticsDockerResponse>("api/statistics/docker");
+    }
+
+    #endregion
+
+    #region Helpers
+
+    private string GenerateJwt(Node node)
+    {
+        var jwtSecurityTokenHandler = new JwtSecurityTokenHandler();
+
+        var securityTokenDescriptor = new SecurityTokenDescriptor()
+        {
+            //Expires = DateTime.UtcNow.AddYears(1),
+            Expires = DateTime.UtcNow.AddMinutes(1),
+            NotBefore = DateTime.UtcNow.AddSeconds(-1),
+            IssuedAt = DateTime.UtcNow,
+            SigningCredentials = new SigningCredentials(
+                new SymmetricSecurityKey(Encoding.UTF8.GetBytes(
+                    node.Token
+                )),
+                SecurityAlgorithms.HmacSha256
+            )
+        };
+
+        var securityToken = jwtSecurityTokenHandler.CreateJwtSecurityToken(securityTokenDescriptor);
+
+        return jwtSecurityTokenHandler.WriteToken(securityToken);
+    }
+    
+    public HttpApiClient CreateApiClient(Node node)
+    {
+        var url = "";
+
+        url += node.UseSsl ? "https://" : "http://";
+        url += $"{node.Fqdn}:{node.HttpPort}/";
+
+        var httpClient = new HttpClient()
+        {
+            BaseAddress = new Uri(url)
+        };
+
+        var jwt = GenerateJwt(node);
+        httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {jwt}");
+
+        return new HttpApiClient(httpClient);
     }
 
     #endregion

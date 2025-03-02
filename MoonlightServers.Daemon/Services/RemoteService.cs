@@ -31,6 +31,13 @@ public class RemoteService
         );
     }
 
+    public async Task<ServerDataResponse> GetServer(int serverId)
+    {
+        return await ApiClient.GetJson<ServerDataResponse>(
+            $"api/remote/servers/{serverId}"
+        );
+    }
+
     public async Task<ServerInstallDataResponse> GetServerInstallation(int serverId)
     {
         return await ApiClient.GetJson<ServerInstallDataResponse>(

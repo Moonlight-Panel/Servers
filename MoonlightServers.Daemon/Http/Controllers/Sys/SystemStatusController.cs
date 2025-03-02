@@ -1,10 +1,12 @@
 using System.Diagnostics;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MoonlightServers.Daemon.Services;
 using MoonlightServers.DaemonShared.DaemonSide.Http.Responses.Sys;
 
 namespace MoonlightServers.Daemon.Http.Controllers.Sys;
 
+[Authorize]
 [ApiController]
 [Route("api/system/status")]
 public class SystemStatusController : Controller

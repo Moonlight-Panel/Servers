@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MoonCore.Exceptions;
 using MoonlightServers.Daemon.Enums;
@@ -5,6 +6,7 @@ using MoonlightServers.Daemon.Services;
 
 namespace MoonlightServers.Daemon.Http.Controllers.Servers;
 
+[Authorize]
 [ApiController]
 [Route("api/servers")]
 public class ServerPowerController : Controller

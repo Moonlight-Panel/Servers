@@ -37,7 +37,7 @@ public class ServersController : Controller
         var node = await NodeRepository
             .Get()
             .FirstAsync(x => x.TokenId == tokenId);
-        
+
         var total = await ServerRepository
             .Get()
             .Where(x => x.Node.Id == node.Id)
@@ -58,47 +58,12 @@ public class ServersController : Controller
 
         foreach (var server in servers)
         {
-            var dockerImage = server.Star.DockerImages
-                .Skip(server.DockerImageIndex)
-                .FirstOrDefault();
+            var convertedData = ConvertToServerData(server);
 
-            if (dockerImage == null)
-            {
-                dockerImage = server.Star.DockerImages
-                    .Skip(server.Star.DefaultDockerImage)
-                    .FirstOrDefault();
-            }
-
-            if (dockerImage == null)
-                dockerImage = server.Star.DockerImages.LastOrDefault();
-
-            if (dockerImage == null)
-            {
-                Logger.LogWarning("Unable to map server data for server {id}: No docker image available", server.Id);
+            if (convertedData == null)
                 continue;
-            }
 
-            serverData.Add(new ServerDataResponse()
-            {
-                Id = server.Id,
-                StartupCommand = server.StartupOverride ?? server.Star.StartupCommand,
-                Allocations = server.Allocations.Select(x => new AllocationDataResponse()
-                {
-                    IpAddress = x.IpAddress,
-                    Port = x.Port
-                }).ToArray(),
-                Variables = server.Variables.ToDictionary(x => x.Key, x => x.Value),
-                Bandwidth = server.Bandwidth,
-                Cpu = server.Cpu,
-                Disk = server.Disk,
-                Memory = server.Memory,
-                OnlineDetection = server.Star.OnlineDetection,
-                DockerImage = dockerImage.Identifier,
-                PullDockerImage = dockerImage.AutoPulling,
-                ParseConiguration = server.Star.ParseConfiguration,
-                StopCommand = server.Star.StopCommand,
-                UseVirtualDisk = server.UseVirtualDisk
-            });
+            serverData.Add(convertedData);
         }
 
         return new PagedData<ServerDataResponse>()
@@ -111,6 +76,38 @@ public class ServersController : Controller
         };
     }
 
+    [HttpGet("{id:int}")]
+    public async Task<ServerDataResponse> Get([FromRoute] int id)
+    {
+        // Load the node via the token id
+        var tokenId = User.Claims.First(x => x.Type == "iss").Value;
+
+        var node = await NodeRepository
+            .Get()
+            .FirstAsync(x => x.TokenId == tokenId);
+
+        // Load the server with the star data attached. We filter by the node to ensure the node can only access
+        // servers linked to it
+        var server = await ServerRepository
+            .Get()
+            .Where(x => x.Node.Id == node.Id)
+            .Include(x => x.Star)
+            .ThenInclude(x => x.DockerImages)
+            .Include(x => x.Variables)
+            .Include(x => x.Allocations)
+            .FirstOrDefaultAsync(x => x.Id == id);
+
+        if (server == null)
+            throw new HttpApiException("No server with this id found", 404);
+
+        var convertedData = ConvertToServerData(server);
+
+        if (convertedData == null)
+            throw new HttpApiException("An error occured while creating the server data model", 500);
+
+        return convertedData;
+    }
+
     [HttpGet("{id:int}/install")]
     public async Task<ServerInstallDataResponse> GetInstall([FromRoute] int id)
     {
@@ -120,7 +117,7 @@ public class ServersController : Controller
         var node = await NodeRepository
             .Get()
             .FirstAsync(x => x.TokenId == tokenId);
-        
+
         // Load the server with the star data attached. We filter by the node to ensure the node can only access
         // servers linked to it
         var server = await ServerRepository
@@ -137,6 +134,60 @@ public class ServersController : Controller
             Script = server.Star.InstallScript,
             DockerImage = server.Star.InstallDockerImage,
             Shell = server.Star.InstallShell
+        };
+    }
+
+    private ServerDataResponse? ConvertToServerData(Server server)
+    {
+        // Find the docker image to use for this server
+        StarDockerImage? dockerImage = null;
+
+        // Handle server set image if specified
+        if (server.DockerImageIndex != -1)
+        {
+            dockerImage = server.Star.DockerImages
+                .Skip(server.DockerImageIndex)
+                .FirstOrDefault();
+        }
+
+        // Handle star default image if set 
+        if (dockerImage == null && server.Star.DefaultDockerImage != -1)
+        {
+            dockerImage = server.Star.DockerImages
+                .Skip(server.Star.DefaultDockerImage)
+                .FirstOrDefault();
+        }
+
+        if (dockerImage == null)
+            dockerImage = server.Star.DockerImages.LastOrDefault();
+
+        if (dockerImage == null)
+        {
+            Logger.LogWarning("Unable to map server data for server {id}: No docker image available", server.Id);
+            return null;
+        }
+
+        // Convert model
+        return new ServerDataResponse()
+        {
+            Id = server.Id,
+            StartupCommand = server.StartupOverride ?? server.Star.StartupCommand,
+            Allocations = server.Allocations.Select(x => new AllocationDataResponse()
+            {
+                IpAddress = x.IpAddress,
+                Port = x.Port
+            }).ToArray(),
+            Variables = server.Variables.ToDictionary(x => x.Key, x => x.Value),
+            Bandwidth = server.Bandwidth,
+            Cpu = server.Cpu,
+            Disk = server.Disk,
+            Memory = server.Memory,
+            OnlineDetection = server.Star.OnlineDetection,
+            DockerImage = dockerImage.Identifier,
+            PullDockerImage = dockerImage.AutoPulling,
+            ParseConiguration = server.Star.ParseConfiguration,
+            StopCommand = server.Star.StopCommand,
+            UseVirtualDisk = server.UseVirtualDisk
         };
     }
 }

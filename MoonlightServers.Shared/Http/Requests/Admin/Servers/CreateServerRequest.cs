@@ -24,8 +24,8 @@ public class CreateServerRequest
     public int Bandwidth { get; set; }
 
     public string? StartupOverride { get; set; }
-    
-    public int DockerImageIndex { get; set; }
+
+    public int DockerImageIndex { get; set; } = -1;
     
     public int StarId { get; set; }
     

@@ -1,11 +1,12 @@
 @using MoonCore.Blazor.Tailwind.Alerts
 @using MoonCore.Helpers
 @using MoonCore.Blazor.Tailwind.Components
+@using MoonlightServers.Frontend.Services
 @using MoonlightServers.Shared.Enums
 
 @inherits BaseServerTab
 
-@inject HttpApiClient HttpApiClient
+@inject ServerService ServerService
 @inject AlertService AlertService
 
 <div class="grid grid-cols-1 md:col-span-2 lg:grid-cols-3">
@@ -34,7 +35,7 @@
         await AlertService.ConfirmDanger(
             "Server installation",
             "Do you really want to reinstall the server? This can potentially lead to loss of data",
-            () => HttpApiClient.Post($"api/client/servers/{Server.Id}/install")
+            () => ServerService.Install(Server.Id)
         );
     }
 }

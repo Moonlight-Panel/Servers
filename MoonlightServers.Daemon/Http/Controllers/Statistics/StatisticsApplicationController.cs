@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MoonlightServers.Daemon.Helpers;
 using MoonlightServers.DaemonShared.DaemonSide.Http.Responses.Statistics;
@@ -6,6 +7,7 @@ namespace MoonlightServers.Daemon.Http.Controllers.Statistics;
 
 // This controller hosts endpoints for the statistics for the daemon application itself
 
+[Authorize]
 [ApiController]
 [Route("api/statistics/application")]
 public class StatisticsApplicationController : Controller

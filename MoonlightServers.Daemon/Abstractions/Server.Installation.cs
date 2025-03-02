@@ -22,9 +22,17 @@ public partial class Server
 
             await LogToConsole("Fetching installation configuration");
 
-            // Fetching remote configuration
+            // Fetching remote configuration and install config
             var remoteService = ServiceProvider.GetRequiredService<RemoteService>();
+            
             var installData = await remoteService.GetServerInstallation(Configuration.Id);
+            var serverData = await remoteService.GetServer(Configuration.Id);
+            
+            // We are updating the regular server config here as well
+            // as changes to variables and other settings wouldn't sync otherwise
+            // because they won't trigger a sync
+            var serverConfiguration = serverData.ToServerConfiguration();
+            UpdateConfiguration(serverConfiguration);
 
             var dockerImageService = ServiceProvider.GetRequiredService<DockerImageService>();
 

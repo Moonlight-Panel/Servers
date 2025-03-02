@@ -2,11 +2,35 @@ using Docker.DotNet.Models;
 using Mono.Unix.Native;
 using MoonCore.Helpers;
 using MoonlightServers.Daemon.Models.Cache;
+using MoonlightServers.DaemonShared.PanelSide.Http.Responses;
 
 namespace MoonlightServers.Daemon.Extensions;
 
 public static class ServerConfigurationExtensions
 {
+    public static ServerConfiguration ToServerConfiguration(this ServerDataResponse response)
+    {
+        return new ServerConfiguration()
+        {
+            Id = response.Id,
+            StartupCommand = response.StartupCommand,
+            Allocations = response.Allocations.Select(y => new ServerConfiguration.AllocationConfiguration()
+            {
+                IpAddress = y.IpAddress,
+                Port = y.Port
+            }).ToArray(),
+            Variables = response.Variables,
+            OnlineDetection = response.OnlineDetection,
+            DockerImage = response.DockerImage,
+            UseVirtualDisk = response.UseVirtualDisk,
+            Bandwidth = response.Bandwidth,
+            Cpu = response.Cpu,
+            Disk = response.Disk,
+            Memory = response.Memory,
+            StopCommand = response.StopCommand
+        };
+    }
+    
     public static CreateContainerParameters ToRuntimeCreateParameters(this ServerConfiguration configuration,
         string hostPath, string containerName)
     {

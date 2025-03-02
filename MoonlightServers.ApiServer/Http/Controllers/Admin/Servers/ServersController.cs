@@ -8,6 +8,7 @@ using MoonCore.Helpers;
 using MoonCore.Models;
 using Moonlight.ApiServer.Database.Entities;
 using MoonlightServers.ApiServer.Database.Entities;
+using MoonlightServers.ApiServer.Services;
 using MoonlightServers.Shared.Http.Requests.Admin.Servers;
 using MoonlightServers.Shared.Http.Responses.Admin.Servers;
 
@@ -24,6 +25,8 @@ public class ServersController : Controller
     private readonly DatabaseRepository<ServerVariable> VariableRepository;
     private readonly DatabaseRepository<Server> ServerRepository;
     private readonly DatabaseRepository<User> UserRepository;
+    private readonly ILogger<ServersController> Logger;
+    private readonly ServerService ServerService;
 
     public ServersController(
         CrudHelper<Server, ServerDetailResponse> crudHelper,
@@ -32,7 +35,10 @@ public class ServersController : Controller
         DatabaseRepository<Allocation> allocationRepository,
         DatabaseRepository<ServerVariable> variableRepository,
         DatabaseRepository<Server> serverRepository,
-        DatabaseRepository<User> userRepository)
+        DatabaseRepository<User> userRepository,
+        ILogger<ServersController> logger,
+        ServerService serverService
+    )
     {
         CrudHelper = crudHelper;
         StarRepository = starRepository;
@@ -41,6 +47,8 @@ public class ServersController : Controller
         VariableRepository = variableRepository;
         ServerRepository = serverRepository;
         UserRepository = userRepository;
+        ServerService = serverService;
+        Logger = logger;
 
         CrudHelper.QueryModifier = servers => servers
             .Include(x => x.Node)
@@ -146,7 +154,7 @@ public class ServersController : Controller
         foreach (var variable in star.Variables)
         {
             var requestVar = request.Variables.FirstOrDefault(x => x.Key == variable.Key);
-            
+
             var serverVar = new ServerVariable()
             {
                 Key = variable.Key,
@@ -162,9 +170,22 @@ public class ServersController : Controller
         server.Node = node;
         server.Star = star;
 
-        // TODO: Call node
-
         var finalServer = await ServerRepository.Add(server);
+
+        try
+        {
+            await ServerService.Sync(finalServer);
+        }
+        catch (Exception e)
+        {
+            Logger.LogError("Unable to sync server to node the server is assigned to: {e}", e);
+
+            // We are deleting the server from the database after the creation has failed
+            // to ensure we wont have a bugged server in the database which doesnt exist on the node
+            await ServerRepository.Remove(finalServer);
+
+            throw;
+        }
 
         return CrudHelper.MapToResult(finalServer);
     }
@@ -186,7 +207,7 @@ public class ServersController : Controller
                 .Where(x => x.Server == null || x.Server.Id == server.Id)
                 .Where(x => x.Node.Id == server.Node.Id)
                 .FirstOrDefaultAsync(x => x.Id == allocationId);
-            
+
             // ^ This loads the allocations specified in the request.
             // Valid allocations are either free ones or ones which are already allocated to this server
 
@@ -207,31 +228,53 @@ public class ServersController : Controller
 
         // Set allocations
         server.Allocations = allocations;
-        
+
         // Process variables
         foreach (var variable in request.Variables)
         {
             // Search server variable associated to the variable in the request
             var serverVar = server.Variables
                 .FirstOrDefault(x => x.Key == variable.Key);
-            
-            if(serverVar == null)
+
+            if (serverVar == null)
                 continue;
 
             // Update value
             serverVar.Value = variable.Value;
         }
-        
-        // TODO: Call node
-        
+
         await ServerRepository.Update(server);
+
+        // Notify the node about the changes
+        await ServerService.Sync(server);
 
         return CrudHelper.MapToResult(server);
     }
 
     [HttpDelete("{id:int}")]
-    public async Task Delete([FromRoute] int id)
+    public async Task Delete([FromRoute] int id, [FromQuery] bool force = false)
     {
+        var server = await CrudHelper.GetSingleModel(id);
+        
+        try
+        {
+            // If the sync fails on the node and we aren't forcing the deletion,
+            // we don't want to delete it from the database yet
+            await ServerService.SyncDelete(server);
+        }
+        catch (Exception e)
+        {
+            if (force)
+            {
+                Logger.LogWarning(
+                    "An error occured while syncing deletion of a server to the node. Continuing anyways. Error: {e}",
+                    e
+                );
+            }
+            else
+                throw;
+        }
+
         await CrudHelper.Delete(id);
     }
 }

@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using MoonCore.Exceptions;
 using MoonCore.Extended.Abstractions;
 using MoonCore.Helpers;
+using Moonlight.ApiServer.Database.Entities;
 using MoonlightServers.ApiServer.Database.Entities;
 using MoonlightServers.ApiServer.Services;
 
@@ -15,113 +16,69 @@ namespace MoonlightServers.ApiServer.Http.Controllers.Client;
 public class ServerPowerController : Controller
 {
     private readonly DatabaseRepository<Server> ServerRepository;
-    private readonly NodeService NodeService;
+    private readonly DatabaseRepository<User> UserRepository;
+    private readonly ServerService ServerService;
 
-    public ServerPowerController(DatabaseRepository<Server> serverRepository, NodeService nodeService)
+    public ServerPowerController(
+        DatabaseRepository<Server> serverRepository,
+        DatabaseRepository<User> userRepository,
+        ServerService serverService
+    )
     {
         ServerRepository = serverRepository;
-        NodeService = nodeService;
+        UserRepository = userRepository;
+        ServerService = serverService;
     }
 
     [HttpPost("{serverId:int}/start")]
     [Authorize]
     public async Task Start([FromRoute] int serverId)
     {
-        var server = await GetServerWithPermCheck(serverId);
-
-        using var apiClient = await NodeService.CreateApiClient(server.Node);
-
-        try
-        {
-            await apiClient.Post($"api/servers/{server.Id}/start");
-        }
-        catch (HttpRequestException e)
-        {
-            throw new HttpApiException("Unable to access the node the server is running on", 502);
-        }
+        var server = await GetServerById(serverId);
+        await ServerService.Start(server);
     }
 
     [HttpPost("{serverId:int}/stop")]
     [Authorize]
     public async Task Stop([FromRoute] int serverId)
     {
-        var server = await GetServerWithPermCheck(serverId);
-
-        using var apiClient = await NodeService.CreateApiClient(server.Node);
-
-        try
-        {
-            await apiClient.Post($"api/servers/{server.Id}/stop");
-        }
-        catch (HttpRequestException e)
-        {
-            throw new HttpApiException("Unable to access the node the server is running on", 502);
-        }
+        var server = await GetServerById(serverId);
+        await ServerService.Stop(server);
     }
 
     [HttpPost("{serverId:int}/kill")]
     [Authorize]
     public async Task Kill([FromRoute] int serverId)
     {
-        var server = await GetServerWithPermCheck(serverId);
-
-        using var apiClient = await NodeService.CreateApiClient(server.Node);
-
-        try
-        {
-            await apiClient.Post($"api/servers/{server.Id}/kill");
-        }
-        catch (HttpRequestException e)
-        {
-            throw new HttpApiException("Unable to access the node the server is running on", 502);
-        }
+        var server = await GetServerById(serverId);
+        await ServerService.Kill(server);
     }
 
     [HttpPost("{serverId:int}/install")]
     [Authorize]
     public async Task Install([FromRoute] int serverId)
     {
-        var server = await GetServerWithPermCheck(serverId);
-
-        using var apiClient = await NodeService.CreateApiClient(server.Node);
-
-        try
-        {
-            await apiClient.Post($"api/servers/{server.Id}/install");
-        }
-        catch (HttpRequestException e)
-        {
-            throw new HttpApiException("Unable to access the node the server is running on", 502);
-        }
+        var server = await GetServerById(serverId);
+        await ServerService.Install(server);
     }
 
-    private async Task<Server> GetServerWithPermCheck(int serverId,
-        Func<IQueryable<Server>, IQueryable<Server>>? queryModifier = null)
+    private async Task<Server> GetServerById(int serverId)
     {
-        var userIdClaim = User.Claims.First(x => x.Type == "userId");
-        var userId = int.Parse(userIdClaim.Value);
-
-        var query = ServerRepository
+        var server = await ServerRepository
             .Get()
-            .Include(x => x.Node) as IQueryable<Server>;
-
-        if (queryModifier != null)
-            query = queryModifier.Invoke(query);
-
-        var server = await query
+            .Include(x => x.Node)
             .FirstOrDefaultAsync(x => x.Id == serverId);
 
         if (server == null)
             throw new HttpApiException("No server with this id found", 404);
 
-        if (server.OwnerId == userId) // The current user is the owner
-            return server;
+        var userIdClaim = User.Claims.First(x => x.Type == "userId");
+        var userId = int.Parse(userIdClaim.Value);
+        var user = await UserRepository.Get().FirstAsync(x => x.Id == userId);
 
-        var permissions = User.Claims.First(x => x.Type == "permissions").Value.Split(";", StringSplitOptions.RemoveEmptyEntries);
-        
-        if (PermissionHelper.HasPermission(permissions, "admin.servers.get")) // The current user is an admin
-            return server;
+        if (!ServerService.IsAllowedToAccess(user, server))
+            throw new HttpApiException("No server with this id found", 404);
 
-        throw new HttpApiException("No server with this id found", 404);
+        return server;
     }
 }

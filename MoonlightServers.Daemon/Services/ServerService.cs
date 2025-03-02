@@ -1,8 +1,11 @@
 using Docker.DotNet;
 using Docker.DotNet.Models;
 using MoonCore.Attributes;
+using MoonCore.Exceptions;
 using MoonCore.Models;
 using MoonlightServers.Daemon.Abstractions;
+using MoonlightServers.Daemon.Enums;
+using MoonlightServers.Daemon.Extensions;
 using MoonlightServers.Daemon.Models.Cache;
 using MoonlightServers.DaemonShared.PanelSide.Http.Responses;
 
@@ -16,11 +19,15 @@ public class ServerService : IHostedLifecycleService
     private readonly RemoteService RemoteService;
     private readonly IServiceProvider ServiceProvider;
     private readonly ILoggerFactory LoggerFactory;
-    private bool IsInitialized = false;
     private CancellationTokenSource Cancellation = new();
+    private bool IsInitialized = false;
 
-    public ServerService(RemoteService remoteService, ILogger<ServerService> logger, IServiceProvider serviceProvider,
-        ILoggerFactory loggerFactory)
+    public ServerService(
+        RemoteService remoteService,
+        ILogger<ServerService> logger,
+        IServiceProvider serviceProvider,
+        ILoggerFactory loggerFactory
+    )
     {
         RemoteService = remoteService;
         Logger = logger;
@@ -35,8 +42,8 @@ public class ServerService : IHostedLifecycleService
             Logger.LogWarning("Ignoring initialize call: Already initialized");
             return;
         }
-
-        IsInitialized = true;
+        else
+            IsInitialized = true;
 
         // Loading models and converting them
         Logger.LogInformation("Fetching servers from panel");
@@ -45,25 +52,9 @@ public class ServerService : IHostedLifecycleService
             await RemoteService.GetServers(page, pageSize)
         );
 
-        var configurations = servers.Select(x => new ServerConfiguration()
-        {
-            Id = x.Id,
-            StartupCommand = x.StartupCommand,
-            Allocations = x.Allocations.Select(y => new ServerConfiguration.AllocationConfiguration()
-            {
-                IpAddress = y.IpAddress,
-                Port = y.Port
-            }).ToArray(),
-            Variables = x.Variables,
-            OnlineDetection = x.OnlineDetection,
-            DockerImage = x.DockerImage,
-            UseVirtualDisk = x.UseVirtualDisk,
-            Bandwidth = x.Bandwidth,
-            Cpu = x.Cpu,
-            Disk = x.Disk,
-            Memory = x.Memory,
-            StopCommand = x.StopCommand
-        }).ToArray();
+        var configurations = servers
+            .Select(x => x.ToServerConfiguration())
+            .ToArray();
 
         Logger.LogInformation("Initializing {count} servers", servers.Length);
 
@@ -91,7 +82,7 @@ public class ServerService : IHostedLifecycleService
         await Cancellation.CancelAsync();
     }
 
-    private async Task AttachToDockerEvents()
+    private Task AttachToDockerEvents()
     {
         var dockerClient = ServiceProvider.GetRequiredService<DockerClient>();
 
@@ -123,11 +114,11 @@ public class ServerService : IHostedLifecycleService
                                 await server.NotifyRuntimeContainerDied();
                                 return;
                             }
-                            
+
                             // Check if it's an installation container
                             lock (Servers)
                                 server = Servers.FirstOrDefault(x => x.InstallationContainerId == message.ID);
-                            
+
                             if (server != null)
                             {
                                 await server.NotifyInstallationContainerDied();
@@ -144,9 +135,11 @@ public class ServerService : IHostedLifecycleService
                 }
             }
         });
+
+        return Task.CompletedTask;
     }
 
-    private async Task InitializeServerRange(ServerConfiguration[] serverConfigurations)
+    public async Task InitializeServerRange(ServerConfiguration[] serverConfigurations)
     {
         var dockerClient = ServiceProvider.GetRequiredService<DockerClient>();
 
@@ -173,7 +166,7 @@ public class ServerService : IHostedLifecycleService
             await InitializeServer(configuration, existingContainers);
     }
 
-    private async Task InitializeServer(
+    public async Task<Server> InitializeServer(
         ServerConfiguration serverConfiguration,
         IList<ContainerListResponse> existingContainers
     )
@@ -190,6 +183,70 @@ public class ServerService : IHostedLifecycleService
 
         lock (Servers)
             Servers.Add(server);
+
+        return server;
+    }
+
+    public async Task Sync(int serverId)
+    {
+        var serverData = await RemoteService.GetServer(serverId);
+        var serverConfiguration = serverData.ToServerConfiguration();
+
+        var server = GetServer(serverId);
+
+        if (server == null)
+            await InitializeServer(serverConfiguration, []);
+        else
+            server.UpdateConfiguration(serverConfiguration);
+    }
+
+    public async Task Delete(int serverId)
+    {
+        var server = GetServer(serverId);
+        
+        // If a server with this id doesn't exist we can just exit
+        if(server == null)
+            return;
+
+        if (server.State == ServerState.Installing)
+            throw new HttpApiException("Unable to delete a server while it is installing", 400);
+
+        #region Callbacks
+
+        var deleteCompletion = new TaskCompletionSource();
+        
+        async Task HandleStateChange(ServerState state)
+        {
+            if (state == ServerState.Offline)
+                await DeleteServer();
+        }
+
+        async Task DeleteServer()
+        {
+            await server.CancelTasks();
+            await server.RemoveInstallationVolume();
+            await server.RemoveRuntimeVolume();
+            
+            deleteCompletion.SetResult();
+
+            lock (Servers)
+                Servers.Remove(server);
+        }
+
+        #endregion
+        
+        // If the server is still online, we are killing it and then
+        // waiting for the callback to trigger notifying us that the server is now offline
+        // so we can delete it. The request will pause until then using the deleteCompletion task
+        if (server.State != ServerState.Offline)
+        {
+            server.OnStateChanged += HandleStateChange;
+            await server.Kill();
+
+            await deleteCompletion.Task;
+        }
+        else
+            await DeleteServer();
     }
 
     public Server? GetServer(int id)
@@ -197,7 +254,7 @@ public class ServerService : IHostedLifecycleService
         lock (Servers)
             return Servers.FirstOrDefault(x => x.Id == id);
     }
-
+    
     #region Lifecycle
 
     public Task StartAsync(CancellationToken cancellationToken)

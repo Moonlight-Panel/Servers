@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MoonlightServers.Daemon.Services;
 using MoonlightServers.DaemonShared.DaemonSide.Http.Responses.Statistics;
@@ -6,6 +7,7 @@ namespace MoonlightServers.Daemon.Http.Controllers.Statistics;
 
 // This controller hosts endpoints for the statistics for the docker environment
 
+[Authorize]
 [ApiController]
 [Route("api/statistics/docker")]
 public class StatisticsDockerController : Controller

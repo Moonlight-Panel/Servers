@@ -1,8 +1,8 @@
-@using MoonCore.Helpers
+@using MoonlightServers.Frontend.Services
 @using MoonlightServers.Shared.Enums
 @using MoonlightServers.Shared.Http.Responses.Users.Servers
 
-@inject HttpApiClient ApiClient
+@inject ServerService ServerService
 @inject ILogger<ServerCard> Logger
 
 @{
@@ -158,9 +158,7 @@
 
         try
         {
-            Status = await ApiClient.GetJson<ServerStatusResponse>(
-                $"api/client/servers/{Server.Id}/status"
-            );
+            Status = await ServerService.GetStatus(Server.Id);
         }
         catch (Exception e)
         {

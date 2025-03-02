@@ -1,12 +1,12 @@
 @page "/servers"
 
-@using MoonCore.Helpers
 @using MoonlightServers.Frontend.UI.Components.Servers
 @using MoonCore.Blazor.Tailwind.Components
 @using MoonCore.Models
+@using MoonlightServers.Frontend.Services
 @using MoonlightServers.Shared.Http.Responses.Users.Servers
 
-@inject HttpApiClient ApiClient
+@inject ServerService ServerService
 
 <LazyLoader Load="Load">
     <div class="flex flex-col gap-y-5">
@@ -42,9 +42,7 @@
     private async Task Load(LazyLoader lazyLoader)
     {
         Servers = await PagedData<ServerDetailResponse>.All(async (page, pageSize) =>
-            await ApiClient.GetJson<PagedData<ServerDetailResponse>>(
-                $"api/client/servers?page={page}&pageSize={pageSize}"
-            )
+            await ServerService.GetServers(page, pageSize)
         );
     }
 }

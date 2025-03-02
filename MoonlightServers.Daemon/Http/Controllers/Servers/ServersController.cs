@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MoonCore.Exceptions;
 using MoonlightServers.Daemon.Services;
@@ -6,6 +7,7 @@ using MoonlightServers.DaemonShared.Enums;
 
 namespace MoonlightServers.Daemon.Http.Controllers.Servers;
 
+[Authorize]
 [ApiController]
 [Route("api/servers")]
 public class ServersController : Controller
@@ -17,18 +19,32 @@ public class ServersController : Controller
         ServerService = serverService;
     }
 
+    [HttpPost("{serverId:int}/sync")]
+    public async Task Sync([FromRoute] int serverId)
+    {
+        await ServerService.Sync(serverId);
+    }
+
+    [HttpDelete("{serverId:int}")]
+    public async Task Delete([FromRoute] int serverId)
+    {
+        await ServerService.Delete(serverId);
+    }
+
     [HttpGet("{serverId:int}/status")]
-    public async Task<ServerStatusResponse> GetStatus(int serverId)
+    public Task<ServerStatusResponse> GetStatus([FromRoute] int serverId)
     {
         var server = ServerService.GetServer(serverId);
 
         if (server == null)
             throw new HttpApiException("No server with this id found", 404);
         
-        return new ServerStatusResponse()
+        var result = new ServerStatusResponse()
         {
             State = (ServerState)server.State
         };
+
+        return Task.FromResult(result);
     }
 
     [HttpGet("{serverId:int}/logs")]
