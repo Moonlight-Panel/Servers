@@ -23,10 +23,13 @@ public partial class Server
         }
         else
             await InitializeStateMachine(ServerState.Offline);
-
-        // And at last we initialize all events, so we can react to certain state changes and outputs.
+        
+        // Now we initialize all events, so we can react to certain state changes and outputs.
         // We need to do this regardless if the server was reattached or not, as it hasn't been initialized yet
         await InitializeEvents();
+        
+        // Load storage configuration
+        await InitializeStorage();
     }
 
     private Task InitializeStateMachine(ServerState initialState)

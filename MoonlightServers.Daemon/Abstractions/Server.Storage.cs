@@ -1,89 +1,121 @@
 using MoonCore.Helpers;
+using MoonCore.Unix.SecureFs;
 using MoonlightServers.Daemon.Configuration;
+using MoonlightServers.Daemon.Helpers;
 
 namespace MoonlightServers.Daemon.Abstractions;
 
 public partial class Server
 {
-    private async Task<string> EnsureRuntimeVolume()
-    {
-        var hostPath = GetRuntimeVolumePath();
-        
-        await LogToConsole("Creating storage");
+    public ServerFileSystem FileSystem { get; private set; }
+    
+    private SpinLock FsLock = new();
+    
+    private SecureFileSystem? InternalFileSystem;
+    
+    private string RuntimeVolumePath;
+    private string InstallationVolumePath;
 
-        // Create volume if missing
-        if (!Directory.Exists(hostPath))
-            Directory.CreateDirectory(hostPath);
+    private async Task InitializeStorage()
+    {
+        #region Configure paths
+
+        var appConfiguration = ServiceProvider.GetRequiredService<AppConfiguration>();
+
+        // Runtime
+        var runtimePath = PathBuilder.Dir(appConfiguration.Storage.Volumes, Configuration.Id.ToString());
+
+        if (appConfiguration.Storage.Volumes.StartsWith("/"))
+            RuntimeVolumePath = runtimePath;
+        else
+            RuntimeVolumePath = PathBuilder.Dir(Directory.GetCurrentDirectory(), runtimePath);
+        
+        // Installation
+        var installationPath = PathBuilder.Dir(appConfiguration.Storage.Install, Configuration.Id.ToString());
+
+        if (appConfiguration.Storage.Install.StartsWith("/"))
+            InstallationVolumePath = installationPath;
+        else
+            InstallationVolumePath = PathBuilder.Dir(Directory.GetCurrentDirectory(), installationPath);
+
+        #endregion
+
+        await ConnectRuntimeVolume();
+    }
+
+    public async Task DestroyStorage()
+    {
+        await DisconnectRuntimeVolume();
+    }
+    
+    private async Task ConnectRuntimeVolume()
+    {
+        var gotLock = false;
+        
+        try
+        {
+            FsLock.Enter(ref gotLock);
+            
+            // We want to dispose the old fs if existing, to make sure we wont leave any file descriptors open
+            if(InternalFileSystem != null && !InternalFileSystem.IsDisposed)
+                InternalFileSystem.Dispose();
+
+            await EnsureRuntimeVolume();
+
+            InternalFileSystem = new SecureFileSystem(RuntimeVolumePath);
+            FileSystem = new ServerFileSystem(InternalFileSystem);
+        }
+        finally
+        {
+            if(gotLock)
+                FsLock.Exit();
+        }
+    }
+
+    private Task DisconnectRuntimeVolume()
+    {
+        if(InternalFileSystem != null && !InternalFileSystem.IsDisposed)
+            InternalFileSystem.Dispose();
+        
+        return Task.CompletedTask;
+    }
+    
+    private Task EnsureRuntimeVolume()
+    {
+        if (!Directory.Exists(RuntimeVolumePath))
+            Directory.CreateDirectory(RuntimeVolumePath);
         
         // TODO: Virtual disk
         
-        return hostPath;
+        return Task.CompletedTask;
     }
     
-    private string GetRuntimeVolumePath()
+    public Task RemoveRuntimeVolume()
     {
-        var appConfiguration = ServiceProvider.GetRequiredService<AppConfiguration>();
-        
-        var hostPath = PathBuilder.Dir(
-            appConfiguration.Storage.Volumes,
-            Configuration.Id.ToString()
-        );
-        
-        if (hostPath.StartsWith("/"))
-            return hostPath;
-        else
-            return PathBuilder.JoinPaths(Directory.GetCurrentDirectory(), hostPath);
-    }
-    
-    public async Task RemoveRuntimeVolume()
-    {
-        var hostPath = GetRuntimeVolumePath();
-        
-        await LogToConsole("Removing storage");
-
         // Remove volume if existing
-        if (Directory.Exists(hostPath))
-            Directory.Delete(hostPath, true);
+        if (Directory.Exists(RuntimeVolumePath))
+            Directory.Delete(RuntimeVolumePath, true);
         
         // TODO: Virtual disk
+        
+        return Task.CompletedTask;
     }
     
-    private async Task<string> EnsureInstallationVolume()
+    private Task EnsureInstallationVolume()
     {
-        var hostPath = GetInstallationVolumePath();
-        
-        await LogToConsole("Creating installation storage");
-
         // Create volume if missing
-        if (!Directory.Exists(hostPath))
-            Directory.CreateDirectory(hostPath);
+        if (!Directory.Exists(InstallationVolumePath))
+            Directory.CreateDirectory(InstallationVolumePath);
         
-        return hostPath;
+        return Task.CompletedTask;
     }
 
-    private string GetInstallationVolumePath()
+    public Task RemoveInstallationVolume()
     {
-        var appConfiguration = ServiceProvider.GetRequiredService<AppConfiguration>();
+        // Remove install volume if existing
+        if (Directory.Exists(InstallationVolumePath))
+            Directory.Delete(InstallationVolumePath, true);
         
-        var hostPath = PathBuilder.Dir(
-            appConfiguration.Storage.Install,
-            Configuration.Id.ToString()
-        );
-        
-        if (hostPath.StartsWith("/"))
-            return hostPath;
-        else
-            return PathBuilder.JoinPaths(Directory.GetCurrentDirectory(), hostPath);
-    }
-
-    public async Task RemoveInstallationVolume()
-    {
-        var hostPath = GetInstallationVolumePath();
-        
-        await LogToConsole("Removing installation storage");
-
-        // Remove volume if existing
-        if (Directory.Exists(hostPath))
-            Directory.Delete(hostPath, true);
+        return Task.CompletedTask;
     }
 }

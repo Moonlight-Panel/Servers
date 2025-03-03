@@ -18,7 +18,6 @@
 
     <ItemGroup>
       <Folder Include="Http\Middleware\" />
-      <Folder Include="storage\volumes\" />
     </ItemGroup>
 
     <ItemGroup>

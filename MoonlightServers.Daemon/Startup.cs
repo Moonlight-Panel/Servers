@@ -41,6 +41,7 @@ public class Startup
 
         await CreateWebApplicationBuilder();
 
+        await ConfigureKestrel();
         await RegisterAppConfiguration();
         await RegisterLogging();
         await RegisterBase();
@@ -81,6 +82,16 @@ public class Startup
 
         WebApplicationBuilder.Services.AddApiExceptionHandler();
 
+        return Task.CompletedTask;
+    }
+
+    private Task ConfigureKestrel()
+    {
+        WebApplicationBuilder.WebHost.ConfigureKestrel(options =>
+        {
+            options.Limits.MaxRequestBodySize = ByteConverter.FromMegaBytes(Configuration.Files.UploadLimit).Bytes;
+        });
+        
         return Task.CompletedTask;
     }
 

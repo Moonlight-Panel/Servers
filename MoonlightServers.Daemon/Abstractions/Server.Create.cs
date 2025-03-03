@@ -14,14 +14,14 @@ public partial class Server
         // for analytics and automatic deletion
         await dockerImageService.Ensure(Configuration.DockerImage, async message => { await LogToConsole(message); });
 
-        var hostPath = await EnsureRuntimeVolume();
+        await EnsureRuntimeVolume();
 
         await LogToConsole("Creating container");
 
         var dockerClient = ServiceProvider.GetRequiredService<DockerClient>();
 
         var parameters = Configuration.ToRuntimeCreateParameters(
-            hostPath: hostPath,
+            hostPath: RuntimeVolumePath,
             containerName: RuntimeContainerName
         );
 

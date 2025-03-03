@@ -8,6 +8,7 @@ public class AppConfiguration
     public StorageData Storage { get; set; } = new();
     public SecurityData Security { get; set; } = new();
     public RemoteData Remote { get; set; } = new();
+    public FilesData Files { get; set; } = new();
     
     public class RemoteData
     {
@@ -31,5 +32,10 @@ public class AppConfiguration
         public string VirtualDisks { get; set; } = PathBuilder.Dir("virtualDisks");
         public string Backups { get; set; } = PathBuilder.Dir("backups");
         public string Install { get; set; } = PathBuilder.Dir("install");
+    }
+    
+    public class FilesData
+    {
+        public int UploadLimit { get; set; } = 500;
     }
 }

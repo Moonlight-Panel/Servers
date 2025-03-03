@@ -20,10 +20,6 @@
     </ItemGroup>
 
     <ItemGroup>
-        <Folder Include="Helpers\"/>
-    </ItemGroup>
-
-    <ItemGroup>
         <None Remove="Properties\launchSettings.json"/>
     </ItemGroup>
 

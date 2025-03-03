@@ -40,18 +40,18 @@ public partial class Server
             // for analytics and automatic deletion
             await dockerImageService.Ensure(installData.DockerImage, async message => { await LogToConsole(message); });
 
-            // Ensuring storage configuration
-            var installationHostPath = await EnsureInstallationVolume();
-            var runtimeHostPath = await EnsureRuntimeVolume();
+            // Ensuring storage
+            await EnsureInstallationVolume();
+            await EnsureRuntimeVolume();
 
             // Write installation script to path
             var content = installData.Script.Replace("\r\n", "\n");
-            await File.WriteAllTextAsync(PathBuilder.File(installationHostPath, "install.sh"), content);
+            await File.WriteAllTextAsync(PathBuilder.File(InstallationVolumePath, "install.sh"), content);
 
             // Creating container configuration
             var parameters = Configuration.ToInstallationCreateParameters(
-                runtimeHostPath,
-                installationHostPath,
+                RuntimeVolumePath,
+                InstallationVolumePath,
                 InstallationContainerName,
                 installData.DockerImage,
                 installData.Shell

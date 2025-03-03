@@ -72,10 +72,24 @@ public class ServerService : IHostedLifecycleService
             servers = Servers.ToArray();
 
         //
-        Logger.LogTrace("Canceling server tasks");
+        Logger.LogTrace("Canceling server tasks and disconnecting storage");
 
         foreach (var server in servers)
-            await server.CancelTasks();
+        {
+            try
+            {
+                await server.CancelTasks();
+                await server.DestroyStorage();
+            }
+            catch (Exception e)
+            {
+                Logger.LogCritical(
+                    "An unhandled error occured while stopping the server management for server {id}: {e}",
+                    server.Id,
+                    e
+                );
+            }
+        }
 
         // 
         Logger.LogTrace("Canceling own tasks");
@@ -203,9 +217,9 @@ public class ServerService : IHostedLifecycleService
     public async Task Delete(int serverId)
     {
         var server = GetServer(serverId);
-        
+
         // If a server with this id doesn't exist we can just exit
-        if(server == null)
+        if (server == null)
             return;
 
         if (server.State == ServerState.Installing)
@@ -214,7 +228,7 @@ public class ServerService : IHostedLifecycleService
         #region Callbacks
 
         var deleteCompletion = new TaskCompletionSource();
-        
+
         async Task HandleStateChange(ServerState state)
         {
             if (state == ServerState.Offline)
@@ -224,9 +238,10 @@ public class ServerService : IHostedLifecycleService
         async Task DeleteServer()
         {
             await server.CancelTasks();
+            await server.DestroyStorage();
             await server.RemoveInstallationVolume();
             await server.RemoveRuntimeVolume();
-            
+
             deleteCompletion.SetResult();
 
             lock (Servers)
@@ -234,7 +249,7 @@ public class ServerService : IHostedLifecycleService
         }
 
         #endregion
-        
+
         // If the server is still online, we are killing it and then
         // waiting for the callback to trigger notifying us that the server is now offline
         // so we can delete it. The request will pause until then using the deleteCompletion task
@@ -254,7 +269,7 @@ public class ServerService : IHostedLifecycleService
         lock (Servers)
             return Servers.FirstOrDefault(x => x.Id == id);
     }
-    
+
     #region Lifecycle
 
     public Task StartAsync(CancellationToken cancellationToken)
