@@ -1,0 +1,36 @@
+@using MoonCore.Blazor.Tailwind.Components
+@using MoonlightServers.Frontend.Services
+@using MoonlightServers.Shared.Http.Responses.Client.Servers.Variables
+
+@inherits BaseServerTab
+
+@inject ServerService ServerService
+
+<LazyLoader Load="Load">
+    <div class="grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-6">
+        @foreach (var variable in Variables)
+        {
+            <div class="sm:col-span-2 card card-body p-5">
+                <label class="block text-sm font-medium leading-6 text-white">
+                    @variable.Name
+                </label>
+                <p class="mt-1 mb-2.5 text-sm leading-6 text-gray-400">
+                    @variable.Description
+                </p>
+                <div class="mt-auto">
+                    <input value="@variable.Value" type="text" class="form-input w-full">
+                </div>
+            </div>
+        }
+    </div>
+</LazyLoader>
+
+@code
+{
+    private ServerVariableDetailResponse[] Variables;
+
+    private async Task Load(LazyLoader _)
+    {
+        Variables = await ServerService.GetVariables(Server.Id);
+    }
+}

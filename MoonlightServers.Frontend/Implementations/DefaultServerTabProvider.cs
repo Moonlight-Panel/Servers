@@ -13,6 +13,7 @@ public class DefaultServerTabProvider : IServerTabProvider
         [
             ServerTab.CreateFromComponent<ConsoleTab>("Console", "console", 0),
             ServerTab.CreateFromComponent<FilesTab>("Files", "files", 1),
+            ServerTab.CreateFromComponent<VariablesTab>("Variables", "variables", 2),
             ServerTab.CreateFromComponent<SettingsTab>("Settings", "settings", 10),
         ];
 

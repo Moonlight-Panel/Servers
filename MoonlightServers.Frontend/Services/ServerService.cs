@@ -1,6 +1,8 @@
 using MoonCore.Attributes;
 using MoonCore.Helpers;
 using MoonCore.Models;
+using MoonlightServers.Shared.Http.Requests.Client.Servers.Variables;
+using MoonlightServers.Shared.Http.Responses.Client.Servers.Variables;
 using MoonlightServers.Shared.Http.Responses.Users.Servers;
 
 namespace MoonlightServers.Frontend.Services;
@@ -49,7 +51,7 @@ public class ServerService
             $"api/client/servers/{serverId}/ws"
         );
     }
-    
+
     public async Task Install(int serverId)
     {
         await HttpApiClient.Post(
@@ -65,18 +67,45 @@ public class ServerService
             $"api/client/servers/{serverId}/start"
         );
     }
-    
+
     public async Task Stop(int serverId)
     {
         await HttpApiClient.Post(
             $"api/client/servers/{serverId}/stop"
         );
     }
-    
+
     public async Task Kill(int serverId)
     {
         await HttpApiClient.Post(
             $"api/client/servers/{serverId}/kill"
+        );
+    }
+
+    #endregion
+
+    #region Variables
+
+    public async Task<ServerVariableDetailResponse[]> GetVariables(int serverId)
+    {
+        return await HttpApiClient.GetJson<ServerVariableDetailResponse[]>(
+            $"api/client/servers/{serverId}/variables"
+        );
+    }
+
+    public async Task UpdateVariables(int serverId, UpdateServerVariableRangeRequest request)
+    {
+        await HttpApiClient.Patch(
+            $"api/client/servers/{serverId}/variables",
+            request
+        );
+    }
+    
+    public async Task UpdateVariable(int serverId, UpdateServerVariableRequest request)
+    {
+        await HttpApiClient.Put(
+            $"api/client/servers/{serverId}/variables",
+            request
         );
     }
 
