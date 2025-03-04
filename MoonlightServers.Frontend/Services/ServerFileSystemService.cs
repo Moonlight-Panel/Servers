@@ -45,7 +45,7 @@ public class ServerFileSystemService
     public async Task Upload(int serverId, string path, Stream dataStream)
     {
         var uploadSession = await ApiClient.GetJson<ServerFilesUploadResponse>(
-            $"api/client/servers/{serverId}/files/upload?path={path}"
+            $"api/client/servers/{serverId}/files/upload"
         );
 
         using var httpClient = new HttpClient();
@@ -54,5 +54,16 @@ public class ServerFileSystemService
         content.Add(new StreamContent(dataStream), "file", path);
         
         await httpClient.PostAsync(uploadSession.UploadUrl, content);
+    }
+
+    public async Task<Stream> Download(int serverId, string path)
+    {
+        var downloadSession = await ApiClient.GetJson<ServerFilesDownloadResponse>(
+            $"api/client/servers/{serverId}/files/download?path={path}"
+        );
+
+        using var httpClient = new HttpClient();
+
+        return await httpClient.GetStreamAsync(downloadSession.DownloadUrl);
     }
 }

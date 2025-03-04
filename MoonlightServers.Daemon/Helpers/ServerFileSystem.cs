@@ -73,6 +73,19 @@ public class ServerFileSystem
 
         return Task.CompletedTask;
     }
+    
+    public Task Read(string inputPath, Func<Stream, Task> onHandle)
+    {
+        var path = Normalize(inputPath);
+        
+        FileSystem.OpenFile(path, stream =>
+        {
+            // No try catch here because the safe fs abstraction already handles every error occuring in the handle
+            onHandle.Invoke(stream).Wait();
+        });
+
+        return Task.CompletedTask;
+    }
 
     private string Normalize(string path)
     {

@@ -53,8 +53,8 @@ public class ServerFileSystemProvider : IFileSystemProvider
         await FileSystemService.Mkdir(ServerId, path);
     }
 
-    public Task<Stream> Read(string path)
+    public async Task<Stream> Read(string path)
     {
-        throw new NotImplementedException();
+        return await FileSystemService.Download(ServerId, path);
     }
 }

@@ -78,7 +78,7 @@ public class ServerFileSystemController : Controller
     }
 
     [HttpGet("{serverId:int}/files/upload")]
-    public async Task<ServerFilesUploadResponse> Upload([FromRoute] int serverId, [FromQuery] string path)
+    public async Task<ServerFilesUploadResponse> Upload([FromRoute] int serverId)
     {
         var server = await GetServerById(serverId);
 
@@ -88,9 +88,8 @@ public class ServerFileSystemController : Controller
             {
                 parameters.Add("type", "upload");
                 parameters.Add("serverId", server.Id);
-                parameters.Add("path", path);
             },
-            TimeSpan.FromMinutes(5)
+            TimeSpan.FromMinutes(1)
         );
         
         var url = "";
@@ -102,6 +101,34 @@ public class ServerFileSystemController : Controller
         return new ServerFilesUploadResponse()
         {
             UploadUrl = url
+        };
+    }
+    
+    [HttpGet("{serverId:int}/files/download")]
+    public async Task<ServerFilesDownloadResponse> Download([FromRoute] int serverId, [FromQuery] string path)
+    {
+        var server = await GetServerById(serverId);
+
+        var accessToken = NodeService.CreateAccessToken(
+            server.Node,
+            parameters =>
+            {
+                parameters.Add("type", "download");
+                parameters.Add("path", path);
+                parameters.Add("serverId", server.Id);
+            },
+            TimeSpan.FromMinutes(1)
+        );
+        
+        var url = "";
+
+        url += server.Node.UseSsl ? "https://" : "http://";
+        url += $"{server.Node.Fqdn}:{server.Node.HttpPort}/";
+        url += $"api/servers/download?token={accessToken}";
+
+        return new ServerFilesDownloadResponse()
+        {
+            DownloadUrl = url
         };
     }
 
