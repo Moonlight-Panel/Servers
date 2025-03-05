@@ -1,10 +1,12 @@
 @using MoonCore.Blazor.Tailwind.Components
+@using MoonCore.Blazor.Tailwind.Toasts
 @using MoonlightServers.Frontend.Services
 @using MoonlightServers.Shared.Http.Responses.Client.Servers.Variables
 
 @inherits BaseServerTab
 
 @inject ServerService ServerService
+@inject ToastService ToastService
 
 <LazyLoader Load="Load">
     <div class="grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-6">
@@ -18,7 +20,10 @@
                     @variable.Description
                 </p>
                 <div class="mt-auto">
-                    <input value="@variable.Value" type="text" class="form-input w-full">
+                    <input @onchange="e => UpdateVariable(variable, e)"
+                           value="@variable.Value"
+                           type="text"
+                           class="form-input w-full">
                 </div>
             </div>
         }
@@ -32,5 +37,22 @@
     private async Task Load(LazyLoader _)
     {
         Variables = await ServerService.GetVariables(Server.Id);
+    }
+
+    private async Task UpdateVariable(ServerVariableDetailResponse variable, ChangeEventArgs args)
+    {
+        var value = args.Value?.ToString() ?? "";
+
+        await ServerService.UpdateVariable(Server.Id, new()
+        {
+            Key = variable.Key,
+            Value = value
+        });
+        
+        // Fetch the current data to make sure the user sees the latest data
+        Variables = await ServerService.GetVariables(Server.Id);
+        await InvokeAsync(StateHasChanged);
+        
+        await ToastService.Success("Successfully updated variable");
     }
 }
