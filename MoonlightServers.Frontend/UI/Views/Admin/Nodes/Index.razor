@@ -27,8 +27,10 @@
     </PageHeader>
 </div>
 
-<DataTable TItem="NodeDetailResponse" PageSize="15" LoadItemsPaginatedAsync="LoadData">
+<DataTable TItem="NodeDetailResponse">
     <Configuration>
+        <Pagination TItem="NodeDetailResponse" ItemSource="LoadData" />
+        
         <DataTableColumn TItem="NodeDetailResponse" Field="@(x => x.Id)" Name="Id"/>
         <DataTableColumn TItem="NodeDetailResponse" Field="@(x => x.Name)" Name="Name">
             <ColumnTemplate>
@@ -103,8 +105,8 @@
             </ColumnTemplate>
         </DataTableColumn>
         <DataTableColumn TItem="NodeDetailResponse"
-                    HeaderCss="p-2 font-semibold text-left hidden xl:table-cell"
-                    ColumnCss="p-2 text-left font-normal hidden xl:table-cell">
+                         HeaderCss="p-2 font-semibold text-left hidden xl:table-cell"
+                         ColumnCss="p-2 text-left font-normal hidden xl:table-cell">
             <ColumnTemplate>
                 <div>
                     <i class="icon-memory-stick text-lg me-1 align-middle text-primary-500"></i>

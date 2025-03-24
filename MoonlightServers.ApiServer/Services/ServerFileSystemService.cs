@@ -4,7 +4,9 @@ using MoonCore.Attributes;
 using MoonCore.Extended.Abstractions;
 using MoonCore.Helpers;
 using MoonlightServers.ApiServer.Database.Entities;
+using MoonlightServers.DaemonShared.DaemonSide.Http.Requests;
 using MoonlightServers.DaemonShared.DaemonSide.Http.Responses.Servers;
+using MoonlightServers.DaemonShared.Enums;
 
 namespace MoonlightServers.ApiServer.Services;
 
@@ -56,6 +58,36 @@ public class ServerFileSystemService
 
         await apiClient.Post(
             $"api/servers/{server.Id}/files/mkdir?path={path}"
+        );
+    }
+
+    public async Task Compress(Server server, CompressType type, string[] items, string destination)
+    {
+        using var apiClient = await GetApiClient(server);
+
+        await apiClient.Post(
+            $"api/servers/{server.Id}/files/compress",
+            new ServerFilesCompressRequest()
+            {
+                Type = type,
+                Items = items,
+                Destination = destination
+            }
+        );
+    }
+    
+    public async Task Decompress(Server server, CompressType type, string path, string destination)
+    {
+        using var apiClient = await GetApiClient(server);
+
+        await apiClient.Post(
+            $"api/servers/{server.Id}/files/decompress",
+            new ServerFilesDecompressRequest()
+            {
+                Type = type,
+                Path = path,
+                Destination = destination
+            }
         );
     }
 

@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MoonCore.Exceptions;
 using MoonlightServers.Daemon.Services;
+using MoonlightServers.DaemonShared.DaemonSide.Http.Requests;
 using MoonlightServers.DaemonShared.DaemonSide.Http.Responses.Servers;
 
 namespace MoonlightServers.Daemon.Http.Controllers.Servers;
@@ -60,5 +61,35 @@ public class ServerFileSystemController : Controller
             throw new HttpApiException("No server with this id found", 404);
 
         await server.FileSystem.Mkdir(path);
+    }
+
+    [HttpPost("{id:int}/files/compress")]
+    public async Task Compress([FromRoute] int id, [FromBody] ServerFilesCompressRequest request)
+    {
+        var server = ServerService.GetServer(id);
+
+        if (server == null)
+            throw new HttpApiException("No server with this id found", 404);
+
+        await server.FileSystem.Compress(
+            request.Items,
+            request.Destination,
+            request.Type
+        );
+    }
+    
+    [HttpPost("{id:int}/files/decompress")]
+    public async Task Decompress([FromRoute] int id, [FromBody] ServerFilesDecompressRequest request)
+    {
+        var server = ServerService.GetServer(id);
+
+        if (server == null)
+            throw new HttpApiException("No server with this id found", 404);
+
+        await server.FileSystem.Decompress(
+            request.Path,
+            request.Destination,
+            request.Type
+        );
     }
 }

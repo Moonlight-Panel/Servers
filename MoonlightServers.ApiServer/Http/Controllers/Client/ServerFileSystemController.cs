@@ -6,6 +6,8 @@ using MoonCore.Extended.Abstractions;
 using Moonlight.ApiServer.Database.Entities;
 using MoonlightServers.ApiServer.Database.Entities;
 using MoonlightServers.ApiServer.Services;
+using MoonlightServers.DaemonShared.Enums;
+using MoonlightServers.Shared.Http.Requests.Client.Servers.Files;
 using MoonlightServers.Shared.Http.Responses.Client.Servers.Files;
 
 namespace MoonlightServers.ApiServer.Http.Controllers.Client;
@@ -130,6 +132,28 @@ public class ServerFileSystemController : Controller
         {
             DownloadUrl = url
         };
+    }
+
+    [HttpPost("{serverId:int}/files/compress")]
+    public async Task Compress([FromRoute] int serverId, [FromBody] ServerFilesCompressRequest request)
+    {
+        var server = await GetServerById(serverId);
+
+        if (!Enum.TryParse(request.Type, true, out CompressType type))
+            throw new HttpApiException("Invalid compress type provided", 400);
+
+        await ServerFileSystemService.Compress(server, type, request.Items, request.Destination);
+    }
+    
+    [HttpPost("{serverId:int}/files/decompress")]
+    public async Task Decompress([FromRoute] int serverId, [FromBody] ServerFilesDecompressRequest request)
+    {
+        var server = await GetServerById(serverId);
+
+        if (!Enum.TryParse(request.Type, true, out CompressType type))
+            throw new HttpApiException("Invalid compress type provided", 400);
+
+        await ServerFileSystemService.Decompress(server, type, request.Path, request.Destination);
     }
 
     private async Task<Server> GetServerById(int serverId)

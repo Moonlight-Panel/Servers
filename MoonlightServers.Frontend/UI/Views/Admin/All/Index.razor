@@ -26,8 +26,10 @@
     </PageHeader>
 </div>
 
-<DataTable @ref="Table" TItem="ServerDetailResponse" PageSize="15" LoadItemsPaginatedAsync="LoadData">
+<DataTable @ref="Table" TItem="ServerDetailResponse">
     <Configuration>
+        <Pagination TItem="ServerDetailResponse" ItemSource="LoadData" />
+        
         <DataTableColumn TItem="ServerDetailResponse" Field="@(x => x.Id)" Name="Id"/>
         <DataTableColumn TItem="ServerDetailResponse" Field="@(x => x.Name)" Name="Name"/>
         <DataTableColumn TItem="ServerDetailResponse" Field="@(x => x.NodeId)" Name="Node">

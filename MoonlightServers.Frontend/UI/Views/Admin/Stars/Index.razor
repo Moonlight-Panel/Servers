@@ -33,9 +33,11 @@
     </PageHeader>
 </div>
 
-<DataTable @ref="Table" TItem="StarDetailResponse" LoadItemsPaginatedAsync="LoadData">
+<DataTable @ref="Table" TItem="StarDetailResponse">
     <Configuration>
-        <DataTableColumn TItem="StarDetailResponse" Field="@(x => x.Id)" Name="Id" />
+        <Pagination TItem="StarDetailResponse" ItemSource="LoadData" />
+        
+        <DataTableColumn TItem="StarDetailResponse" Field="@(x => x.Id)" Name="Id"/>
         <DataTableColumn TItem="StarDetailResponse" Field="@(x => x.Name)" Name="Name">
             <ColumnTemplate>
                 <a class="text-primary-500" href="/admin/servers/stars/update/@(context.Id)">
@@ -43,8 +45,8 @@
                 </a>
             </ColumnTemplate>
         </DataTableColumn>
-        <DataTableColumn TItem="StarDetailResponse" Field="@(x => x.Version)" Name="Version" />
-        <DataTableColumn TItem="StarDetailResponse" Field="@(x => x.Author)" Name="Author" />
+        <DataTableColumn TItem="StarDetailResponse" Field="@(x => x.Version)" Name="Version"/>
+        <DataTableColumn TItem="StarDetailResponse" Field="@(x => x.Author)" Name="Author"/>
         <DataTableColumn TItem="StarDetailResponse">
             <ColumnTemplate>
                 <div class="flex justify-end">
@@ -68,7 +70,7 @@
                         <i class="icon-download align-middle"></i>
                         <span class="align-middle">Export</span>
                     </a>
-                    
+
                     <a href="/admin/servers/stars/update/@(context.Id)" class="text-primary-500 mr-2 sm:mr-3">
                         <i class="icon-pencil text-base"></i>
                     </a>

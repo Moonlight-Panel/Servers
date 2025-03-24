@@ -1,5 +1,7 @@
+using System.Net;
 using MoonCore.Attributes;
 using MoonCore.Helpers;
+using MoonlightServers.Shared.Http.Requests.Client.Servers.Files;
 using MoonlightServers.Shared.Http.Responses.Client.Servers.Files;
 
 namespace MoonlightServers.Frontend.Services;
@@ -42,28 +44,43 @@ public class ServerFileSystemService
         );
     }
 
-    public async Task Upload(int serverId, string path, Stream dataStream)
+    public async Task<ServerFilesUploadResponse> Upload(int serverId)
     {
-        var uploadSession = await ApiClient.GetJson<ServerFilesUploadResponse>(
+        return await ApiClient.GetJson<ServerFilesUploadResponse>(
             $"api/client/servers/{serverId}/files/upload"
         );
-
-        using var httpClient = new HttpClient();
-
-        var content = new MultipartFormDataContent();
-        content.Add(new StreamContent(dataStream), "file", path);
-        
-        await httpClient.PostAsync(uploadSession.UploadUrl, content);
     }
 
-    public async Task<Stream> Download(int serverId, string path)
+    public async Task<ServerFilesDownloadResponse> Download(int serverId, string path)
     {
-        var downloadSession = await ApiClient.GetJson<ServerFilesDownloadResponse>(
+        return await ApiClient.GetJson<ServerFilesDownloadResponse>(
             $"api/client/servers/{serverId}/files/download?path={path}"
         );
+    }
 
-        using var httpClient = new HttpClient();
-
-        return await httpClient.GetStreamAsync(downloadSession.DownloadUrl);
+    public async Task Compress(int serverId, string type, string[] items, string destination)
+    {
+        await ApiClient.Post(
+            $"api/client/servers/{serverId}/files/compress",
+            new ServerFilesCompressRequest()
+            {
+                Type = type,
+                Items = items,
+                Destination = destination
+            }
+        );
+    }
+    
+    public async Task Decompress(int serverId, string type, string path, string destination)
+    {
+        await ApiClient.Post(
+            $"api/client/servers/{serverId}/files/decompress",
+            new ServerFilesDecompressRequest()
+            {
+                Type = type,
+                Path = path,
+                Destination = destination
+            }
+        );
     }
 }

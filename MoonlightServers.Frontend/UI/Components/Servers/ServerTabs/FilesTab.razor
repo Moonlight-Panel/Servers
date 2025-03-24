@@ -1,19 +1,25 @@
 @using MoonlightServers.Frontend.Services
 @using MoonCore.Blazor.Tailwind.Fm
+@using MoonCore.Blazor.Tailwind.Services
 @using MoonlightServers.Frontend.Helpers
 
 @inherits BaseServerTab
 
 @inject ServerFileSystemService FileSystemService
+@inject DownloadService DownloadService
 
-<FileManager FileSystemProvider="Provider" />
+<FileManager FileSystemProvider="Provider"/>
 
 @code
 {
     private IFileSystemProvider Provider;
-    
+
     protected override void OnInitialized()
     {
-        Provider = new ServerFileSystemProvider(Server.Id, FileSystemService);
+        Provider = new ServerFileSystemProvider(
+            Server.Id,
+            FileSystemService,
+            DownloadService
+        );
     }
 }

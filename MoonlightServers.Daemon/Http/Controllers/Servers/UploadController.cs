@@ -17,6 +17,8 @@ public class UploadController : Controller
     private readonly AppConfiguration Configuration;
     private readonly ServerService ServerService;
 
+    private readonly long ChunkSize = ByteConverter.FromMegaBytes(20).Bytes; // TODO config
+
     public UploadController(
         AccessTokenHelper accessTokenHelper,
         ServerService serverService,
@@ -29,15 +31,24 @@ public class UploadController : Controller
     }
 
     [HttpPost]
-    public async Task Upload([FromQuery] string token)
+    public async Task Upload(
+        [FromQuery] string token,
+        [FromQuery] long totalSize, // TODO: Add limit in config
+        [FromQuery] int chunkId,
+        [FromQuery] string path
+    )
     {
-        var file = Request.Form.Files.FirstOrDefault();
+        #region File validation
 
-        if (file == null)
-            throw new HttpApiException("No file provided", 400);
+        if (Request.Form.Files.Count != 1)
+            throw new HttpApiException("You need to provide exactly one file", 400);
+
+        var file = Request.Form.Files[0];
         
-        if(file.Length > ByteConverter.FromMegaBytes(Configuration.Files.UploadLimit).Bytes)
-            throw new HttpApiException("The provided file is bigger than the upload limit", 400);
+        if (file.Length > ChunkSize)
+            throw new HttpApiException("The provided data exceeds the chunk size limit", 400);
+
+        #endregion
 
         #region Token validation
 
@@ -56,14 +67,30 @@ public class UploadController : Controller
 
         #endregion
 
+        #region Chunk calculation and validation
+
+        var chunks = totalSize / ChunkSize;
+        chunks += totalSize % ChunkSize > 0 ? 1 : 0;
+
+        if (chunkId > chunks)
+            throw new HttpApiException("Invalid chunk id: Out of bounds", 400);
+        
+        var positionToSkipTo = ChunkSize * chunkId;
+
+        #endregion
+
         var server = ServerService.GetServer(serverId);
 
         if (server == null)
             throw new HttpApiException("No server with this id found", 404);
 
         var dataStream = file.OpenReadStream();
-        var path = file.FileName;
 
-        await server.FileSystem.Create(path, dataStream);
+        await server.FileSystem.CreateChunk(
+            path,
+            totalSize,
+            positionToSkipTo,
+            dataStream
+        );
     }
 }
