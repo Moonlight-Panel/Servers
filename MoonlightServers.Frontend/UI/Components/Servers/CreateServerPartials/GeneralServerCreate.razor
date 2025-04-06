@@ -19,7 +19,7 @@
     <div class="sm:col-span-2">
         <label class="block text-sm font-medium leading-6 text-white">Owner</label>
         <div class="mt-2">
-            <InputItemSearchSelect TItem="UserDetailResponse"
+            <InputItemSearchSelect TItem="UserResponse"
                                    TProperty="int"
                                    @bind-Value="Request.OwnerId"
                                    AllowNone="false"
@@ -89,7 +89,7 @@
 {
     [Parameter] public CreateServerRequest Request { get; set; }
 
-    private UserDetailResponse[]? Users;
+    private UserResponse[]? Users;
 
     private async Task<StarDetailResponse[]> LoadStars()
     {
@@ -113,12 +113,12 @@
         return items;
     }
 
-    private async Task<UserDetailResponse[]> Loader(string searchTerm)
+    private async Task<UserResponse[]> Loader(string searchTerm)
     {
         if (Users == null)
         {
-            Users = await PagedData<UserDetailResponse>.All(async (page, pageSize) =>
-                await ApiClient.GetJson<PagedData<UserDetailResponse>>(
+            Users = await PagedData<UserResponse>.All(async (page, pageSize) =>
+                await ApiClient.GetJson<PagedData<UserResponse>>(
                     $"api/admin/users?page={page}&pageSize={pageSize}"
                 )
             );
