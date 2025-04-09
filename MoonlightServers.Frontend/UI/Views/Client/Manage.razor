@@ -1,4 +1,5 @@
 @page "/servers/{ServerId:int}"
+@page "/servers/{ServerId:int}/{TabPath:alpha}"
 
 @using Microsoft.AspNetCore.SignalR.Client
 @using MoonlightServers.Shared.Http.Responses.Users.Servers
@@ -9,10 +10,9 @@
 @using MoonlightServers.Frontend.Models
 @using MoonlightServers.Frontend.Services
 @using MoonlightServers.Shared.Enums
-@using MoonlightServers.Frontend.UI.Components
-@using MoonlightServers.Frontend.UI.Components.Servers.ServerTabs
 
 @inject ServerService ServerService
+@inject NavigationManager Navigation
 @inject IEnumerable<IServerTabProvider> TabProviders
 
 @implements IAsyncDisposable
@@ -124,25 +124,43 @@
         </div>
 
         <div class="mt-3">
-            <Tabs>
+            <ul class="flex flex-wrap -m-1">
                 @foreach (var tab in Tabs)
                 {
-                    <Tab Name="@tab.Name">
-                        @{
-                            var rf = ComponentHelper.FromType(tab.ComponentType, parameters =>
-                            {
-                                parameters.Add("Server", Server);
-                                parameters.Add("State", State);
-                                parameters.Add("InitialConsoleMessage", InitialConsoleMessage);
-                                parameters.Add("HubConnection", HubConnection);
-                                parameters.Add("Parent", this);
-                            });
+                    <li class="m-1">
+                        @if (tab == CurrentTab)
+                        {
+                            <a href="/servers/@(ServerId)/@(tab.Path)"
+                               class="inline-flex items-center justify-center text-sm font-medium leading-5 rounded-full px-3 py-1 border border-transparent shadow-sm bg-gray-100 text-gray-800 transition">
+                                @tab.Name
+                            </a>
                         }
-
-                        @rf
-                    </Tab>
+                        else
+                        {
+                            <a href="/servers/@(ServerId)/@(tab.Path)" @onclick:preventDefault
+                               @onclick="() => SwitchTab(tab)"
+                               class="inline-flex items-center justify-center text-sm font-medium leading-5 rounded-full px-3 py-1 border border-gray-700/60 hover:border-gray-600 shadow-sm bg-gray-800 text-gray-400 transition">
+                                @tab.Name
+                            </a>
+                        }
+                    </li>
                 }
-            </Tabs>
+            </ul>
+
+            @{
+                var rf = ComponentHelper.FromType(CurrentTab!.ComponentType, parameters =>
+                {
+                    parameters.Add("Server", Server);
+                    parameters.Add("State", State);
+                    parameters.Add("InitialConsoleMessage", InitialConsoleMessage);
+                    parameters.Add("HubConnection", HubConnection);
+                    parameters.Add("Parent", this);
+                });
+            }
+
+            <div class="mt-5">
+                @rf
+            </div>
         </div>
     }
 </LazyLoader>
@@ -150,8 +168,10 @@
 @code
 {
     [Parameter] public int ServerId { get; set; }
+    [Parameter] public string? TabPath { get; set; }
 
-    private List<ServerTab> Tabs = new();
+    private ServerTab[] Tabs;
+    private ServerTab? CurrentTab;
 
     private ServerDetailResponse Server;
     private bool NotFound = false;
@@ -168,8 +188,23 @@
             Server = await ServerService.GetServer(ServerId);
 
             // Load server tabs
+            var tmpTabs = new List<ServerTab>();
+
             foreach (var serverTabProvider in TabProviders)
-                Tabs.AddRange(await serverTabProvider.GetTabs(Server));
+                tmpTabs.AddRange(await serverTabProvider.GetTabs(Server));
+
+            Tabs = tmpTabs.OrderBy(x => x.Priority).ToArray();
+
+            // Find current tab
+            if (!string.IsNullOrEmpty(TabPath))
+            {
+                CurrentTab = Tabs.FirstOrDefault(
+                    x => TabPath.Equals(x.Path, StringComparison.InvariantCultureIgnoreCase)
+                );
+            }
+
+            if (CurrentTab == null)
+                CurrentTab = Tabs.First();
 
             // Load initial status for first render
             var status = await ServerService.GetStatus(ServerId);
@@ -222,6 +257,14 @@
             else
                 throw;
         }
+    }
+
+    private async Task SwitchTab(ServerTab tab)
+    {
+        CurrentTab = tab;
+        Navigation.NavigateTo($"/servers/{ServerId}/{tab.Path}");
+
+        await InvokeAsync(StateHasChanged);
     }
 
     private async Task Start()

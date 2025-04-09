@@ -31,8 +31,10 @@
         </div>
     </div>
     <div class="col-span-1 md:col-span-2 -mb-3">
-        <DataTable @ref="Table" TItem="NodeAllocationDetailResponse" LoadItemsPaginatedAsync="LoadData">
+        <DataTable @ref="Table" TItem="NodeAllocationDetailResponse">
             <Configuration>
+                <Pagination TItem="NodeAllocationDetailResponse" ItemSource="LoadData" />
+                
                 <DataTableColumn TItem="NodeAllocationDetailResponse" Field="@(x => x.IpAddress)" Name="IP Address"/>
                 <DataTableColumn TItem="NodeAllocationDetailResponse" Field="@(x => x.Port)" Name="Port"/>
                 <DataTableColumn TItem="NodeAllocationDetailResponse">
