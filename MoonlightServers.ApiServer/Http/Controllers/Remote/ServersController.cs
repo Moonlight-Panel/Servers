@@ -11,7 +11,7 @@ namespace MoonlightServers.ApiServer.Http.Controllers.Remote;
 
 [ApiController]
 [Route("api/remote/servers")]
-[Authorize(AuthenticationSchemes = "serverNodeAuthentication")]
+[Authorize(AuthenticationSchemes = "nodeAuthentication")]
 public class ServersController : Controller
 {
     private readonly DatabaseRepository<Server> ServerRepository;
@@ -21,7 +21,8 @@ public class ServersController : Controller
     public ServersController(
         DatabaseRepository<Server> serverRepository,
         DatabaseRepository<Node> nodeRepository,
-        ILogger<ServersController> logger)
+        ILogger<ServersController> logger
+    )
     {
         ServerRepository = serverRepository;
         NodeRepository = nodeRepository;
@@ -31,12 +32,12 @@ public class ServersController : Controller
     [HttpGet]
     public async Task<PagedData<ServerDataResponse>> Get([FromQuery] int page, [FromQuery] int pageSize)
     {
-        // Load the node via the token id
-        var tokenId = User.Claims.First(x => x.Type == "iss").Value;
+        // Load the node via the id
+        var nodeId = int.Parse(User.Claims.First(x => x.Type == "nodeId").Value);
 
         var node = await NodeRepository
             .Get()
-            .FirstAsync(x => x.TokenId == tokenId);
+            .FirstAsync(x => x.Id == nodeId);
 
         var total = await ServerRepository
             .Get()
@@ -79,12 +80,12 @@ public class ServersController : Controller
     [HttpGet("{id:int}")]
     public async Task<ServerDataResponse> Get([FromRoute] int id)
     {
-        // Load the node via the token id
-        var tokenId = User.Claims.First(x => x.Type == "iss").Value;
+        // Load the node via the id
+        var nodeId = int.Parse(User.Claims.First(x => x.Type == "nodeId").Value);
 
         var node = await NodeRepository
             .Get()
-            .FirstAsync(x => x.TokenId == tokenId);
+            .FirstAsync(x => x.Id == nodeId);
 
         // Load the server with the star data attached. We filter by the node to ensure the node can only access
         // servers linked to it
@@ -111,12 +112,12 @@ public class ServersController : Controller
     [HttpGet("{id:int}/install")]
     public async Task<ServerInstallDataResponse> GetInstall([FromRoute] int id)
     {
-        // Load the node via the token id
-        var tokenId = User.Claims.First(x => x.Type == "iss").Value;
+        // Load the node via the id
+        var nodeId = int.Parse(User.Claims.First(x => x.Type == "nodeId").Value);
 
         var node = await NodeRepository
             .Get()
-            .FirstAsync(x => x.TokenId == tokenId);
+            .FirstAsync(x => x.Id == nodeId);
 
         // Load the server with the star data attached. We filter by the node to ensure the node can only access
         // servers linked to it

@@ -69,29 +69,6 @@ public class NodeService
     #endregion
 
     #region Helpers
-
-    private string GenerateJwt(Node node)
-    {
-        var jwtSecurityTokenHandler = new JwtSecurityTokenHandler();
-
-        var securityTokenDescriptor = new SecurityTokenDescriptor()
-        {
-            //Expires = DateTime.UtcNow.AddYears(1),
-            Expires = DateTime.UtcNow.AddMinutes(1),
-            NotBefore = DateTime.UtcNow.AddSeconds(-1),
-            IssuedAt = DateTime.UtcNow,
-            SigningCredentials = new SigningCredentials(
-                new SymmetricSecurityKey(Encoding.UTF8.GetBytes(
-                    node.Token
-                )),
-                SecurityAlgorithms.HmacSha256
-            )
-        };
-
-        var securityToken = jwtSecurityTokenHandler.CreateJwtSecurityToken(securityTokenDescriptor);
-
-        return jwtSecurityTokenHandler.WriteToken(securityToken);
-    }
     
     public HttpApiClient CreateApiClient(Node node)
     {
@@ -105,8 +82,7 @@ public class NodeService
             BaseAddress = new Uri(url)
         };
 
-        var jwt = GenerateJwt(node);
-        httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {jwt}");
+        httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {node.Token}");
 
         return new HttpApiClient(httpClient);
     }

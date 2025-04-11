@@ -21,8 +21,8 @@
 
     <ItemGroup>
         <Folder Include="Database\Migrations\"/>
-        <Folder Include="Helpers\"/>
         <Folder Include="Http\Middleware\"/>
+        <Folder Include="Implementations\" />
         <Folder Include="Interfaces\"/>
     </ItemGroup>
 

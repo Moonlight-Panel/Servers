@@ -1,9 +1,7 @@
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.Extensions.Options;
 using MoonCore.Extensions;
 using Moonlight.ApiServer.Interfaces.Startup;
 using MoonlightServers.ApiServer.Database;
-using MoonlightServers.ApiServer.Implementations;
+using MoonlightServers.ApiServer.Helpers;
 
 namespace MoonlightServers.ApiServer.Startup;
 
@@ -19,20 +17,7 @@ public class PluginStartup : IPluginStartup
         // Configure authentication for the remote endpoints
         builder.Services
             .AddAuthentication()
-            .AddJwtBearer("serverNodeAuthentication", options =>
-            {
-                options.TokenValidationParameters = new()
-                {
-                    ClockSkew = TimeSpan.Zero,
-                    ValidateIssuer = false,
-                    ValidateActor = false,
-                    ValidateLifetime = true,
-                    ValidateAudience = false,
-                    ValidateIssuerSigningKey = true
-                };
-            });
-
-        builder.Services.AddSingleton<IConfigureOptions<JwtBearerOptions>, NodeJwtBearerOptions>();
+            .AddScheme<NodeAuthOptions, NodeAuthScheme>("nodeAuthentication", null);
         
         return Task.CompletedTask;
     }

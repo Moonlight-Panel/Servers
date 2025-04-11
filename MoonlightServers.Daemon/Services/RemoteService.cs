@@ -58,36 +58,12 @@ public class RemoteService
             BaseAddress = new Uri(formattedUrl)
         };
 
-        var jwt = GenerateJwt(configuration);
-        httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {jwt}");
+        httpClient.DefaultRequestHeaders.Add(
+            "Authorization",
+            $"Bearer {configuration.Security.TokenId}.{configuration.Security.Token}"
+        );
 
         return new HttpApiClient(httpClient);
-    }
-
-    private string GenerateJwt(AppConfiguration configuration)
-    {
-        var jwtSecurityTokenHandler = new JwtSecurityTokenHandler();
-
-        var securityTokenDesc = new SecurityTokenDescriptor()
-        {
-            Expires = DateTime.UtcNow.AddYears(1), // TODO: Document somewhere
-            IssuedAt = DateTime.UtcNow,
-            Issuer = configuration.Security.TokenId,
-            Audience = configuration.Remote.Url,
-            NotBefore = DateTime.UtcNow.AddSeconds(-1),
-            SigningCredentials = new SigningCredentials(
-                new SymmetricSecurityKey(
-                    Encoding.UTF8.GetBytes(configuration.Security.Token)
-                ),
-                SecurityAlgorithms.HmacSha256
-            )
-        };
-
-        var securityToken = jwtSecurityTokenHandler.CreateJwtSecurityToken(securityTokenDesc);
-
-        securityToken.Header.Add("kid", configuration.Security.TokenId);
-
-        return jwtSecurityTokenHandler.WriteToken(securityToken);
     }
 
     #endregion

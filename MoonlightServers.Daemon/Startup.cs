@@ -1,15 +1,11 @@
-using System.Text;
 using System.Text.Json;
 using Docker.DotNet;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.IdentityModel.Tokens;
-using MoonCore.Configuration;
 using MoonCore.EnvConfiguration;
 using MoonCore.Extended.Extensions;
 using MoonCore.Extensions;
 using MoonCore.Helpers;
-using MoonCore.Services;
 using MoonlightServers.Daemon.Configuration;
+using MoonlightServers.Daemon.Helpers;
 using MoonlightServers.Daemon.Http.Hubs;
 using MoonlightServers.Daemon.Services;
 
@@ -91,7 +87,7 @@ public class Startup
         {
             options.Limits.MaxRequestBodySize = ByteConverter.FromMegaBytes(Configuration.Files.UploadLimit).Bytes;
         });
-        
+
         return Task.CompletedTask;
     }
 
@@ -137,7 +133,7 @@ public class Startup
     private async Task SetupAppConfiguration()
     {
         var configurationBuilder = new ConfigurationBuilder();
-        
+
         // Ensure configuration file exists
         var jsonFilePath = PathBuilder.File(Directory.GetCurrentDirectory(), "storage", "app.json");
 
@@ -147,7 +143,7 @@ public class Startup
         configurationBuilder.AddJsonFile(
             jsonFilePath
         );
-        
+
         configurationBuilder.AddEnvironmentVariables(prefix: "MOONLIGHT_", separator: "_");
 
         var configurationRoot = configurationBuilder.Build();
@@ -311,32 +307,22 @@ public class Startup
     private Task RegisterAuth()
     {
         WebApplicationBuilder.Services
-            .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-            .AddJwtBearer(options =>
+            .AddAuthentication("token")
+            .AddScheme<TokenAuthOptions, TokenAuthScheme>("token", options =>
             {
-                options.TokenValidationParameters = new()
-                {
-                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(
-                        Configuration.Security.Token
-                    )),
-                    ValidateIssuerSigningKey = true,
-                    ValidateLifetime = true,
-                    ValidateAudience = false,
-                    ValidateIssuer = false,
-                    ClockSkew = TimeSpan.Zero
-                };
+                options.Token = Configuration.Security.Token;
             });
-        
+
         WebApplicationBuilder.Services.AddAuthorization();
-        
+
         return Task.CompletedTask;
     }
-    
+
     private Task UseAuth()
     {
         WebApplication.UseAuthentication();
         WebApplication.UseAuthorization();
-        
+
         return Task.CompletedTask;
     }
 

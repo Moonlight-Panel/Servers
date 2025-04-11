@@ -48,8 +48,8 @@ public class NodesController : Controller
     {
         var node = Mapper.Map<Node>(request);
 
-        node.Token = Formatter.GenerateString(32);
         node.TokenId = Formatter.GenerateString(6);
+        node.Token = Formatter.GenerateString(32);
 
         var finalNode = await NodeRepository.Add(node);
 
