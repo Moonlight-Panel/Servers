@@ -1,6 +1,7 @@
 @page "/servers/{ServerId:int}"
 @page "/servers/{ServerId:int}/{TabPath:alpha}"
 
+@using Microsoft.AspNetCore.Http.Connections
 @using Microsoft.AspNetCore.SignalR.Client
 @using MoonlightServers.Shared.Http.Responses.Users.Servers
 @using MoonCore.Blazor.Tailwind.Components
@@ -224,7 +225,15 @@
 
             // Build signal r
             HubConnection = new HubConnectionBuilder()
-                .WithUrl(websocketDetails.Target)
+                .WithUrl(websocketDetails.Target, options =>
+                {
+                    options.AccessTokenProvider = async () =>
+                    {
+                        var details = await ServerService.GetWebSocket(ServerId);
+                        return details.AccessToken;
+                    };
+                })
+                .WithAutomaticReconnect()
                 .Build();
 
             // Define handlers
@@ -246,9 +255,6 @@
 
             // Connect
             await HubConnection.StartAsync();
-
-            // Authenticate
-            await HubConnection.SendAsync("Authenticate", websocketDetails.AccessToken);
         }
         catch (HttpApiException e)
         {

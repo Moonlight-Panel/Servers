@@ -32,7 +32,8 @@ public class NodeService
                     node.Token
                 )),
                 SecurityAlgorithms.HmacSha256
-            )
+            ),
+            Audience = node.TokenId
         };
 
         var securityToken = jwtSecurityTokenHandler.CreateJwtSecurityToken(securityTokenDescriptor);

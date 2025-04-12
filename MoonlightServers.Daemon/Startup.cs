@@ -1,5 +1,9 @@
+using System.Text;
 using System.Text.Json;
 using Docker.DotNet;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Http.Connections;
+using Microsoft.IdentityModel.Tokens;
 using MoonCore.EnvConfiguration;
 using MoonCore.Extended.Extensions;
 using MoonCore.Extensions;
@@ -50,8 +54,8 @@ public class Startup
         await BuildWebApplication();
 
         await UseBase();
-        await UseAuth();
         await UseCors();
+        await UseAuth();
         await UseBaseMiddleware();
 
         await MapBase();
@@ -273,7 +277,11 @@ public class Startup
 
     private Task MapHubs()
     {
-        WebApplication.MapHub<ServerWebSocketHub>("api/servers/ws");
+        WebApplication.MapHub<ServerWebSocketHub>("api/servers/ws", options =>
+        {
+            options.AllowStatefulReconnects = false;
+            options.CloseOnAuthenticationExpiration = true;
+        });
 
         return Task.CompletedTask;
     }
@@ -286,8 +294,11 @@ public class Startup
     {
         //TODO: IMPORTANT: CHANGE !!!
         WebApplicationBuilder.Services.AddCors(x =>
-            x.AddDefaultPolicy(builder =>
-                builder.AllowAnyHeader().AllowAnyOrigin().AllowAnyMethod().Build()
+            x.AddDefaultPolicy(builder => builder
+                .SetIsOriginAllowed(_ => true)
+                .AllowAnyMethod()
+                .AllowAnyHeader()
+                .AllowCredentials()
             )
         );
 
@@ -308,12 +319,78 @@ public class Startup
     {
         WebApplicationBuilder.Services
             .AddAuthentication("token")
-            .AddScheme<TokenAuthOptions, TokenAuthScheme>("token", options =>
+            .AddScheme<TokenAuthOptions, TokenAuthScheme>("token",
+                options => { options.Token = Configuration.Security.Token; })
+            .AddJwtBearer("accessToken", options =>
             {
-                options.Token = Configuration.Security.Token;
+                options.TokenValidationParameters = new TokenValidationParameters()
+                {
+                    ClockSkew = TimeSpan.Zero,
+                    ValidateAudience = true,
+                    ValidateIssuer = false,
+                    ValidateLifetime = true,
+                    ValidateIssuerSigningKey = true,
+                    ValidateActor = false,
+                    IssuerSigningKeys =
+                    [
+                        new SymmetricSecurityKey(
+                            Encoding.UTF8.GetBytes(Configuration.Security.Token)
+                        )
+                    ],
+                    AudienceValidator = (audiences, _, _)
+                        => audiences.Contains(Configuration.Security.TokenId)
+                };
+
+                // Some requests like the signal r websockets or the upload and download endpoints require the user to provide
+                // the access token via the query instead of the header field due to client limitations. To reuse the authentication
+                // on all these requests as we do for all other endpoints which require an access token, we are defining
+                // the custom behaviour to load the access token from the query for these specific endpoints below
+                options.Events = new JwtBearerEvents()
+                {
+                    OnMessageReceived = context =>
+                    {
+                        if (
+                            !context.HttpContext.Request.Path.StartsWithSegments("/api/servers/ws") &&
+                            !context.HttpContext.Request.Path.StartsWithSegments("/api/servers/upload") &&
+                            !context.HttpContext.Request.Path.StartsWithSegments("/api/servers/download")
+                        )
+                        {
+                            return Task.CompletedTask;
+                        }
+
+                        var accessToken = context.Request.Query["access_token"];
+
+                        if (string.IsNullOrEmpty(accessToken))
+                            return Task.CompletedTask;
+
+                        context.Token = accessToken;
+
+                        return Task.CompletedTask;
+                    }
+                };
             });
 
-        WebApplicationBuilder.Services.AddAuthorization();
+        WebApplicationBuilder.Services.AddAuthorization(options =>
+        {
+            // We are defining the access token policies here. Because the same jwt secret is used by the panel
+            // to generate jwt access tokens for all sorts of daemon related stuff we need to separate
+            // the type of access token using the type parameter provided in the claims.
+            
+            options.AddPolicy("serverWebsocket", builder =>
+            {
+                builder.RequireClaim("type", "websocket");
+            });
+            
+            options.AddPolicy("serverUpload", builder =>
+            {
+                builder.RequireClaim("type", "upload");
+            });
+            
+            options.AddPolicy("serverDownload", builder =>
+            {
+                builder.RequireClaim("type", "download");
+            });
+        });
 
         return Task.CompletedTask;
     }

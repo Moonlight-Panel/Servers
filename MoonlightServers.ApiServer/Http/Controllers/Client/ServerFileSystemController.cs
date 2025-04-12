@@ -98,7 +98,7 @@ public class ServerFileSystemController : Controller
 
         url += server.Node.UseSsl ? "https://" : "http://";
         url += $"{server.Node.Fqdn}:{server.Node.HttpPort}/";
-        url += $"api/servers/upload?token={accessToken}";
+        url += $"api/servers/upload?access_token={accessToken}";
 
         return new ServerFilesUploadResponse()
         {
@@ -126,7 +126,7 @@ public class ServerFileSystemController : Controller
 
         url += server.Node.UseSsl ? "https://" : "http://";
         url += $"{server.Node.Fqdn}:{server.Node.HttpPort}/";
-        url += $"api/servers/download?token={accessToken}";
+        url += $"api/servers/download?access_token={accessToken}";
 
         return new ServerFilesDownloadResponse()
         {

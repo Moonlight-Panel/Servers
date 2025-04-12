@@ -1,43 +1,28 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
-using MoonlightServers.Daemon.Services;
 
 namespace MoonlightServers.Daemon.Http.Hubs;
 
+[Authorize(AuthenticationSchemes = "accessToken", Policy = "serverWebsocket")]
 public class ServerWebSocketHub : Hub
 {
     private readonly ILogger<ServerWebSocketHub> Logger;
-    private readonly ServerWebSocketService WebSocketService;
 
-    public ServerWebSocketHub(ILogger<ServerWebSocketHub> logger, ServerWebSocketService webSocketService)
+    public ServerWebSocketHub(ILogger<ServerWebSocketHub> logger)
     {
         Logger = logger;
-        WebSocketService = webSocketService;
     }
-
-    #region Connection Handlers
 
     public override async Task OnConnectedAsync()
-        => await WebSocketService.InitializeClient(Context);
-
-    public override async Task OnDisconnectedAsync(Exception? exception)
-        => await WebSocketService.DestroyClient(Context);
-
-    #endregion
-
-    #region Methods
-
-    [HubMethodName("Authenticate")]
-    public async Task Authenticate(string accessToken)
     {
-        try
-        {
-            await WebSocketService.AuthenticateClient(Context, accessToken);
-        }
-        catch (Exception e)
-        {
-            Logger.LogError("An unhandled error occured in the Authenticate method: {e}", e);
-        }
-    }
+        // The policies validated already the type and the token so we can assume we are authenticated
+        // and just start adding ourselves into the desired group
+        
+        var serverId = Context.User!.Claims.First(x => x.Type == "serverId").Value;
 
-    #endregion
+        await Groups.AddToGroupAsync(
+            Context.ConnectionId,
+            serverId
+        );
+    }
 }

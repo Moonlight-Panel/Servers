@@ -9,30 +9,26 @@ using MoonlightServers.Daemon.Services;
 namespace MoonlightServers.Daemon.Http.Controllers.Servers;
 
 [ApiController]
-[AllowAnonymous]
 [Route("api/servers/upload")]
+[Authorize(AuthenticationSchemes = "accessToken", Policy = "serverUpload")]
 public class UploadController : Controller
 {
-    private readonly AccessTokenHelper AccessTokenHelper;
     private readonly AppConfiguration Configuration;
     private readonly ServerService ServerService;
 
     private readonly long ChunkSize = ByteConverter.FromMegaBytes(20).Bytes; // TODO config
 
     public UploadController(
-        AccessTokenHelper accessTokenHelper,
         ServerService serverService,
         AppConfiguration configuration
     )
     {
-        AccessTokenHelper = accessTokenHelper;
         ServerService = serverService;
         Configuration = configuration;
     }
 
     [HttpPost]
     public async Task Upload(
-        [FromQuery] string token,
         [FromQuery] long totalSize, // TODO: Add limit in config
         [FromQuery] int chunkId,
         [FromQuery] string path
@@ -50,22 +46,7 @@ public class UploadController : Controller
 
         #endregion
 
-        #region Token validation
-
-        if (!AccessTokenHelper.Process(token, out var claims))
-            throw new HttpApiException("Invalid access token provided", 401);
-
-        var typeClaim = claims.FirstOrDefault(x => x.Type == "type");
-
-        if (typeClaim == null || typeClaim.Value != "upload")
-            throw new HttpApiException("Invalid access token provided: Missing or invalid type", 401);
-
-        var serverIdClaim = claims.FirstOrDefault(x => x.Type == "serverId");
-
-        if (serverIdClaim == null || !int.TryParse(serverIdClaim.Value, out var serverId))
-            throw new HttpApiException("Invalid access token provided: Missing or invalid server id", 401);
-
-        #endregion
+        var serverId = int.Parse(User.Claims.First(x => x.Type == "serverId").Value);
 
         #region Chunk calculation and validation
 

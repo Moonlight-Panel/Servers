@@ -1,11 +1,13 @@
 using Docker.DotNet;
 using Docker.DotNet.Models;
+using Microsoft.AspNetCore.SignalR;
 using MoonCore.Attributes;
 using MoonCore.Exceptions;
 using MoonCore.Models;
 using MoonlightServers.Daemon.Abstractions;
 using MoonlightServers.Daemon.Enums;
 using MoonlightServers.Daemon.Extensions;
+using MoonlightServers.Daemon.Http.Hubs;
 using MoonlightServers.Daemon.Models.Cache;
 using MoonlightServers.DaemonShared.PanelSide.Http.Responses;
 
@@ -19,6 +21,7 @@ public class ServerService : IHostedLifecycleService
     private readonly RemoteService RemoteService;
     private readonly IServiceProvider ServiceProvider;
     private readonly ILoggerFactory LoggerFactory;
+    private readonly IHubContext<ServerWebSocketHub> WebSocketHub;
     private CancellationTokenSource Cancellation = new();
     private bool IsInitialized = false;
 
@@ -26,13 +29,15 @@ public class ServerService : IHostedLifecycleService
         RemoteService remoteService,
         ILogger<ServerService> logger,
         IServiceProvider serviceProvider,
-        ILoggerFactory loggerFactory
+        ILoggerFactory loggerFactory,
+        IHubContext<ServerWebSocketHub> webSocketHub
     )
     {
         RemoteService = remoteService;
         Logger = logger;
         ServiceProvider = serviceProvider;
         LoggerFactory = loggerFactory;
+        WebSocketHub = webSocketHub;
     }
 
     public async Task Initialize() //TODO: Add initialize call from panel
@@ -190,7 +195,8 @@ public class ServerService : IHostedLifecycleService
         var server = new Server(
             LoggerFactory.CreateLogger($"Server {serverConfiguration.Id}"),
             ServiceProvider,
-            serverConfiguration
+            serverConfiguration,
+            WebSocketHub
         );
 
         await server.Initialize(existingContainers);

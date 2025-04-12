@@ -1,5 +1,6 @@
 using System.Text.RegularExpressions;
 using Docker.DotNet.Models;
+using Microsoft.AspNetCore.SignalR;
 using MoonlightServers.Daemon.Enums;
 using MoonlightServers.Daemon.Extensions;
 using Stateless;
@@ -98,21 +99,28 @@ public partial class Server
             Logger.LogInformation("State: {state}", transition.Destination);
         });
 
-        // Proxy the events so outside subscribes can react to it
+        // Proxy the events so outside subscribes can react to it and notify websockets
         StateMachine.OnTransitionCompletedAsync(async transition =>
         {
+            // Notify all clients interested in the server
+            await WebSocketHub.Clients
+                .Group(Id.ToString()) //TODO: Consider saving the string value in memory
+                .SendAsync("StateChanged", transition.Destination.ToString());
+            
+            // Notify all external listeners
             if (OnStateChanged != null)
-            {
                 await OnStateChanged(transition.Destination);
-            }
         });
         
         Console.OnOutput += (async message =>
         {
+            // Notify all clients interested in the server
+            await WebSocketHub.Clients
+                .Group(Id.ToString()) //TODO: Consider saving the string value in memory
+                .SendAsync("ConsoleOutput", message);
+            
             if (OnConsoleOutput != null)
-            {
                 await OnConsoleOutput(message);
-            }
         });
 
         return Task.CompletedTask;
