@@ -45,6 +45,7 @@ public partial class Server
 
         StateMachine.Configure(ServerState.Starting)
             .Permit(ServerTrigger.Stop, ServerState.Stopping) // Allow stopping
+            .Permit(ServerTrigger.Kill, ServerState.Stopping) // Allow killing while starting
             .Permit(ServerTrigger.NotifyOnline, ServerState.Online) // Allow the server to report as online
             .Permit(ServerTrigger.NotifyRuntimeContainerDied, ServerState.Offline) // Allow server to handle container death
             .Permit(ServerTrigger.NotifyInternalError, ServerState.Offline) // Error handling for the action below
@@ -53,6 +54,7 @@ public partial class Server
 
         StateMachine.Configure(ServerState.Online)
             .Permit(ServerTrigger.Stop, ServerState.Stopping) // Allow stopping
+            .Permit(ServerTrigger.Kill, ServerState.Stopping) // Allows killing
             .Permit(ServerTrigger.NotifyRuntimeContainerDied, ServerState.Offline) // Allow server to handle container death
             .OnExitFromAsync(ServerTrigger.NotifyRuntimeContainerDied, InternalCrash); // Define a runtime container death as a crash
 
