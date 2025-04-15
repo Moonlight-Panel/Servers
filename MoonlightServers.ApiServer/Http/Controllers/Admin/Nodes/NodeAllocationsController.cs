@@ -1,10 +1,10 @@
+using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using MoonCore.Extended.PermFilter;
 using MoonCore.Exceptions;
 using MoonCore.Extended.Abstractions;
 using MoonCore.Extended.Helpers;
-using MoonCore.Helpers;
 using MoonCore.Models;
 using MoonlightServers.ApiServer.Database.Entities;
 using MoonlightServers.Shared.Http.Requests.Admin.NodeAllocations;
@@ -16,86 +16,151 @@ namespace MoonlightServers.ApiServer.Http.Controllers.Admin.Nodes;
 [Route("api/admin/servers/nodes")]
 public class NodeAllocationsController : Controller
 {
-    private readonly CrudHelper<Allocation, NodeAllocationDetailResponse> CrudHelper;
     private readonly DatabaseRepository<Node> NodeRepository;
     private readonly DatabaseRepository<Allocation> AllocationRepository;
 
-    private Node Node;
-
-    public NodeAllocationsController(CrudHelper<Allocation, NodeAllocationDetailResponse> crudHelper, DatabaseRepository<Node> nodeRepository, DatabaseRepository<Allocation> allocationRepository)
+    public NodeAllocationsController(
+        DatabaseRepository<Node> nodeRepository,
+        DatabaseRepository<Allocation> allocationRepository
+    )
     {
-        CrudHelper = crudHelper;
         NodeRepository = nodeRepository;
         AllocationRepository = allocationRepository;
-    }
-    
-    private async Task ApplyNode(int id)
-    {
-        var node = await NodeRepository
-            .Get()
-            .FirstOrDefaultAsync(x => x.Id == id);
-
-        if (node == null)
-            throw new HttpApiException("A node with this id could not be found", 404);
-
-        Node = node;
-
-        CrudHelper.QueryModifier = variables =>
-            variables.Where(x => x.Node.Id == node.Id);
     }
 
     [HttpGet("{nodeId:int}/allocations")]
     [RequirePermission("admin.servers.nodes.get")]
-    public async Task<IPagedData<NodeAllocationDetailResponse>> Get([FromRoute] int nodeId, [FromQuery] int page, [FromQuery] int pageSize)
+    public async Task<IPagedData<NodeAllocationDetailResponse>> Get(
+        [FromRoute] int nodeId,
+        [FromQuery] int page,
+        [FromQuery] [Range(1, 100)] int pageSize
+    )
     {
-        await ApplyNode(nodeId);
-        
-        return await CrudHelper.Get(page, pageSize);
+        var count = await AllocationRepository.Get().CountAsync(x => x.Node.Id == nodeId);
+
+        var allocations = await AllocationRepository
+            .Get()
+            .Skip(page * pageSize)
+            .Take(pageSize)
+            .Where(x => x.Node.Id == nodeId)
+            .ToArrayAsync();
+
+        var mappedAllocations = allocations.Select(x => new NodeAllocationDetailResponse()
+        {
+            Id = x.Id,
+            IpAddress = x.IpAddress,
+            Port = x.Port
+        }).ToArray();
+
+        return new PagedData<NodeAllocationDetailResponse>()
+        {
+            Items = mappedAllocations,
+            CurrentPage = page,
+            PageSize = pageSize,
+            TotalItems = count,
+            TotalPages = count == 0 ? 0 : (count - 1) / pageSize
+        };
     }
 
     [HttpGet("{nodeId:int}/allocations/{id:int}")]
     [RequirePermission("admin.servers.nodes.get")]
     public async Task<NodeAllocationDetailResponse> GetSingle([FromRoute] int nodeId, [FromRoute] int id)
     {
-        await ApplyNode(nodeId);
-        
-        return await CrudHelper.GetSingle(id);
+        var allocation = await AllocationRepository
+            .Get()
+            .Where(x => x.Node.Id == nodeId)
+            .FirstOrDefaultAsync(x => x.Id == id);
+
+        if (allocation == null)
+            throw new HttpApiException("No allocation with that id found", 404);
+
+        return new()
+        {
+            Id = allocation.Id,
+            IpAddress = allocation.IpAddress,
+            Port = allocation.Port
+        };
     }
 
     [HttpPost("{nodeId:int}/allocations")]
     [RequirePermission("admin.servers.nodes.create")]
-    public async Task<NodeAllocationDetailResponse> Create([FromRoute] int nodeId, [FromBody] CreateNodeAllocationRequest request)
+    public async Task<NodeAllocationDetailResponse> Create(
+        [FromRoute] int nodeId,
+        [FromBody] CreateNodeAllocationRequest request
+    )
     {
-        await ApplyNode(nodeId);
-        
-        var allocation = Mapper.Map<Allocation>(request);
-        allocation.Node = Node;
+        var node = await NodeRepository
+            .Get()
+            .FirstOrDefaultAsync(x => x.Id == nodeId);
+
+        if (node == null)
+            throw new HttpApiException("No node with that id found", 404);
+
+        var allocation = new Allocation
+        {
+            IpAddress = request.IpAddress,
+            Port = request.Port,
+            Node = node
+        };
 
         var finalVariable = await AllocationRepository.Add(allocation);
 
-        return CrudHelper.MapToResult(finalVariable);
+        return new()
+        {
+            Id = finalVariable.Id,
+            IpAddress = finalVariable.IpAddress,
+            Port = finalVariable.Port
+        };
     }
 
     [HttpPatch("{nodeId:int}/allocations/{id:int}")]
-    public async Task<NodeAllocationDetailResponse> Update([FromRoute] int nodeId, [FromRoute] int id, [FromBody] UpdateNodeAllocationRequest request)
+    public async Task<NodeAllocationDetailResponse> Update([FromRoute] int nodeId, [FromRoute] int id,
+        [FromBody] UpdateNodeAllocationRequest request)
     {
-        await ApplyNode(nodeId);
+        var allocation = await AllocationRepository
+            .Get()
+            .Where(x => x.Node.Id == nodeId)
+            .FirstOrDefaultAsync(x => x.Id == id);
+
+        if (allocation == null)
+            throw new HttpApiException("No allocation with that id found", 404);
+
+        allocation.IpAddress = request.IpAddress;
+        allocation.Port = request.Port;
+
+        await AllocationRepository.Update(allocation);
         
-        return await CrudHelper.Update(id, request);
+        return new()
+        {
+            Id = allocation.Id,
+            IpAddress = allocation.IpAddress,
+            Port = allocation.Port
+        };
     }
 
     [HttpDelete("{nodeId:int}/allocations/{id:int}")]
     public async Task Delete([FromRoute] int nodeId, [FromRoute] int id)
     {
-        await ApplyNode(nodeId);
-        
-        await CrudHelper.Delete(id);
+        var allocation = await AllocationRepository
+            .Get()
+            .Where(x => x.Node.Id == nodeId)
+            .FirstOrDefaultAsync(x => x.Id == id);
+
+        if (allocation == null)
+            throw new HttpApiException("No allocation with that id found", 404);
+
+        await AllocationRepository.Remove(allocation);
     }
 
     [HttpPost("{nodeId:int}/allocations/range")]
     public async Task CreateRange([FromRoute] int nodeId, [FromBody] CreateNodeAllocationRangeRequest rangeRequest)
     {
-        await ApplyNode(nodeId);
+        var node = await NodeRepository
+            .Get()
+            .FirstOrDefaultAsync(x => x.Id == nodeId);
+
+        if (node == null)
+            throw new HttpApiException("No node with that id found", 404);
         
         var existingAllocations = AllocationRepository
             .Get()
@@ -107,9 +172,9 @@ public class NodeAllocationsController : Controller
         for (var i = rangeRequest.Start; i < rangeRequest.End; i++)
         {
             // Skip existing allocations
-            if(existingAllocations.Any(x => x.Port == i && x.IpAddress == rangeRequest.IpAddress))
+            if (existingAllocations.Any(x => x.Port == i && x.IpAddress == rangeRequest.IpAddress))
                 continue;
-            
+
             ports.Add(i);
         }
 
@@ -118,32 +183,28 @@ public class NodeAllocationsController : Controller
             {
                 IpAddress = rangeRequest.IpAddress,
                 Port = port,
-                Node = Node
+                Node = node
             })
             .ToArray();
-        
-        // TODO: Add AddRange in database repository
-        foreach (var allocation in allocations)
-            await AllocationRepository.Add(allocation);
+
+        await AllocationRepository.RunTransaction(async set => { await set.AddRangeAsync(allocations); });
     }
 
     [HttpDelete("{nodeId:int}/allocations/all")]
     public async Task DeleteAll([FromRoute] int nodeId)
     {
-        await ApplyNode(nodeId);
-        
         var allocations = AllocationRepository
             .Get()
             .Where(x => x.Node.Id == nodeId)
             .ToArray();
 
-        foreach (var allocation in allocations)
-            await AllocationRepository.Remove(allocation);
+        await AllocationRepository.RunTransaction(set => { set.RemoveRange(allocations); });
     }
-    
+
     [HttpGet("{nodeId:int}/allocations/free")]
     [RequirePermission("admin.servers.nodes.get")]
-    public async Task<IPagedData<NodeAllocationDetailResponse>> GetFree([FromRoute] int nodeId, [FromQuery] int page, [FromQuery] int pageSize, [FromQuery] int serverId = -1)
+    public async Task<IPagedData<NodeAllocationDetailResponse>> GetFree([FromRoute] int nodeId, [FromQuery] int page,
+        [FromQuery][Range(1, 100)] int pageSize, [FromQuery] int serverId = -1)
     {
         var node = NodeRepository
             .Get()
@@ -152,12 +213,28 @@ public class NodeAllocationsController : Controller
         if (node == null)
             throw new HttpApiException("A node with this id could not be found", 404);
 
-        Node = node;
+        var freeAllocationsQuery = AllocationRepository
+            .Get()
+            .Where(x => x.Node.Id == node.Id)
+            .Where(x => x.Server == null || x.Server.Id == serverId);
 
-        CrudHelper.QueryModifier = variables => variables
-                .Where(x => x.Node.Id == node.Id)
-                .Where(x => x.Server == null || x.Server.Id == serverId);
-        
-        return await CrudHelper.Get(page, pageSize);
+        var count = await freeAllocationsQuery.CountAsync();
+        var allocations = await freeAllocationsQuery.ToArrayAsync();
+
+        var mappedAllocations = allocations.Select(x => new NodeAllocationDetailResponse()
+        {
+            Id = x.Id,
+            IpAddress = x.IpAddress,
+            Port = x.Port
+        }).ToArray();
+
+        return new PagedData<NodeAllocationDetailResponse>()
+        {
+            Items = mappedAllocations,
+            CurrentPage = page,
+            PageSize = pageSize,
+            TotalItems = count,
+            TotalPages = count == 0 ? 0 : (count - 1) / pageSize
+        };
     }
 }

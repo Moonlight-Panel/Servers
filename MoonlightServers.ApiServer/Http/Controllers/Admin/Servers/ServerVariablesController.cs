@@ -33,8 +33,6 @@ public class ServerVariablesController : Controller
 
         if (server == null)
             throw new HttpApiException("No server with this id found", 404);
-
-        //TODO: Replace with a extension method to use queryable extension for PagedData
         
         var variables = await VariableRepository
             .Get()
