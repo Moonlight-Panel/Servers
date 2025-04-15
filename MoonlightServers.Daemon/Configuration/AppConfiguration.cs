@@ -10,6 +10,12 @@ public class AppConfiguration
     public RemoteData Remote { get; set; } = new();
     public FilesData Files { get; set; } = new();
     public ServerData Server { get; set; } = new();
+    public KestrelData Kestrel { get; set; } = new();
+    
+    public class KestrelData
+    {
+        public int RequestBodySizeLimit { get; set; } = 25;
+    }
     
     public class RemoteData
     {

@@ -89,7 +89,8 @@ public class Startup
     {
         WebApplicationBuilder.WebHost.ConfigureKestrel(options =>
         {
-            options.Limits.MaxRequestBodySize = ByteConverter.FromMegaBytes(Configuration.Files.UploadChunkSize).Bytes;
+            options.Limits.MaxRequestBodySize =
+                ByteConverter.FromMegaBytes(Configuration.Kestrel.RequestBodySizeLimit).Bytes;
         });
 
         return Task.CompletedTask;
@@ -375,21 +376,12 @@ public class Startup
             // We are defining the access token policies here. Because the same jwt secret is used by the panel
             // to generate jwt access tokens for all sorts of daemon related stuff we need to separate
             // the type of access token using the type parameter provided in the claims.
-            
-            options.AddPolicy("serverWebsocket", builder =>
-            {
-                builder.RequireClaim("type", "websocket");
-            });
-            
-            options.AddPolicy("serverUpload", builder =>
-            {
-                builder.RequireClaim("type", "upload");
-            });
-            
-            options.AddPolicy("serverDownload", builder =>
-            {
-                builder.RequireClaim("type", "download");
-            });
+
+            options.AddPolicy("serverWebsocket", builder => { builder.RequireClaim("type", "websocket"); });
+
+            options.AddPolicy("serverUpload", builder => { builder.RequireClaim("type", "upload"); });
+
+            options.AddPolicy("serverDownload", builder => { builder.RequireClaim("type", "download"); });
         });
 
         return Task.CompletedTask;
