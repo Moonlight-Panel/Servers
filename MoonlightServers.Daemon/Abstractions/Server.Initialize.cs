@@ -86,7 +86,7 @@ public partial class Server
 
         StateMachine.OnTransitioned(transition =>
         {
-            Logger.LogInformation(
+            Logger.LogDebug(
                 "{source} => {destination} ({trigger})",
                 transition.Source,
                 transition.Destination,
@@ -96,7 +96,7 @@ public partial class Server
 
         StateMachine.OnTransitionCompleted(transition =>
         {
-            Logger.LogInformation("State: {state}", transition.Destination);
+            Logger.LogDebug("State: {state}", transition.Destination);
         });
 
         // Proxy the events so outside subscribes can react to it and notify websockets

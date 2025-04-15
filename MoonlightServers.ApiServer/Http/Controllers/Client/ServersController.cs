@@ -132,7 +132,7 @@ public class ServersController : Controller
         {
             parameters.Add("type", "websocket");
             parameters.Add("serverId", server.Id);
-        }, TimeSpan.FromSeconds(30));
+        }, TimeSpan.FromMinutes(15)); // TODO: Configurable
         
         var url = "";
 

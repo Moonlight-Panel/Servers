@@ -89,7 +89,7 @@ public class Startup
     {
         WebApplicationBuilder.WebHost.ConfigureKestrel(options =>
         {
-            options.Limits.MaxRequestBodySize = ByteConverter.FromMegaBytes(Configuration.Files.UploadLimit).Bytes;
+            options.Limits.MaxRequestBodySize = ByteConverter.FromMegaBytes(Configuration.Files.UploadChunkSize).Bytes;
         });
 
         return Task.CompletedTask;

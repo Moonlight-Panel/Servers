@@ -53,7 +53,7 @@ public class DockerImageService
 
                 var line = $"[{message.ID}] {message.ProgressMessage}";
 
-                Logger.LogInformation("{line}", line);
+                Logger.LogDebug("{line}", line);
 
                 if (onProgressUpdated != null)
                     onProgressUpdated.Invoke(line);
