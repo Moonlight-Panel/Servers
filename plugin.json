@@ -3,8 +3,15 @@
   "name": "Servers",
   "author": "Moonlight-Panel/Servers contributors",
   "assemblies": {
-    "apiServer": ["MoonlightServers.ApiServer.dll"],
-    "client": ["MoonlightServers.Client.dll"]
+    "apiServer": [
+      "MoonlightServers.ApiServer.dll",
+      "MoonlightServers.DaemonShared.dll",
+      "MoonlightServers.Shared.dll"
+    ],
+    "client": [
+      "MoonlightServers.Frontend.dll",
+      "MoonlightServers.Shared.dll"
+    ]
   },
   "bundledStyles": [
     "css/MoonlightServers.min.css",

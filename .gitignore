@@ -432,3 +432,6 @@ nupkgs/
 
 # Local daemon tests
 **/data/volumes/**
+
+# Local plugin build
+tmp/
