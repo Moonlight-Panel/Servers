@@ -18,6 +18,15 @@ public class AppConfiguration
     public class DockerData
     {
         public string Uri { get; set; } = "unix:///var/run/docker.sock";
+        public DockerCredentialData[] Credentials { get; set; } = [];
+        
+        public class DockerCredentialData
+        {
+            public string Domain { get; set; }
+            public string Username { get; set; }
+            public string Password { get; set; }
+            public string Email { get; set; }
+        }
     }
     
     public class SecurityData
