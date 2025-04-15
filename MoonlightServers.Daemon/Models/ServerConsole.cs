@@ -2,12 +2,17 @@ namespace MoonlightServers.Daemon.Models;
 
 public class ServerConsole
 {
-    public event Func<string, Task> OnOutput;
-    public event Func<string, Task> OnInput;
+    public event Func<string, Task>? OnOutput;
+    public event Func<string, Task>? OnInput;
 
     public string[] Messages => GetMessages();
     private readonly Queue<string> MessageCache = new();
-    private const int MaxMessagesInCache = 250; //TODO: Config
+    private int MaxMessagesInCache;
+
+    public ServerConsole(int maxMessagesInCache)
+    {
+        MaxMessagesInCache = maxMessagesInCache;
+    }
 
     public async Task WriteToOutput(string content)
     {

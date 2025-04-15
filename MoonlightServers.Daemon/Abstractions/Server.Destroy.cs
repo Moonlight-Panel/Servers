@@ -1,4 +1,5 @@
 using Docker.DotNet;
+using MoonlightServers.Daemon.Configuration;
 
 namespace MoonlightServers.Daemon.Abstractions;
 
@@ -19,12 +20,11 @@ public partial class Server
             if (container.State.Running)
             {
                 // Stop container when running
-                
                 await LogToConsole("Stopping container");
-                
+
                 await dockerClient.Containers.StopContainerAsync(container.ID, new()
                 {
-                    WaitBeforeKillSeconds = 30 // TODO: Config
+                    WaitBeforeKillSeconds = (uint)AppConfiguration.Server.WaitBeforeKillSeconds
                 });
             }
 

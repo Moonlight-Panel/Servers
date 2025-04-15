@@ -16,8 +16,6 @@ public class UploadController : Controller
     private readonly AppConfiguration Configuration;
     private readonly ServerService ServerService;
 
-    private readonly long ChunkSize = ByteConverter.FromMegaBytes(20).Bytes; // TODO config
-
     public UploadController(
         ServerService serverService,
         AppConfiguration configuration
@@ -29,11 +27,14 @@ public class UploadController : Controller
 
     [HttpPost]
     public async Task Upload(
-        [FromQuery] long totalSize, // TODO: Add limit in config
+        [FromQuery] long totalSize,
         [FromQuery] int chunkId,
         [FromQuery] string path
     )
     {
+        var chunkSize = ByteConverter.FromMegaBytes(Configuration.Files.UploadChunkSize).Bytes;
+        var uploadLimit = ByteConverter.FromMegaBytes(Configuration.Files.UploadSizeLimit).Bytes;
+        
         #region File validation
 
         if (Request.Form.Files.Count != 1)
@@ -41,7 +42,7 @@ public class UploadController : Controller
 
         var file = Request.Form.Files[0];
         
-        if (file.Length > ChunkSize)
+        if (file.Length > chunkSize)
             throw new HttpApiException("The provided data exceeds the chunk size limit", 400);
 
         #endregion
@@ -49,14 +50,17 @@ public class UploadController : Controller
         var serverId = int.Parse(User.Claims.First(x => x.Type == "serverId").Value);
 
         #region Chunk calculation and validation
+        
+        if(totalSize > uploadLimit)
+            throw new HttpApiException("Invalid upload request: Exceeding upload limit", 400);
 
-        var chunks = totalSize / ChunkSize;
-        chunks += totalSize % ChunkSize > 0 ? 1 : 0;
+        var chunks = totalSize / chunkSize;
+        chunks += totalSize % chunkSize > 0 ? 1 : 0;
 
         if (chunkId > chunks)
             throw new HttpApiException("Invalid chunk id: Out of bounds", 400);
         
-        var positionToSkipTo = ChunkSize * chunkId;
+        var positionToSkipTo = chunkSize * chunkId;
 
         #endregion
 

@@ -5,6 +5,7 @@ using MoonCore.Attributes;
 using MoonCore.Exceptions;
 using MoonCore.Models;
 using MoonlightServers.Daemon.Abstractions;
+using MoonlightServers.Daemon.Configuration;
 using MoonlightServers.Daemon.Enums;
 using MoonlightServers.Daemon.Extensions;
 using MoonlightServers.Daemon.Http.Hubs;
@@ -22,6 +23,7 @@ public class ServerService : IHostedLifecycleService
     private readonly IServiceProvider ServiceProvider;
     private readonly ILoggerFactory LoggerFactory;
     private readonly IHubContext<ServerWebSocketHub> WebSocketHub;
+    private readonly AppConfiguration Configuration;
     private CancellationTokenSource Cancellation = new();
     private bool IsInitialized = false;
 
@@ -30,7 +32,8 @@ public class ServerService : IHostedLifecycleService
         ILogger<ServerService> logger,
         IServiceProvider serviceProvider,
         ILoggerFactory loggerFactory,
-        IHubContext<ServerWebSocketHub> webSocketHub
+        IHubContext<ServerWebSocketHub> webSocketHub,
+        AppConfiguration configuration
     )
     {
         RemoteService = remoteService;
@@ -38,6 +41,7 @@ public class ServerService : IHostedLifecycleService
         ServiceProvider = serviceProvider;
         LoggerFactory = loggerFactory;
         WebSocketHub = webSocketHub;
+        Configuration = configuration;
     }
 
     public async Task Initialize() //TODO: Add initialize call from panel
@@ -196,7 +200,8 @@ public class ServerService : IHostedLifecycleService
             LoggerFactory.CreateLogger($"Server {serverConfiguration.Id}"),
             ServiceProvider,
             serverConfiguration,
-            WebSocketHub
+            WebSocketHub,
+            Configuration
         );
 
         await server.Initialize(existingContainers);

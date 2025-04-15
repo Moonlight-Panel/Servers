@@ -1,5 +1,6 @@
 using Docker.DotNet.Models;
 using Microsoft.AspNetCore.SignalR;
+using MoonlightServers.Daemon.Configuration;
 using MoonlightServers.Daemon.Enums;
 using MoonlightServers.Daemon.Http.Hubs;
 using MoonlightServers.Daemon.Models;
@@ -36,20 +37,23 @@ public partial class Server
     private StateMachine<ServerState, ServerTrigger> StateMachine;
     private ServerConfiguration Configuration;
     private CancellationTokenSource Cancellation;
+    private AppConfiguration AppConfiguration;
 
     public Server(
         ILogger logger,
         IServiceProvider serviceProvider,
         ServerConfiguration configuration,
-        IHubContext<ServerWebSocketHub> webSocketHub
+        IHubContext<ServerWebSocketHub> webSocketHub,
+        AppConfiguration appConfiguration
     )
     {
         Logger = logger;
         ServiceProvider = serviceProvider;
         Configuration = configuration;
         WebSocketHub = webSocketHub;
+        AppConfiguration = appConfiguration;
 
-        Console = new();
+        Console = new(AppConfiguration.Server.ConsoleMessageCacheLimit);
         Cancellation = new();
 
         RuntimeContainerName = $"moonlight-runtime-{Configuration.Id}";

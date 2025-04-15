@@ -9,6 +9,7 @@ public class AppConfiguration
     public SecurityData Security { get; set; } = new();
     public RemoteData Remote { get; set; } = new();
     public FilesData Files { get; set; } = new();
+    public ServerData Server { get; set; } = new();
     
     public class RemoteData
     {
@@ -45,6 +46,15 @@ public class AppConfiguration
     
     public class FilesData
     {
-        public int UploadLimit { get; set; } = 500;
+        public int UploadSizeLimit { get; set; } = 1024 * 2;
+        public int UploadChunkSize { get; set; } = 20;
+    }
+    
+    public class ServerData
+    {
+        public int WaitBeforeKillSeconds { get; set; } = 30;
+        public int TmpFsSize { get; set; } = 100;
+        public float MemoryOverheadMultiplier { get; set; } = 0.05f;
+        public int ConsoleMessageCacheLimit { get; set; } = 250;
     }
 }

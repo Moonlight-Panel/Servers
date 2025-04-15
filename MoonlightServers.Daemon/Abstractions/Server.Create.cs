@@ -21,6 +21,7 @@ public partial class Server
         var dockerClient = ServiceProvider.GetRequiredService<DockerClient>();
 
         var parameters = Configuration.ToRuntimeCreateParameters(
+            appConfiguration: AppConfiguration,
             hostPath: RuntimeVolumePath,
             containerName: RuntimeContainerName
         );

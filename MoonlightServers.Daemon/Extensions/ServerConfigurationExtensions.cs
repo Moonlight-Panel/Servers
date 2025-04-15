@@ -1,6 +1,7 @@
 using Docker.DotNet.Models;
 using Mono.Unix.Native;
 using MoonCore.Helpers;
+using MoonlightServers.Daemon.Configuration;
 using MoonlightServers.Daemon.Models.Cache;
 using MoonlightServers.DaemonShared.PanelSide.Http.Responses;
 
@@ -30,11 +31,15 @@ public static class ServerConfigurationExtensions
             StopCommand = response.StopCommand
         };
     }
-    
-    public static CreateContainerParameters ToRuntimeCreateParameters(this ServerConfiguration configuration,
-        string hostPath, string containerName)
+
+    public static CreateContainerParameters ToRuntimeCreateParameters(
+        this ServerConfiguration configuration,
+        AppConfiguration appConfiguration,
+        string hostPath,
+        string containerName
+    )
     {
-        var parameters = configuration.ToSharedCreateParameters();
+        var parameters = configuration.ToSharedCreateParameters(appConfiguration);
 
         #region Security
 
@@ -150,6 +155,7 @@ public static class ServerConfigurationExtensions
 
     public static CreateContainerParameters ToInstallationCreateParameters(
         this ServerConfiguration configuration,
+        AppConfiguration appConfiguration,
         string runtimeHostPath,
         string installationHostPath,
         string containerName,
@@ -157,27 +163,27 @@ public static class ServerConfigurationExtensions
         string installShell
     )
     {
-        var parameters = configuration.ToSharedCreateParameters();
+        var parameters = configuration.ToSharedCreateParameters(appConfiguration);
 
         // - Name
         parameters.Name = containerName;
         parameters.Hostname = containerName;
-        
+
         // - Image
         parameters.Image = installDockerImage;
-        
+
         // - Env
         parameters.Env = configuration
             .ToEnvironmentVariables()
             .Select(x => $"{x.Key}={x.Value}")
             .ToList();
-        
+
         // -- Working directory
         parameters.WorkingDir = "/mnt/server";
-        
+
         // - User
         // Note: Some images might not work if we set a user here
-        
+
         var userId = Syscall.getuid();
 
         // If we are root, we are able to change owner permissions after the installation
@@ -186,11 +192,11 @@ public static class ServerConfigurationExtensions
         if (userId == 0)
             parameters.User = "0:0";
         else
-            parameters.User = $"{userId}:{userId}";        
+            parameters.User = $"{userId}:{userId}";
 
         // -- Mounts
         parameters.HostConfig.Mounts = new List<Mount>();
-        
+
         parameters.HostConfig.Mounts.Add(new()
         {
             Source = runtimeHostPath,
@@ -198,7 +204,7 @@ public static class ServerConfigurationExtensions
             ReadOnly = false,
             Type = "bind"
         });
-        
+
         parameters.HostConfig.Mounts.Add(new()
         {
             Source = installationHostPath,
@@ -212,7 +218,8 @@ public static class ServerConfigurationExtensions
         return parameters;
     }
 
-    private static CreateContainerParameters ToSharedCreateParameters(this ServerConfiguration configuration)
+    private static CreateContainerParameters ToSharedCreateParameters(this ServerConfiguration configuration,
+        AppConfiguration appConfiguration)
     {
         var parameters = new CreateContainerParameters()
         {
@@ -242,7 +249,7 @@ public static class ServerConfigurationExtensions
         var memoryLimit = configuration.Memory;
 
         // The overhead multiplier gives the container a little bit more memory to prevent crashes
-        var memoryOverhead = memoryLimit + (memoryLimit * 0.05f); // TODO: Config
+        var memoryOverhead = memoryLimit + (memoryLimit * appConfiguration.Server.MemoryOverheadMultiplier);
 
         long swapLimit = -1;
 
@@ -287,7 +294,7 @@ public static class ServerConfigurationExtensions
 
         parameters.HostConfig.Tmpfs = new Dictionary<string, string>()
         {
-            { "/tmp", $"rw,exec,nosuid,size=100M" } // TODO: Config
+            { "/tmp", $"rw,exec,nosuid,size={appConfiguration.Server.TmpFsSize}M" }
         };
 
         #endregion

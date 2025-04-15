@@ -50,6 +50,7 @@ public partial class Server
 
             // Creating container configuration
             var parameters = Configuration.ToInstallationCreateParameters(
+                appConfiguration: AppConfiguration,
                 RuntimeVolumePath,
                 InstallationVolumePath,
                 InstallationContainerName,
