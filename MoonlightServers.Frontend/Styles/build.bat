@@ -1,1 +1,0 @@
-npx tailwindcss -i style.css -o ../wwwroot/css/MoonlightServers.min.css --watch

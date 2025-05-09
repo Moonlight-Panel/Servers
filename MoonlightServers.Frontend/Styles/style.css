@@ -1,12 +1,11 @@
-@import "tailwindcss/base";
-@import "tailwindcss/components";
+@import "moonlight/preTailwind.nuget.css";
 
-@import "additions/animations.css";
-@import "additions/buttons.css";
-@import "additions/cards.css";
-@import "additions/fonts.css";
-@import "additions/progress.css";
-@import "additions/scrollbar.css";
-@import "additions/loaders.css";
+@import "tailwindcss";
 
-@import "tailwindcss/utilities";
+@import "moonlight/nuget.css";
+
+@plugin "@tailwindcss/forms";
+
+@source "../**/*.razor";
+@source "../**/*.cs";
+@source "../**/*.html";
