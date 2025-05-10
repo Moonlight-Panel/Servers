@@ -38,11 +38,11 @@
                 @{
                     var bgColor = State switch
                     {
-                        ServerState.Installing => "bg-primary-500",
-                        ServerState.Offline => "bg-danger-500",
-                        ServerState.Starting => "bg-warning-500",
-                        ServerState.Stopping => "bg-warning-500",
-                        ServerState.Online => "bg-success-500",
+                        ServerState.Installing => "bg-primary",
+                        ServerState.Offline => "bg-danger",
+                        ServerState.Starting => "bg-warning",
+                        ServerState.Stopping => "bg-warning",
+                        ServerState.Online => "bg-success",
                         _ => "bg-gray-500"
                     };
                 }

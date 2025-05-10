@@ -435,3 +435,4 @@ nupkgs/
 
 # Local plugin build
 tmp/
+style.min.css

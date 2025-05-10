@@ -13,21 +13,21 @@
     {
         gradient = Status.State switch
         {
-            ServerState.Installing => "from-primary-600/20",
-            ServerState.Offline => "from-danger-600/20",
-            ServerState.Starting => "from-warning-600/20",
-            ServerState.Stopping => "from-warning-600/20",
-            ServerState.Online => "from-success-600/20",
+            ServerState.Installing => "from-primary/20",
+            ServerState.Offline => "from-danger/20",
+            ServerState.Starting => "from-warning/20",
+            ServerState.Stopping => "from-warning/20",
+            ServerState.Online => "from-success/20",
             _ => "from-gray-600/20"
         };
         
         border = Status.State switch
         {
-            ServerState.Installing => "border-primary-600",
-            ServerState.Offline => "border-danger-600",
-            ServerState.Starting => "border-warning-600",
-            ServerState.Stopping => "border-warning-600",
-            ServerState.Online => "border-success-600",
+            ServerState.Installing => "border-primary",
+            ServerState.Offline => "border-danger",
+            ServerState.Starting => "border-warning",
+            ServerState.Stopping => "border-warning",
+            ServerState.Online => "border-success",
             _ => "border-gray-600"
         };
     }
@@ -90,7 +90,7 @@
                 }
                 else if (IsFailed)
                 {
-                    <div class="bg-gray-900 bg-opacity-45 py-1 px-2 rounded-lg flex flex-row text-danger-500">
+                    <div class="bg-gray-900 bg-opacity-45 py-1 px-2 rounded-lg flex flex-row text-danger">
                         <div>
                             <i class="icon-cable"></i>
                         </div>
@@ -100,7 +100,7 @@
                 }
                 else if (IsLoaded && !IsFailed && Status.State is ServerState.Offline)
                 {
-                    <div class="bg-gray-900 bg-opacity-45 py-1 px-2 rounded-lg flex flex-row text-danger-500">
+                    <div class="bg-gray-900 bg-opacity-45 py-1 px-2 rounded-lg flex flex-row text-danger">
                         <div>
                             <i class="icon-power-off"></i>
                         </div>
@@ -110,7 +110,7 @@
                 }
                 else if (IsLoaded && !IsFailed && Status.State is ServerState.Installing)
                 {
-                    <div class="bg-gray-900 bg-opacity-45 py-1 px-2 rounded-lg flex flex-row text-primary-500">
+                    <div class="bg-gray-900 bg-opacity-45 py-1 px-2 rounded-lg flex flex-row text-primary">
                         <div>
                             <i class="icon-hammer"></i>
                         </div>

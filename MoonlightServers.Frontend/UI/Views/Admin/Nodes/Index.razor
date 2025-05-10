@@ -34,7 +34,7 @@
         <DataTableColumn TItem="NodeDetailResponse" Field="@(x => x.Id)" Name="Id"/>
         <DataTableColumn TItem="NodeDetailResponse" Field="@(x => x.Name)" Name="Name">
             <ColumnTemplate>
-                <a class="text-primary-500" href="/admin/servers/nodes/update/@(context.Id)">
+                <a class="text-primary" href="/admin/servers/nodes/update/@(context.Id)">
                     @context.Name
                 </a>
             </ColumnTemplate>
@@ -55,7 +55,7 @@
                     {
                         if (data == null)
                         {
-                            <span class="text-danger-500">
+                            <span class="text-danger">
                                 <i class="icon-server-offg text-base me-1 align-middle"></i>
                                 <span class="align-middle">
                                     API Error
@@ -66,14 +66,14 @@
                         {
                             if (data.RoundtripSuccess)
                             {
-                                <span class="text-success-500">
+                                <span class="text-success">
                                     <i class="icon-check text-base me-1 align-middle"></i>
                                     <span class="align-middle">Online (@(data.Version))</span>
                                 </span>
                             }
                             else
                             {
-                                <span class="text-danger-500">
+                                <span class="text-danger">
                                     <i class="icon-server-off text-base me-1 align-middle"></i>
                                     <span class="align-middle">
                                         Error
@@ -99,7 +99,7 @@
                          ColumnCss="p-2 text-left font-normal hidden xl:table-cell">
             <ColumnTemplate>
                 <div>
-                    <i class="icon-cpu text-lg me-1 align-middle text-primary-500"></i>
+                    <i class="icon-cpu text-lg me-1 align-middle text-primary"></i>
                     <span class="align-middle">33% of 6 Cores</span>
                 </div>
             </ColumnTemplate>
@@ -109,7 +109,7 @@
                          ColumnCss="p-2 text-left font-normal hidden xl:table-cell">
             <ColumnTemplate>
                 <div>
-                    <i class="icon-memory-stick text-lg me-1 align-middle text-primary-500"></i>
+                    <i class="icon-memory-stick text-lg me-1 align-middle text-primary"></i>
                     <span class="align-middle">1.56GB / 64GB</span>
                 </div>
             </ColumnTemplate>
@@ -119,7 +119,7 @@
                          ColumnCss="p-2 text-left font-normal hidden xl:table-cell">
             <ColumnTemplate>
                 <div>
-                    <i class="icon-hard-drive text-lg me-1 align-middle text-primary-500"></i>
+                    <i class="icon-hard-drive text-lg me-1 align-middle text-primary"></i>
                     <span class="align-middle">78.68GB / 1TB</span>
                 </div>
             </ColumnTemplate>
@@ -127,12 +127,12 @@
         <DataTableColumn TItem="NodeDetailResponse">
             <ColumnTemplate>
                 <div class="flex justify-end">
-                    <a href="/admin/servers/nodes/update/@(context.Id)" class="text-primary-500 mr-2 sm:mr-3">
+                    <a href="/admin/servers/nodes/update/@(context.Id)" class="text-primary mr-2 sm:mr-3">
                         <i class="icon-pencil text-base"></i>
                     </a>
 
                     <a href="#" @onclick="() => Delete(context)" @onclick:preventDefault
-                       class="text-danger-500">
+                       class="text-danger">
                         <i class="icon-trash text-base"></i>
                     </a>
                 </div>

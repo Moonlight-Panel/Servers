@@ -13,8 +13,7 @@
       "MoonlightServers.Shared.dll"
     ]
   },
-  "bundledStyles": [
-    "css/MoonlightServers.min.css",
+  "styles": [
     "css/XtermBlazor.min.css"
   ],
   "scripts": [
