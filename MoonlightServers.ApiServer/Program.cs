@@ -1,6 +1,7 @@
 using System.Text.Json;
 using Moonlight.ApiServer;
 using Moonlight.ApiServer.Models;
+using MoonlightServers.ApiServer.Startup;
 
 // Development Server Startup
 
@@ -28,8 +29,6 @@ pluginManifest.Assemblies.Clear();
 
 #endregion
 
-await startup.Run(
-    args,
-    [typeof(Program).Assembly],
-    [pluginManifest]
-);
+await startup.Run(args, [
+    new PluginStartup()
+]);

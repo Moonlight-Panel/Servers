@@ -4,6 +4,11 @@
         <TargetFramework>net8.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
+        <PackageId>MoonlightServers.DaemonShared</PackageId>
+        <PackageTags>shared</PackageTags>
+        <IsPackable>true</IsPackable>
+        <Version>2.1.0</Version>
+        <Title>MoonlightServers.DaemonShared</Title>
     </PropertyGroup>
 
     <ItemGroup>

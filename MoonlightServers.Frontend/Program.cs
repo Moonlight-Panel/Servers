@@ -1,4 +1,5 @@
 using Moonlight.Client;
+using MoonlightServers.Frontend.Startup;
 
 // Development Client Startup
 
@@ -11,5 +12,5 @@ using Moonlight.Client;
 var startup = new Startup();
 
 await startup.Run(args, [
-    typeof(Program).Assembly
+    new PluginStartup()
 ]);

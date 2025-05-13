@@ -5,16 +5,19 @@
         <Nullable>enable</Nullable>
         <ImplicitUsings>enable</ImplicitUsings>
         <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
+        <IsPackable>true</IsPackable>
+        <Version>2.1.0</Version>
+        <Title>MoonlightServers.ApiServer</Title>
+        <PackageTags>apiserver</PackageTags>
     </PropertyGroup>
 
     <ItemGroup>
         <PackageReference Include="Moonlight.ApiServer" Version="2.1.0"/>
-        <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.11"/>
-        <PackageReference Include="Swashbuckle.AspNetCore" Version="6.4.0"/>
+        <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.15"/>
     </ItemGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\MoonlightServers.DaemonShared\MoonlightServers.DaemonShared.csproj" />
+        <ProjectReference Include="..\MoonlightServers.DaemonShared\MoonlightServers.DaemonShared.csproj"/>
         <ProjectReference Include="..\MoonlightServers.Frontend\MoonlightServers.Frontend.csproj"/>
         <ProjectReference Include="..\MoonlightServers.Shared\MoonlightServers.Shared.csproj"/>
     </ItemGroup>
@@ -22,8 +25,24 @@
     <ItemGroup>
         <Folder Include="Database\Migrations\"/>
         <Folder Include="Http\Middleware\"/>
-        <Folder Include="Implementations\" />
+        <Folder Include="Implementations\"/>
         <Folder Include="Interfaces\"/>
+    </ItemGroup>
+
+    <ItemGroup>
+        <None Include="**\*.cs" Exclude="storage\**\*;bin\**\*;obj\**\*">
+            <Pack>true</Pack>
+            <PackagePath>src</PackagePath>
+            <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+        </None>
+        <None Include="**\*.razor" Exclude="storage\**\*;bin\**\*;obj\**\*">
+            <Pack>true</Pack>
+            <PackagePath>src</PackagePath>
+            <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+        </None>
+        <Compile Remove="storage\**\*"/>
+        <Content Remove="storage\**\*"/>
+        <None Remove="storage\**\*"/>
     </ItemGroup>
 
 </Project>
