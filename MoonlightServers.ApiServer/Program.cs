@@ -13,22 +13,6 @@ using MoonlightServers.ApiServer.Startup;
 
 var startup = new Startup();
 
-#region Creating virtual plugin manifest from plugin.json file
-
-// Read out content
-var pluginManifestJson = await File.ReadAllTextAsync("../plugin.json");
-
-// Parse to model
-var pluginManifest = JsonSerializer.Deserialize<PluginManifest>(pluginManifestJson, new JsonSerializerOptions()
-{
-    PropertyNameCaseInsensitive = true
-})!;
-
-// Clear assemblies as we are loading them using the additional assembly parameter
-pluginManifest.Assemblies.Clear();
-
-#endregion
-
 await startup.Run(args, [
     new PluginStartup()
 ]);

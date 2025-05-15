@@ -1,13 +1,17 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <TargetFramework>net8.0</TargetFramework>
+        <TargetFramework>net9.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
-        <IsPackable>true</IsPackable>
-        <Version>2.1.0</Version>
-        <Title>MoonlightServers.Shared</Title>
-        <PackageTags>shared</PackageTags>
     </PropertyGroup>
 
+    <PropertyGroup Label="Nuget Settings">
+        <PackageId>MoonlightServers.Shared</PackageId>
+        <Title>MoonlightServers.Shared</Title>
+        <Version>2.1.0</Version>
+        <PackageTags>shared</PackageTags>
+        <IsPackable>true</IsPackable>
+    </PropertyGroup>
+    
 </Project>
