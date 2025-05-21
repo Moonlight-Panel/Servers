@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using MoonCore.Extended.PermFilter;
+using Microsoft.AspNetCore.Authorization;
 using MoonCore.Exceptions;
 using MoonCore.Extended.Abstractions;
 using MoonCore.Helpers;
@@ -24,7 +24,7 @@ public class ServerVariablesController : Controller
     }
 
     [HttpGet("{serverId}/variables")]
-    [RequirePermission("admin.servers.get")]
+    [Authorize(Policy = "permissions:admin.servers.get")]
     public async Task<PagedData<ServerVariableDetailResponse>> Get([FromRoute] int serverId, [FromQuery] int page, [FromQuery] int pageSize)
     {
         var server = await ServerRepository

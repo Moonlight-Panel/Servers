@@ -22,6 +22,7 @@ public class SidebarImplementation : ISidebarItemProvider
                     Path = "/admin/servers",
                     Icon = "icon-server",
                     Group = "Admin",
+                    Policy = "permissions:admin.servers.overview",
                     Priority = 4
                 }
             ]

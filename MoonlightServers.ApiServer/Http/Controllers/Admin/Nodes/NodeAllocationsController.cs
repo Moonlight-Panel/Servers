@@ -1,10 +1,9 @@
 using System.ComponentModel.DataAnnotations;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using MoonCore.Extended.PermFilter;
 using MoonCore.Exceptions;
 using MoonCore.Extended.Abstractions;
-using MoonCore.Extended.Helpers;
 using MoonCore.Models;
 using MoonlightServers.ApiServer.Database.Entities;
 using MoonlightServers.Shared.Http.Requests.Admin.NodeAllocations;
@@ -29,7 +28,7 @@ public class NodeAllocationsController : Controller
     }
 
     [HttpGet("{nodeId:int}/allocations")]
-    [RequirePermission("admin.servers.nodes.get")]
+    [Authorize(Policy = "permissions:admin.servers.nodes.get")]
     public async Task<IPagedData<NodeAllocationDetailResponse>> Get(
         [FromRoute] int nodeId,
         [FromQuery] int page,
@@ -63,7 +62,7 @@ public class NodeAllocationsController : Controller
     }
 
     [HttpGet("{nodeId:int}/allocations/{id:int}")]
-    [RequirePermission("admin.servers.nodes.get")]
+    [Authorize(Policy = "permissions:admin.servers.nodes.get")]
     public async Task<NodeAllocationDetailResponse> GetSingle([FromRoute] int nodeId, [FromRoute] int id)
     {
         var allocation = await AllocationRepository
@@ -83,7 +82,7 @@ public class NodeAllocationsController : Controller
     }
 
     [HttpPost("{nodeId:int}/allocations")]
-    [RequirePermission("admin.servers.nodes.create")]
+    [Authorize(Policy = "permissions:admin.servers.nodes.create")]
     public async Task<NodeAllocationDetailResponse> Create(
         [FromRoute] int nodeId,
         [FromBody] CreateNodeAllocationRequest request
@@ -202,7 +201,7 @@ public class NodeAllocationsController : Controller
     }
 
     [HttpGet("{nodeId:int}/allocations/free")]
-    [RequirePermission("admin.servers.nodes.get")]
+    [Authorize(Policy = "permissions:admin.servers.nodes.get")]
     public async Task<IPagedData<NodeAllocationDetailResponse>> GetFree([FromRoute] int nodeId, [FromQuery] int page,
         [FromQuery][Range(1, 100)] int pageSize, [FromQuery] int serverId = -1)
     {

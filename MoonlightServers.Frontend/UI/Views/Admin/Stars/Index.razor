@@ -15,6 +15,8 @@
 @inject ToastService ToastService
 @inject AlertService AlertService
 
+@attribute [Authorize(Policy = "permissions:admin.servers.stars.get")]
+
 <div class="mb-3">
     <NavTabs Index="3" Names="@UiConstants.AdminNavNames" Links="@UiConstants.AdminNavLinks"/>
 </div>

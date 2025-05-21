@@ -11,6 +11,8 @@
 @inject NavigationManager Navigation
 @inject ToastService ToastService
 
+@attribute [Authorize(Policy = "permissions:admin.servers.stars.update")]
+
 <LazyLoader Load="Load">
     <PageHeader Title="Update Star">
         <a href="/admin/servers/stars" class="btn btn-secondary">

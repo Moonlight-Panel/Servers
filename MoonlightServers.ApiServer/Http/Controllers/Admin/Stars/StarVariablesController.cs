@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using MoonCore.Extended.PermFilter;
+using Microsoft.AspNetCore.Authorization;
 using MoonCore.Exceptions;
 using MoonCore.Extended.Abstractions;
 using MoonCore.Extended.Helpers;
@@ -48,7 +48,7 @@ public class StarVariablesController : Controller
     }
 
     [HttpGet("{starId:int}/variables")]
-    [RequirePermission("admin.servers.stars.get")]
+    [Authorize(Policy = "permissions:admin.servers.stars.get")]
     public async Task<IPagedData<StarVariableDetailResponse>> Get([FromRoute] int starId, [FromQuery] int page, [FromQuery] int pageSize)
     {
         await ApplyStar(starId);
@@ -57,7 +57,7 @@ public class StarVariablesController : Controller
     }
 
     [HttpGet("{starId:int}/variables/{id:int}")]
-    [RequirePermission("admin.servers.stars.get")]
+    [Authorize(Policy = "permissions:admin.servers.stars.get")]
     public async Task<StarVariableDetailResponse> GetSingle([FromRoute] int starId, [FromRoute] int id)
     {
         await ApplyStar(starId);
@@ -66,7 +66,7 @@ public class StarVariablesController : Controller
     }
 
     [HttpPost("{starId:int}/variables")]
-    [RequirePermission("admin.servers.stars.create")]
+    [Authorize(Policy = "permissions:admin.servers.stars.create")]
     public async Task<StarVariableDetailResponse> Create([FromRoute] int starId, [FromBody] CreateStarVariableRequest request)
     {
         await ApplyStar(starId);
@@ -80,7 +80,7 @@ public class StarVariablesController : Controller
     }
 
     [HttpPatch("{starId:int}/variables/{id:int}")]
-    [RequirePermission("admin.servers.stars.update")]
+    [Authorize(Policy = "permissions:admin.servers.stars.update")]
     public async Task<StarVariableDetailResponse> Update([FromRoute] int starId, [FromRoute] int id,
         [FromBody] UpdateStarVariableRequest request)
     {
@@ -96,7 +96,7 @@ public class StarVariablesController : Controller
     }
 
     [HttpDelete("{starId:int}/variables/{id:int}")]
-    [RequirePermission("admin.servers.stars.delete")]
+    [Authorize(Policy = "permissions:admin.servers.stars.delete")]
     public async Task Delete([FromRoute] int starId, [FromRoute] int id)
     {
         await ApplyStar(starId);

@@ -10,6 +10,8 @@
 @inject NavigationManager Navigation
 @inject ToastService ToastService
 
+@attribute [Authorize(Policy = "permissions:admin.servers.create")]
+
 <PageHeader Title="Create Server">
     <a href="/admin/servers/all" class="btn btn-secondary">
         <i class="icon-chevron-left mr-1"></i>

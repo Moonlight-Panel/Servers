@@ -1,6 +1,6 @@
 using System.Text;
 using Microsoft.AspNetCore.Mvc;
-using MoonCore.Extended.PermFilter;
+using Microsoft.AspNetCore.Authorization;
 using MoonCore.Exceptions;
 using MoonCore.Helpers;
 using MoonlightServers.ApiServer.Services;
@@ -20,7 +20,7 @@ public class StarImportExportController : Controller
     }
 
     [HttpGet("{starId:int}/export")]
-    [RequirePermission("admin.servers.stars.get")]
+    [Authorize(Policy = "permissions:admin.servers.stars.get")]
     public async Task Export([FromRoute] int starId)
     {
         var exportedStar = await ImportExportService.Export(starId);
@@ -31,7 +31,7 @@ public class StarImportExportController : Controller
     }
 
     [HttpPost("import")]
-    [RequirePermission("admin.servers.stars.create")]
+    [Authorize(Policy = "permissions:admin.servers.stars.create")]
     public async Task<StarDetailResponse> Import()
     {
         if (Request.Form.Files.Count == 0)

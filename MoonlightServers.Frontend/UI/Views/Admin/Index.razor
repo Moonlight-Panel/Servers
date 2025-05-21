@@ -2,5 +2,7 @@
 
 @using MoonCore.Blazor.Tailwind.Components
 
+@attribute [Authorize(Policy = "permissions:admin.servers.overview")]
+
 <NavTabs Index="0" Names="@UiConstants.AdminNavNames" Links="@UiConstants.AdminNavLinks"/>
 

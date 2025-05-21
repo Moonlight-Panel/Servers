@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using MoonCore.Extended.PermFilter;
+using Microsoft.AspNetCore.Authorization;
 using MoonCore.Extended.Abstractions;
 using MoonCore.Extended.Helpers;
 using MoonCore.Helpers;
@@ -27,21 +27,21 @@ public class StarsController : Controller
     }
 
     [HttpGet]
-    [RequirePermission("admin.servers.stars.get")]
+    [Authorize(Policy = "permissions:admin.servers.stars.get")]
     public async Task<IPagedData<StarDetailResponse>> Get([FromQuery] int page, [FromQuery] int pageSize)
     {
         return await CrudHelper.Get(page, pageSize);
     }
 
     [HttpGet("{id:int}")]
-    [RequirePermission("admin.servers.stars.get")]
+    [Authorize(Policy = "permissions:admin.servers.stars.get")]
     public async Task<StarDetailResponse> GetSingle([FromRoute] int id)
     {
         return await CrudHelper.GetSingle(id);
     }
 
     [HttpPost]
-    [RequirePermission("admin.servers.stars.create")]
+    [Authorize(Policy = "permissions:admin.servers.stars.create")]
     public async Task<StarDetailResponse> Create([FromBody] CreateStarRequest request)
     {
         var star = Mapper.Map<Star>(request);
@@ -67,14 +67,14 @@ public class StarsController : Controller
     }
 
     [HttpPatch("{id:int}")]
-    [RequirePermission("admin.servers.stars.update")]
+    [Authorize(Policy = "permissions:admin.servers.stars.update")]
     public async Task<StarDetailResponse> Update([FromRoute] int id, [FromBody] UpdateStarRequest request)
     {
         return await CrudHelper.Update(id, request);
     }
 
     [HttpDelete("{id:int}")]
-    [RequirePermission("admin.servers.stars.delete")]
+    [Authorize(Policy = "permissions:admin.servers.stars.delete")]
     public async Task Delete([FromRoute] int id)
     {
         await CrudHelper.Delete(id);

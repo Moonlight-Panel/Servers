@@ -2,7 +2,7 @@ using System.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 using MoonCore.Exceptions;
 using MoonCore.Extended.Abstractions;
-using MoonCore.Extended.PermFilter;
+using Microsoft.AspNetCore.Authorization;
 using MoonlightServers.ApiServer.Database.Entities;
 using MoonlightServers.ApiServer.Services;
 using MoonlightServers.Shared.Http.Responses.Admin.Nodes.Sys;
@@ -23,7 +23,7 @@ public class NodeStatusController : Controller
     }
 
     [HttpGet("{nodeId}/system/status")]
-    [RequirePermission("admin.servers.nodes.status")]
+    [Authorize(Policy = "permissions:admin.servers.nodes.status")]
     public async Task<NodeSystemStatusResponse> GetStatus([FromRoute] int nodeId)
     {
         var node = GetNode(nodeId);

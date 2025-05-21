@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using MoonCore.Extended.PermFilter;
+using Microsoft.AspNetCore.Authorization;
 using MoonCore.Exceptions;
 using MoonCore.Extended.Abstractions;
 using MoonCore.Extended.Helpers;
@@ -67,21 +67,21 @@ public class ServersController : Controller
     }
 
     [HttpGet]
-    [RequirePermission("admin.servers.get")]
+    [Authorize(Policy = "permissions:admin.servers.get")]
     public async Task<IPagedData<ServerDetailResponse>> Get([FromQuery] int page, [FromQuery] int pageSize)
     {
         return await CrudHelper.Get(page, pageSize);
     }
 
     [HttpGet("{id:int}")]
-    [RequirePermission("admin.servers.get")]
+    [Authorize(Policy = "permissions:admin.servers.get")]
     public async Task<ServerDetailResponse> GetSingle([FromRoute] int id)
     {
         return await CrudHelper.GetSingle(id);
     }
 
     [HttpPost]
-    [RequirePermission("admin.servers.create")]
+    [Authorize(Policy = "permissions:admin.servers.create")]
     public async Task<ServerDetailResponse> Create([FromBody] CreateServerRequest request)
     {
         // Construct model
