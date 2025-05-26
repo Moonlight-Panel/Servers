@@ -1,0 +1,218 @@
+@using MoonCore.Blazor.Tailwind.Components
+@using MoonCore.Blazor.Tailwind.Toasts
+@using MoonCore.Helpers
+@using MoonlightServers.Frontend.Services
+@using MoonlightServers.Shared.Http.Responses.Admin.Nodes
+@using MoonlightServers.Shared.Http.Responses.Admin.Nodes.Statistics
+
+@inject NodeService NodeService
+@inject ToastService ToastService
+@inject ILogger<OverviewNodeUpdate> Logger
+
+@implements IDisposable
+
+<LazyLoader Load="Load">
+
+    <div class="mb-3 mt-5 text-xl font-semibold">
+        Overview
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+        <div class="col-span-1 card card-body">
+            <div class="flex justify-between">
+                <p class="text-xl font-semibold text-slate-200">
+                    @Math.Round(Statistics.Cpu.Usage, 2)%
+                </p>
+                <i class="icon-cpu text-4xl text-primary"></i>
+            </div>
+            <div class="text-base text-slate-300">
+                <span class="truncate">
+                    CPU: @Statistics.Cpu.Model
+                </span>
+            </div>
+        </div>
+
+        <div class="col-span-1 card card-body">
+            <div class="flex justify-between">
+                <p class="text-xl font-semibold text-slate-200">
+                    @Formatter.FormatSize(Statistics.Memory.Total - Statistics.Memory.Available)
+                    /
+                    @Formatter.FormatSize(Statistics.Memory.Total)
+                </p>
+                <i class="icon-memory-stick text-4xl text-primary"></i>
+            </div>
+            <div class="text-base text-slate-300">
+                Memory
+            </div>
+        </div>
+
+        <div class="col-span-1 card card-body">
+            <div class="flex justify-between">
+                <div class="text-xl font-semibold text-slate-200">
+                    @Formatter.FormatSize(Statistics.Memory.SwapTotal - Statistics.Memory.SwapFree)
+                    /
+                    @Formatter.FormatSize(Statistics.Memory.SwapTotal)
+                </div>
+                <i class="icon-shapes text-4xl text-primary"></i>
+            </div>
+            <div class="text-base text-slate-300">
+                Swap
+            </div>
+        </div>
+    </div>
+
+    <div class="mb-3 mt-5 text-xl font-semibold">
+        CPU
+    </div>
+
+    <div class="card card-body grid grid-cols-1 lg:grid-cols-2 gap-y-2 gap-x-5">
+        @{
+            var i = 0;
+        }
+
+        @foreach (var usage in Statistics.Cpu.UsagePerCore)
+        {
+            var percentRounded = Math.Round(usage, 2);
+
+            <div class="flex flex-row items-center col-span-1">
+                <div class="text-sm text-slate-300 me-1.5 grow-0 flex flex-col">
+                    <span>#@(i)</span>
+                </div>
+                <div class="grow">
+                    <div class="progress bg-gray-750">
+                        <div style="width: @(usage)%"
+                             class="progress-bar h-3 @(GetBackgroundColorByPercent(percentRounded))"></div>
+                    </div>
+                </div>
+            </div>
+
+            i++;
+        }
+    </div>
+
+    <div class="mb-3 mt-5 text-xl font-semibold">
+        Disks
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+        @foreach (var disk in Statistics.Disks)
+        {
+            var usedPercent = Math.Round((disk.DiskTotal - disk.DiskFree) / (double)disk.DiskTotal * 100, 2);
+            var iNodesPercent = Math.Round((disk.InodesTotal - disk.InodesFree) / (double)disk.InodesTotal * 100, 2);
+
+            <div class="col-span-1 card card-body">
+                <div class="flex items-center">
+                    <div class="grow">
+                        <div class="progress bg-gray-750">
+                            <div style="width: @(usedPercent)%"
+                                 class="progress-bar h-3 @(GetBackgroundColorByPercent(usedPercent))"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="text-sm text-slate-300 mt-2.5 flex flex-col">
+                    <div>
+                        Device: <span class="font-semibold">@disk.Device</span> - Mounted at: <span class="font-semibold truncate">@disk.MountPath</span>
+                    </div>
+                    <div>
+                        Used: <span class="font-semibold">@Formatter.FormatSize(disk.DiskTotal - disk.DiskFree)</span>
+                        Total: <span class="font-semibold">@Formatter.FormatSize(disk.DiskTotal)</span>
+                    </div>
+                    <div>
+                        INodes: <span class="font-semibold">@(iNodesPercent)%</span>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+    
+    <div class="mb-3 mt-5 text-xl font-semibold">
+        Docker
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+        <div class="col-span-1 card card-body">
+            <div class="flex justify-between">
+                <p class="text-xl font-semibold text-slate-200">
+                    @Formatter.FormatSize(DockerStatistics.ImagesUsed) (@Formatter.FormatSize(DockerStatistics.ImagesReclaimable) unused)
+                </p>
+                <i class="icon-gallery-horizontal-end text-4xl text-primary"></i>
+            </div>
+            <div class="text-base text-slate-300">
+                Images
+            </div>
+        </div>
+        
+        <div class="col-span-1 card card-body">
+            <div class="flex justify-between">
+                <p class="text-xl font-semibold text-slate-200">
+                    @Formatter.FormatSize(DockerStatistics.ContainersUsed) ( @Formatter.FormatSize(DockerStatistics.ContainersReclaimable) unused)
+                </p>
+                <i class="icon-container text-4xl text-primary"></i>
+            </div>
+            <div class="text-base text-slate-300">
+                Containers
+            </div>
+        </div>
+
+        <div class="col-span-1 card card-body">
+            <div class="flex justify-between">
+                <p class="text-xl font-semibold text-slate-200">
+                    @Formatter.FormatSize(DockerStatistics.BuildCacheUsed) (@Formatter.FormatSize(DockerStatistics.BuildCacheReclaimable) unused)
+                </p>
+                <i class="icon-hard-hat text-4xl text-primary"></i>
+            </div>
+            <div class="text-base text-slate-300">
+                Build Cache
+            </div>
+        </div>
+    </div>
+</LazyLoader>
+
+@code
+{
+    [Parameter] public NodeDetailResponse Node { get; set; }
+
+    private StatisticsResponse Statistics;
+    private DockerStatisticsResponse DockerStatistics;
+
+    private Timer? UpdateTimer;
+
+    private async Task Load(LazyLoader _)
+    {
+        Statistics = await NodeService.GetStatistics(Node.Id);
+        DockerStatistics = await NodeService.GetDockerStatistics(Node.Id);
+
+        UpdateTimer = new Timer(HandleUpdate, null, TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(3));
+    }
+
+    private async void HandleUpdate(object? _)
+    {
+        try
+        {
+            Statistics = await NodeService.GetStatistics(Node.Id);
+            DockerStatistics = await NodeService.GetDockerStatistics(Node.Id);
+            
+            await InvokeAsync(StateHasChanged);
+        }
+        catch (Exception e)
+        {
+            Logger.LogWarning("An error occured while fetching status update: {e}", e);
+            await ToastService.Danger("Unable to fetch status update", e.Message);
+        }
+    }
+    
+    private string GetBackgroundColorByPercent(double percent)
+    {
+        if (percent < 70)
+            return "bg-success";
+        else if (percent < 80)
+            return "bg-warning";
+        else
+            return "bg-danger";
+    }
+
+    public void Dispose()
+    {
+        UpdateTimer?.Dispose();
+    }
+}

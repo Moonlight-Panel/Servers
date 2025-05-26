@@ -49,16 +49,10 @@ public class NodeService
 
     #region Statistics
 
-    public async Task<StatisticsApplicationResponse> GetApplicationStatistics(Node node)
+    public async Task<StatisticsResponse> GetStatistics(Node node)
     {
         using var apiClient = CreateApiClient(node);
-        return await apiClient.GetJson<StatisticsApplicationResponse>("api/statistics/application");
-    }
-
-    public async Task<StatisticsHostResponse> GetHostStatistics(Node node)
-    {
-        using var apiClient = CreateApiClient(node);
-        return await apiClient.GetJson<StatisticsHostResponse>("api/statistics/host");
+        return await apiClient.GetJson<StatisticsResponse>("api/statistics");
     }
 
     public async Task<StatisticsDockerResponse> GetDockerStatistics(Node node)

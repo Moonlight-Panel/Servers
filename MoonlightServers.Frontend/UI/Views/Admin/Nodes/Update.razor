@@ -14,7 +14,7 @@
 @attribute [Authorize(Policy = "permissions:admin.servers.nodes.update")]
 
 <LazyLoader Load="Load">
-    <PageHeader Title="Update Node">
+    <PageHeader Title="@Node.Name">
         <a href="/admin/servers/nodes" class="btn btn-secondary">
             <i class="icon-chevron-left mr-1"></i>
             Back
@@ -29,12 +29,16 @@
         <HandleForm @ref="Form" Model="Request" OnValidSubmit="OnSubmit">
             
             <Tabs>
+                <Tab Name="Overview">
+                    <OverviewNodeUpdate Node="Node" />
+                </Tab>
+                
                 <Tab Name="Settings">
                     <GeneralNodeUpdate Request="Request"/>
                 </Tab>
-                
+
                 <Tab Name="Allocations">
-                    <AllocationsNodeUpdate Node="Node" />
+                    <AllocationsNodeUpdate Node="Node"/>
                 </Tab>
 
                 <Tab Name="Advanced Settings">

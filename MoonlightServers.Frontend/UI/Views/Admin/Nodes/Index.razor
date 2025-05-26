@@ -8,12 +8,14 @@
 @using MoonCore.Blazor.Tailwind.Dt
 @using MoonCore.Blazor.Tailwind.Toasts
 @using MoonlightServers.Frontend.Services
+@using MoonlightServers.Shared.Http.Responses.Admin.Nodes.Statistics
 @using MoonlightServers.Shared.Http.Responses.Admin.Nodes.Sys
 
 @inject HttpApiClient ApiClient
 @inject NodeService NodeService
 @inject AlertService AlertService
 @inject ToastService ToastService
+@inject ILogger<Index> Logger
 
 @attribute [Authorize(Policy = "permissions:admin.servers.nodes.get")]
 
@@ -31,8 +33,8 @@
 
 <DataTable TItem="NodeDetailResponse">
     <Configuration>
-        <Pagination TItem="NodeDetailResponse" ItemSource="LoadData" />
-        
+        <Pagination TItem="NodeDetailResponse" ItemSource="LoadData"/>
+
         <DataTableColumn TItem="NodeDetailResponse" Field="@(x => x.Id)" Name="Id"/>
         <DataTableColumn TItem="NodeDetailResponse" Field="@(x => x.Name)" Name="Name">
             <ColumnTemplate>
@@ -44,86 +46,96 @@
         <DataTableColumn TItem="NodeDetailResponse" Field="@(x => x.Fqdn)" Name="Fqdn"/>
         <DataTableColumn TItem="NodeDetailResponse" Field="@(x => x.Fqdn)" Name="Status">
             <ColumnTemplate>
-                <LazyLoader Load="_ => LoadNodeStatus(context.Id)">
-                    @{
-                        bool isFetched;
-                        NodeSystemStatusResponse? data;
+                @{
+                    var isFetched = StatusResponses.TryGetValue(context.Id, out var data);
+                }
 
-                        lock (Responses)
-                            isFetched = Responses.TryGetValue(context.Id, out data);
-                    }
-
-                    @if (isFetched)
+                @if (isFetched)
+                {
+                    if (data == null)
                     {
-                        if (data == null)
-                        {
-                            <span class="text-danger">
-                                <i class="icon-server-offg text-base me-1 align-middle"></i>
-                                <span class="align-middle">
-                                    API Error
-                                </span>
+                        <div class="text-danger flex items-center">
+                            <i class="icon-server-off text-base me-1"></i>
+                            <span>
+                                API Error
                             </span>
-                        }
-                        else
-                        {
-                            if (data.RoundtripSuccess)
-                            {
-                                <span class="text-success">
-                                    <i class="icon-check text-base me-1 align-middle"></i>
-                                    <span class="align-middle">Online (@(data.Version))</span>
-                                </span>
-                            }
-                            else
-                            {
-                                <span class="text-danger">
-                                    <i class="icon-server-off text-base me-1 align-middle"></i>
-                                    <span class="align-middle">
-                                        Error
-                                        <a @onclick="() => ShowErrorDetails(context.Id)" @onclick:preventDefault
-                                           href="#" class="ms-1 text-gray-600">Details</a>
-                                    </span>
-                                </span>
-                            }
-                        }
+                        </div>
                     }
                     else
                     {
-                        <span class="text-gray-500">
-                            <i class="icon-loader text-base me-1 align-middle"></i>
-                            <span class="align-middle">Loading</span>
-                        </span>
+                        if (data.RoundtripSuccess)
+                        {
+                            <div class="text-success flex items-center">
+                                <i class="icon-check text-base me-1"></i>
+                                <span>Online (@(data.Version))</span>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="text-danger flex items-center">
+                                <i class="icon-server-off text-base me-1"></i>
+                                <span class="me-2">
+                                    Error
+                                </span>
+                                <a @onclick="() => ShowErrorDetails(context.Id)" @onclick:preventDefault
+                                   href="#" class="ms-1 text-gray-600">Details</a>
+                            </div>
+                        }
                     }
-                </LazyLoader>
+                }
+                else
+                {
+                    <div class="text-gray-500">
+                        <i class="icon-loader text-base me-1 align-middle"></i>
+                        <span class="align-middle">Loading</span>
+                    </div>
+                }
             </ColumnTemplate>
         </DataTableColumn>
         <DataTableColumn TItem="NodeDetailResponse"
+                         Name="Utilization"
                          HeaderCss="p-2 font-semibold text-left hidden xl:table-cell"
                          ColumnCss="p-2 text-left font-normal hidden xl:table-cell">
             <ColumnTemplate>
-                <div>
-                    <i class="icon-cpu text-lg me-1 align-middle text-primary"></i>
-                    <span class="align-middle">33% of 6 Cores</span>
-                </div>
-            </ColumnTemplate>
-        </DataTableColumn>
-        <DataTableColumn TItem="NodeDetailResponse"
-                         HeaderCss="p-2 font-semibold text-left hidden xl:table-cell"
-                         ColumnCss="p-2 text-left font-normal hidden xl:table-cell">
-            <ColumnTemplate>
-                <div>
-                    <i class="icon-memory-stick text-lg me-1 align-middle text-primary"></i>
-                    <span class="align-middle">1.56GB / 64GB</span>
-                </div>
-            </ColumnTemplate>
-        </DataTableColumn>
-        <DataTableColumn TItem="NodeDetailResponse"
-                         HeaderCss="p-2 font-semibold text-left hidden xl:table-cell"
-                         ColumnCss="p-2 text-left font-normal hidden xl:table-cell">
-            <ColumnTemplate>
-                <div>
-                    <i class="icon-hard-drive text-lg me-1 align-middle text-primary"></i>
-                    <span class="align-middle">78.68GB / 1TB</span>
-                </div>
+                @{
+                    var isFetched = Statistics.TryGetValue(context.Id, out var data);
+                }
+
+                @if (isFetched)
+                {
+                    if (data == null)
+                    {
+                        <div class="flex items-center text-danger">
+                            <i class="icon-server-off text-base me-1"></i>
+                            <span>
+                                API Error
+                            </span>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="flex flex-row">
+                            <div class="flex items-center">
+                                <i class="text-primary text-base me-2 icon-cpu"></i>
+                                <span>@(Math.Round(data.Cpu.Usage))%</span>
+                            </div>
+                        
+                            <div class="flex items-center ms-5">
+                                <i class="text-primary text-base me-2 icon-memory-stick"></i>
+                                <span>
+                                    @(Math.Round((data.Memory.Total - data.Memory.Free - data.Memory.Cached) / (double)data.Memory.Total * 100))%
+                                </span>
+                            </div>
+                        </div>
+                    }
+                }
+                else
+                {
+                    <div class="flex items-center text-gray-500">
+                        <i class="icon-loader text-base me-1"></i>
+                        <span>Loading</span>
+                    </div>
+                }
             </ColumnTemplate>
         </DataTableColumn>
         <DataTableColumn TItem="NodeDetailResponse">
@@ -147,10 +159,60 @@
 {
     private DataTable<NodeDetailResponse> Table;
 
-    private Dictionary<int, NodeSystemStatusResponse?> Responses = new();
+    private Dictionary<int, NodeSystemStatusResponse?> StatusResponses = new();
+    private Dictionary<int, StatisticsResponse?> Statistics = new();
 
     private async Task<IPagedData<NodeDetailResponse>> LoadData(PaginationOptions options)
-        => await ApiClient.GetJson<PagedData<NodeDetailResponse>>($"api/admin/servers/nodes?page={options.Page}&pageSize={options.PerPage}");
+    {
+        Statistics.Clear();
+        StatusResponses.Clear();
+
+        var result = await ApiClient.GetJson<PagedData<NodeDetailResponse>>(
+            $"api/admin/servers/nodes?page={options.Page}&pageSize={options.PerPage}"
+        );
+
+        Task.Run(async () =>
+        {
+            foreach (var item in result.Items)
+            {
+                try
+                {
+                    Statistics[item.Id] = await NodeService.GetStatistics(item.Id);
+                }
+                catch (Exception e)
+                {
+                    Logger.LogWarning(
+                        "An error occured while fetching statistics for node {nodeId}: {e}",
+                        item.Id,
+                        e
+                    );
+
+                    Statistics[item.Id] = null;
+                }
+
+                await InvokeAsync(StateHasChanged);
+                
+                try
+                {
+                    StatusResponses[item.Id] = await NodeService.GetSystemStatus(item.Id);
+                }
+                catch (Exception e)
+                {
+                    Logger.LogWarning(
+                        "An error occured while fetching status for node {nodeId}: {e}",
+                        item.Id,
+                        e
+                    );
+
+                    StatusResponses[item.Id] = null;
+                }
+                
+                await InvokeAsync(StateHasChanged);
+            }
+        });
+
+        return result;
+    }
 
     private async Task Delete(NodeDetailResponse detailResponse)
     {
@@ -167,35 +229,9 @@
         );
     }
 
-    private Task LoadNodeStatus(int node)
-    {
-        Task.Run(async () =>
-        {
-            try
-            {
-                var status = await NodeService.GetSystemStatus(node);
-
-                lock (Responses)
-                    Responses[node] = status;
-            }
-            catch (Exception e)
-            {
-                lock (Responses)
-                    Responses[node] = null;
-            }
-
-            await InvokeAsync(StateHasChanged);
-        });
-
-        return Task.CompletedTask;
-    }
-
     private async Task ShowErrorDetails(int id)
     {
-        NodeSystemStatusResponse? data;
-
-        lock (Responses)
-            data = Responses.GetValueOrDefault(id);
+        var data = StatusResponses.GetValueOrDefault(id);
 
         if (data == null)
             return;
