@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using MoonCore.Exceptions;
 using MoonCore.Helpers;
 using MoonlightServers.Daemon.Configuration;
-using MoonlightServers.Daemon.Helpers;
+using MoonlightServers.Daemon.ServerSystem.SubSystems;
 using MoonlightServers.Daemon.Services;
 
 namespace MoonlightServers.Daemon.Http.Controllers.Servers;
@@ -64,14 +64,18 @@ public class UploadController : Controller
 
         #endregion
 
-        var server = ServerService.GetServer(serverId);
+        var server = ServerService.Find(serverId);
 
         if (server == null)
             throw new HttpApiException("No server with this id found", 404);
 
+        var storageSubSystem = server.GetRequiredSubSystem<StorageSubSystem>();
+
+        var fileSystem = await storageSubSystem.GetFileSystem();
+
         var dataStream = file.OpenReadStream();
 
-        await server.FileSystem.CreateChunk(
+        await fileSystem.CreateChunk(
             path,
             totalSize,
             positionToSkipTo,

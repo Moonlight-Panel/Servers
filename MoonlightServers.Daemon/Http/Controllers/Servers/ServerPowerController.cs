@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using MoonCore.Exceptions;
 using MoonlightServers.Daemon.Enums;
 using MoonlightServers.Daemon.Services;
+using ServerTrigger = MoonlightServers.Daemon.ServerSystem.ServerTrigger;
 
 namespace MoonlightServers.Daemon.Http.Controllers.Servers;
 
@@ -21,44 +22,44 @@ public class ServerPowerController : Controller
     [HttpPost("{serverId:int}/start")]
     public async Task Start(int serverId)
     {
-        var server = ServerService.GetServer(serverId);
+        var server = ServerService.Find(serverId);
 
         if (server == null)
             throw new HttpApiException("No server with this id found", 404);
 
-        await server.Start();
+        await server.Trigger(ServerTrigger.Start);
     }
     
     [HttpPost("{serverId:int}/stop")]
     public async Task Stop(int serverId)
     {
-        var server = ServerService.GetServer(serverId);
+        var server = ServerService.Find(serverId);
 
         if (server == null)
             throw new HttpApiException("No server with this id found", 404);
 
-        await server.Stop();
+        await server.Trigger(ServerTrigger.Stop);
     }
     
     [HttpPost("{serverId:int}/install")]
     public async Task Install(int serverId)
     {
-        var server = ServerService.GetServer(serverId);
+        var server = ServerService.Find(serverId);
 
         if (server == null)
             throw new HttpApiException("No server with this id found", 404);
 
-        await server.Install();
+        await server.Trigger(ServerTrigger.Install);
     }
     
     [HttpPost("{serverId:int}/kill")]
     public async Task Kill(int serverId)
     {
-        var server = ServerService.GetServer(serverId);
+        var server = ServerService.Find(serverId);
 
         if (server == null)
             throw new HttpApiException("No server with this id found", 404);
 
-        await server.Kill();
+        await server.Trigger(ServerTrigger.Kill);
     }
 }

@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MoonCore.Exceptions;
+using MoonlightServers.Daemon.ServerSystem.SubSystems;
 using MoonlightServers.Daemon.Services;
 using MoonlightServers.DaemonShared.DaemonSide.Http.Responses.Servers;
 using MoonlightServers.DaemonShared.Enums;
@@ -28,20 +29,20 @@ public class ServersController : Controller
     [HttpDelete("{serverId:int}")]
     public async Task Delete([FromRoute] int serverId)
     {
-        await ServerService.Delete(serverId);
+        //await ServerService.Delete(serverId);
     }
 
     [HttpGet("{serverId:int}/status")]
     public Task<ServerStatusResponse> GetStatus([FromRoute] int serverId)
     {
-        var server = ServerService.GetServer(serverId);
+        var server = ServerService.Find(serverId);
 
         if (server == null)
             throw new HttpApiException("No server with this id found", 404);
         
         var result = new ServerStatusResponse()
         {
-            State = (ServerState)server.State
+            State = (ServerState)server.StateMachine.State
         };
 
         return Task.FromResult(result);
@@ -50,14 +51,17 @@ public class ServersController : Controller
     [HttpGet("{serverId:int}/logs")]
     public async Task<ServerLogsResponse> GetLogs([FromRoute] int serverId)
     {
-        var server = ServerService.GetServer(serverId);
+        var server = ServerService.Find(serverId);
 
         if (server == null)
             throw new HttpApiException("No server with this id found", 404);
+
+        var consoleSubSystem = server.GetRequiredSubSystem<ConsoleSubSystem>();
+        var messages = await consoleSubSystem.RetrieveCache();
         
         return new ServerLogsResponse()
         {
-            Messages = await server.GetConsoleMessages()
+            Messages = messages
         };
     }
 }

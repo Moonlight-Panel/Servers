@@ -12,6 +12,8 @@ public class DockerImageService
     private readonly AppConfiguration Configuration;
     private readonly ILogger<DockerImageService> Logger;
 
+    private readonly Dictionary<string, TaskCompletionSource> PendingDownloads = new();
+
     public DockerImageService(
         DockerClient dockerClient,
         ILogger<DockerImageService> logger,
@@ -23,55 +25,84 @@ public class DockerImageService
         Logger = logger;
     }
 
-    public async Task Ensure(string name, Action<string>? onProgressUpdated)
+    public async Task Download(string name, Action<string>? onProgressUpdated = null)
     {
-        // Figure out if and which credentials to use by checking for the domain
-        AuthConfig credentials = new();
-
-        var domain = GetDomainFromDockerImageName(name);
-
-        var configuredCredentials = Configuration.Docker.Credentials
-            .FirstOrDefault(x => x.Domain.Equals(domain, StringComparison.InvariantCultureIgnoreCase));
-
-        if (configuredCredentials != null)
+        // If there is already a download for this image occuring, we want to wait for this to complete instead
+        // of calling docker to download it again
+        if (PendingDownloads.TryGetValue(name, out var downloadTaskCompletion))
         {
-            credentials.Username = configuredCredentials.Username;
-            credentials.Password = configuredCredentials.Password;
-            credentials.Email = configuredCredentials.Email;
+            await downloadTaskCompletion.Task;
+            return;
         }
-        
-        // Now we want to pull the image
-        await DockerClient.Images.CreateImageAsync(new()
+
+        var tsc = new TaskCompletionSource();
+        PendingDownloads.Add(name, tsc);
+
+        try
+        {
+            // Figure out if and which credentials to use by checking for the domain
+            AuthConfig credentials = new();
+
+            var domain = GetDomainFromDockerImageName(name);
+
+            var configuredCredentials = Configuration.Docker.Credentials.FirstOrDefault(x =>
+                x.Domain.Equals(domain, StringComparison.InvariantCultureIgnoreCase)
+            );
+
+            // Apply credentials configuration if specified
+            if (configuredCredentials != null)
             {
-                FromImage = name
-            },
-            credentials,
-            new Progress<JSONMessage>(async message =>
-            {
-                if (message.Progress == null)
-                    return;
+                credentials.Username = configuredCredentials.Username;
+                credentials.Password = configuredCredentials.Password;
+                credentials.Email = configuredCredentials.Email;
+            }
 
-                var line = $"[{message.ID}] {message.ProgressMessage}";
+            // Now we want to pull the image
+            await DockerClient.Images.CreateImageAsync(new()
+                {
+                    FromImage = name
+                },
+                credentials,
+                new Progress<JSONMessage>(async message =>
+                {
+                    if (message.Progress == null)
+                        return;
 
-                Logger.LogDebug("{line}", line);
+                    var line = $"[{message.ID}] {message.ProgressMessage}";
 
-                if (onProgressUpdated != null)
-                    onProgressUpdated.Invoke(line);
-            })
-        );
+                    Logger.LogDebug("{line}", line);
+
+                    if (onProgressUpdated != null)
+                        onProgressUpdated.Invoke(line);
+                })
+            );
+            
+            tsc.SetResult();
+            PendingDownloads.Remove(name);
+        }
+        catch (Exception e)
+        {
+            Logger.LogError("An error occured while download image {name}: {e}", name, e);
+
+            tsc.SetException(e);
+            PendingDownloads.Remove(name);
+            
+            throw;
+        }
     }
 
     private string GetDomainFromDockerImageName(string name) // Method names are my passion ;)
     {
         var nameParts = name.Split("/");
-        
+
         // If it has 1 part -> just the image name (e.g., "ubuntu")
         // If it has 2 parts -> usually "user/image" (e.g., "library/ubuntu")
         // If it has 3 or more -> assume first part is the registry domain
 
-        if (nameParts.Length >= 3 || (nameParts.Length >= 2 && nameParts[0].Contains('.') || nameParts[0].Contains(':')))
+        if (nameParts.Length >= 3 ||
+            (nameParts.Length >= 2 && nameParts[0].Contains('.') || nameParts[0].Contains(':')))
             return nameParts[0]; // Registry domain is explicitly specified
-        
+
         return "docker.io"; // Default Docker registry
     }
 }
