@@ -3,6 +3,7 @@ using Docker.DotNet;
 using Docker.DotNet.Models;
 using Microsoft.AspNetCore.SignalR;
 using MoonCore.Attributes;
+using MoonCore.Exceptions;
 using MoonCore.Models;
 using MoonlightServers.Daemon.Extensions;
 using MoonlightServers.Daemon.Http.Hubs;
@@ -44,15 +45,10 @@ public class ServerService : IHostedLifecycleService
 
     public async Task Sync(int serverId)
     {
-        if (Servers.TryGetValue(serverId, out var server))
-        {
-            var serverData = await RemoteService.GetServer(serverId);
-            var configuration = serverData.ToServerConfiguration();
+        var serverData = await RemoteService.GetServer(serverId);
+        var configuration = serverData.ToServerConfiguration();
 
-            server.Configuration = configuration;
-        }
-        else
-            await Initialize(serverId);
+        await Sync(serverId, configuration);
     }
 
     public async Task Sync(int serverId, ServerConfiguration configuration)
@@ -126,7 +122,7 @@ public class ServerService : IHostedLifecycleService
         {
             try
             {
-                await Initialize(configuration);
+                await Sync(configuration.Id, configuration);
             }
             catch (Exception e)
             {
@@ -171,6 +167,79 @@ public class ServerService : IHostedLifecycleService
         await server.Initialize(subSystems);
 
         Servers[configuration.Id] = server;
+    }
+
+    public async Task Delete(int serverId)
+    {
+        var server = Find(serverId);
+
+        // If a server with this id doesn't exist we can just exit
+        if (server == null)
+            return;
+
+        if (server.StateMachine.State == ServerState.Installing)
+            throw new HttpApiException("Unable to delete a server while it is installing", 400);
+
+        if (server.StateMachine.State != ServerState.Offline)
+        {
+            // If the server is not offline we need to wait until it goes offline, we
+            // do that by creating the serverOfflineWaiter task completion source which will get triggered
+            // when the event handler for state changes gets informed that the server state is now offline
+
+            var serverOfflineWaiter = new TaskCompletionSource();
+            var timeoutCancellation = new CancellationTokenSource();
+
+            // Set timeout to 10 seconds, this gives the server 10 seconds to go offline, before the request fails
+            timeoutCancellation.CancelAfter(TimeSpan.FromSeconds(10));
+
+            // Subscribe to state updates in order to get notified when the server is offline
+            server.StateMachine.OnTransitioned(transition =>
+            {
+                // Only listen for changes to offline
+                if (transition.Destination != ServerState.Offline)
+                    return;
+
+                // If the timeout has already been reached, ignore all changes
+                if (timeoutCancellation.IsCancellationRequested)
+                    return;
+
+                // Server is finally offline, notify the request that we now can delete the server
+                serverOfflineWaiter.SetResult();
+            });
+
+            // Now we trigger the kill and waiting for the server to be deleted
+            await server.StateMachine.FireAsync(ServerTrigger.Kill);
+
+            try
+            {
+                await serverOfflineWaiter.Task.WaitAsync(timeoutCancellation.Token);
+
+                await DeleteServer_Unhandled(server);
+            }
+            catch (TaskCanceledException)
+            {
+                Logger.LogWarning(
+                    "Deletion of server {id} failed because it didnt stop in time despite being killed",
+                    server.Configuration.Id
+                );
+
+                throw new HttpApiException(
+                    "Could not kill the server in time for the deletion. Please try again later",
+                    500
+                );
+            }
+        }
+        else
+            await DeleteServer_Unhandled(server);
+    }
+
+    private async Task DeleteServer_Unhandled(Server server)
+    {
+        await server.DisposeAsync();
+        await server.Delete();
+
+        lock (Servers)
+            Servers.Remove(server.Configuration.Id);
     }
 
     #region Docker Monitoring
@@ -282,56 +351,6 @@ public class ServerService : IHostedLifecycleService
            }
        });
      *
-     *
-     *public async Task Delete(int serverId)
-       {
-           var server = GetServer(serverId);
-
-           // If a server with this id doesn't exist we can just exit
-           if (server == null)
-               return;
-
-           if (server.State == ServerState.Installing)
-               throw new HttpApiException("Unable to delete a server while it is installing", 400);
-
-           #region Callbacks
-
-           var deleteCompletion = new TaskCompletionSource();
-
-           async Task HandleStateChange(ServerState state)
-           {
-               if (state == ServerState.Offline)
-                   await DeleteServer();
-           }
-
-           async Task DeleteServer()
-           {
-               await server.CancelTasks();
-               await server.DestroyStorage();
-               await server.RemoveInstallationVolume();
-               await server.RemoveRuntimeVolume();
-
-               deleteCompletion.SetResult();
-
-               lock (Servers)
-                   Servers.Remove(server);
-           }
-
-           #endregion
-
-           // If the server is still online, we are killing it and then
-           // waiting for the callback to trigger notifying us that the server is now offline
-           // so we can delete it. The request will pause until then using the deleteCompletion task
-           if (server.State != ServerState.Offline)
-           {
-               server.OnStateChanged += HandleStateChange;
-               await server.Kill();
-
-               await deleteCompletion.Task;
-           }
-           else
-               await DeleteServer();
-       }
      *
      */
 }

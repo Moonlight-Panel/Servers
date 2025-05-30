@@ -29,7 +29,7 @@ public class ServersController : Controller
     [HttpDelete("{serverId:int}")]
     public async Task Delete([FromRoute] int serverId)
     {
-        //await ServerService.Delete(serverId);
+        await ServerService.Delete(serverId);
     }
 
     [HttpGet("{serverId:int}/status")]

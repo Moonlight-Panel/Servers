@@ -21,7 +21,7 @@ public class StorageSubSystem : ServerSubSystem
         AppConfiguration = appConfiguration;
     }
 
-    public override async Task Initialize()
+    public override Task Initialize()
     {
         Logger.LogDebug("Lazy initializing server file system");
         
@@ -42,6 +42,14 @@ public class StorageSubSystem : ServerSubSystem
                 Logger.LogError("An unhandled error occured while lazy initializing server file system: {e}", e);
             }
         });
+        
+        return Task.CompletedTask;
+    }
+
+    public override async Task Delete()
+    {
+        await DeleteInstallVolume();
+        await DeleteRuntimeVolume();
     }
 
     #region Runtime
@@ -65,7 +73,7 @@ public class StorageSubSystem : ServerSubSystem
             
         if (!Directory.Exists(path))
             Directory.CreateDirectory(path);
-
+/*
         var consoleSubSystem = Server.GetRequiredSubSystem<ConsoleSubSystem>();
 
         await consoleSubSystem.WriteMoonlight("Creating virtual disk file. Please be patient");
@@ -77,7 +85,7 @@ public class StorageSubSystem : ServerSubSystem
         await consoleSubSystem.WriteMoonlight("Mounting virtual disk. Please be patient");
         await Task.Delay(TimeSpan.FromSeconds(3));
         
-        await consoleSubSystem.WriteMoonlight("Virtual disk ready");
+        await consoleSubSystem.WriteMoonlight("Virtual disk ready");*/
 
         // TODO: Implement virtual disk 
     }
@@ -93,6 +101,16 @@ public class StorageSubSystem : ServerSubSystem
             path = Path.Combine(Directory.GetCurrentDirectory(), path);
         
         return Task.FromResult(path);
+    }
+
+    private async Task DeleteRuntimeVolume()
+    {
+        var path = await GetRuntimeHostPath();
+        
+        if(!Directory.Exists(path))
+            return;
+        
+        Directory.Delete(path, true);
     }
 
     #endregion
