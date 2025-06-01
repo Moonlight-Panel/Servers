@@ -36,7 +36,7 @@
         <ProjectReference Include="..\MoonlightServers.Shared\MoonlightServers.Shared.csproj"/>
     </ItemGroup>
 
-    <ItemGroup>
+    <ItemGroup Label="Build instruction for nuget package building">
         <None Include="**\*.cs" Exclude="storage\**\*;bin\**\*;obj\**\*">
             <Pack>true</Pack>
             <PackagePath>src</PackagePath>

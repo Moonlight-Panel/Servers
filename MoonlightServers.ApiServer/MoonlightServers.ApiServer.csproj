@@ -33,7 +33,7 @@
         <Folder Include="Interfaces\"/>
     </ItemGroup>
 
-    <ItemGroup>
+    <ItemGroup Label="Build instruction for nuget package building">
         <None Include="**\*.cs" Exclude="storage\**\*;bin\**\*;obj\**\*">
             <Pack>true</Pack>
             <PackagePath>src</PackagePath>
