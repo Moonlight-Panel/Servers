@@ -193,6 +193,8 @@ public class ServersController : Controller
     [HttpPatch("{id:int}")]
     public async Task<ServerDetailResponse> Update([FromRoute] int id, [FromBody] UpdateServerRequest request)
     {
+        //TODO: Handle shrinking virtual disk
+        
         var server = await CrudHelper.GetSingleModel(id);
 
         server = Mapper.Map(server, request);

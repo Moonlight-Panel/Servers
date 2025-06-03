@@ -32,13 +32,19 @@ public class ConsoleSubSystem : ServerSubSystem
     {
         OnInput += async content =>
         {
-            if(Stream == null)
+            if (Stream == null)
                 return;
-            
+
             var contentBuffer = Encoding.UTF8.GetBytes(content);
-            await Stream.WriteAsync(contentBuffer, 0, contentBuffer.Length, Server.TaskCancellation);
+
+            await Stream.WriteAsync(
+                contentBuffer,
+                0,
+                contentBuffer.Length,
+                Server.TaskCancellation
+            );
         };
-        
+
         return Task.CompletedTask;
     }
 
@@ -95,10 +101,10 @@ public class ConsoleSubSystem : ServerSubSystem
                     Logger.LogWarning("An unhandled error occured while reading from container stream: {e}", e);
                 }
             }
-            
+
             // Reset stream so no further inputs will be piped to it
             Stream = null;
-            
+
             Logger.LogDebug("Disconnected from container stream");
         });
     }
@@ -124,7 +130,8 @@ public class ConsoleSubSystem : ServerSubSystem
 
     public async Task WriteMoonlight(string output)
     {
-        await WriteOutput($"\x1b[38;5;16;48;5;135m\x1b[39m\x1b[1m Moonlight \x1b[0m\x1b[38;5;250m\x1b[3m {output}\x1b[0m\n\r");
+        await WriteOutput(
+            $"\x1b[0;38;2;255;255;255;48;2;124;28;230m Moonlight \x1b[0m\x1b[38;5;250m\x1b[3m {output}\x1b[0m\n\r");
     }
 
     public async Task WriteInput(string input)

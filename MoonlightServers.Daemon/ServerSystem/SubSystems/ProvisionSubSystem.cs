@@ -118,7 +118,7 @@ public class ProvisionSubSystem : ServerSubSystem
         
         var storageSubSystem = Server.GetRequiredSubSystem<StorageSubSystem>();
 
-        if (!await storageSubSystem.IsRuntimeVolumeReady())
+        if (!await storageSubSystem.RequestRuntimeVolume())
         {
             Logger.LogDebug("Unable to continue provision because the server file system isn't ready");
             await consoleSubSystem.WriteMoonlight("Server file system is not ready yet. Try again later");
@@ -127,7 +127,7 @@ public class ProvisionSubSystem : ServerSubSystem
             return;
         }
         
-        var volumePath = await storageSubSystem.GetRuntimeHostPath();
+        var volumePath = storageSubSystem.RuntimeVolumePath;
 
         // 4. Ensure the docker image is downloaded
 

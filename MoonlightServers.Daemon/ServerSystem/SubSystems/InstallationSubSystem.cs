@@ -114,13 +114,13 @@ public class InstallationSubSystem : ServerSubSystem
 
         var installData = await RemoteService.GetServerInstallation(Configuration.Id);
 
-        // 3. Ensure the storage location exists
+        // 3. Ensure the storage locations exists
 
         Logger.LogDebug("Ensuring storage");
 
         var storageSubSystem = Server.GetRequiredSubSystem<StorageSubSystem>();
         
-        if (!await storageSubSystem.IsRuntimeVolumeReady())
+        if (!await storageSubSystem.RequestRuntimeVolume())
         {
             Logger.LogDebug("Unable to continue provision because the server file system isn't ready");
             await consoleSubSystem.WriteMoonlight("Server file system is not ready yet. Try again later");
@@ -129,9 +129,10 @@ public class InstallationSubSystem : ServerSubSystem
             return;
         }
         
-        var runtimePath = await storageSubSystem.GetRuntimeHostPath();
-        
-        var installPath = await storageSubSystem.EnsureInstallVolume();
+        var runtimePath = storageSubSystem.RuntimeVolumePath;
+
+        await storageSubSystem.EnsureInstallVolume();
+        var installPath = storageSubSystem.InstallVolumePath;
         
         // 4. Copy script to location
         

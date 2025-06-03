@@ -89,6 +89,14 @@ public static class ServerConfigurationExtensions
         var userId = Syscall.getuid(); // TODO: Extract to external service?
 
         if (userId == 0)
+            userId = 998;
+
+        parameters.User = $"{userId}:{userId}";
+        
+        Console.WriteLine($"DUID: {userId}");
+        
+        /*
+        if (userId == 0)
         {
             // We are running as root, so we need to run the container as another user and chown the files when we make changes
             parameters.User = $"998:998";
@@ -98,7 +106,7 @@ public static class ServerConfigurationExtensions
             // We are not running as root, so we start the container as the same user,
             // as we are not able to chown the container content to a different user
             parameters.User = $"{userId}:{userId}";
-        }
+        }*/
 
         #endregion
 

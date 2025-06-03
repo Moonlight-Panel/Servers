@@ -20,8 +20,7 @@ public class Server : IAsyncDisposable
     private readonly IServiceScope ServiceScope;
     private readonly ILoggerFactory LoggerFactory;
     private readonly ILogger Logger;
-
-
+    
     public Server(
         ServerConfiguration configuration,
         IServiceScope serviceScope,
