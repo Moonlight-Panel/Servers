@@ -93,8 +93,6 @@ public static class ServerConfigurationExtensions
 
         parameters.User = $"{userId}:{userId}";
         
-        Console.WriteLine($"DUID: {userId}");
-        
         /*
         if (userId == 0)
         {

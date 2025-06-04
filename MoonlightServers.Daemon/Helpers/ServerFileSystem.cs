@@ -24,7 +24,14 @@ public class ServerFileSystem
         var path = Normalize(inputPath);
         var entries = FileSystem.ReadDir(path);
 
-        var result = entries
+        IEnumerable<SecureFsEntry> entryQuery = entries;
+
+        // Filter all lost+found directories on the root of the file system
+        // to hide the folder shown by virtual disk volumes
+        if (string.IsNullOrEmpty(inputPath) || inputPath == "/")
+            entryQuery = entryQuery.Where(x => x.Name != "lost+found");
+        
+        var result = entryQuery
             .Select(x => new ServerFileSystemResponse()
             {
                 Name = x.Name,
@@ -267,8 +274,11 @@ public class ServerFileSystem
         {
             var entry = inputStream.GetNextEntry();
             
-            if(entry == null || entry.IsDirectory)
+            if(entry == null)
                 break;
+            
+            if(entry.IsDirectory)
+                continue;
 
             var fileDestination = Path.Combine(destination, entry.Name);
             
@@ -294,8 +304,11 @@ public class ServerFileSystem
         {
             var entry = inputStream.GetNextEntry();
             
-            if(entry == null || entry.IsDirectory)
+            if(entry == null)
                 break;
+            
+            if(entry.IsDirectory)
+                continue;
 
             var fileDestination = Path.Combine(destination, entry.Name);
             

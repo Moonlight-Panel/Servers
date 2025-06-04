@@ -71,7 +71,6 @@ public class Server : IAsyncDisposable
             .Permit(ServerTrigger.Exited, ServerState.Offline);
 
         // Configure task reset when server goes offline
-
         StateMachine.Configure(ServerState.Offline)
             .OnEntryAsync(async () =>
             {
@@ -82,7 +81,6 @@ public class Server : IAsyncDisposable
             });
 
         // Setup websocket notify for state changes
-
         StateMachine.OnTransitionedAsync(async transition =>
         {
             await HubContext.Clients

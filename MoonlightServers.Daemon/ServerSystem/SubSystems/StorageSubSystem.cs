@@ -2,6 +2,7 @@ using System.Diagnostics;
 using Mono.Unix.Native;
 using MoonCore.Exceptions;
 using MoonCore.Helpers;
+using MoonCore.Unix.Exceptions;
 using MoonCore.Unix.SecureFs;
 using MoonlightServers.Daemon.Configuration;
 using MoonlightServers.Daemon.Helpers;
@@ -11,15 +12,18 @@ namespace MoonlightServers.Daemon.ServerSystem.SubSystems;
 public class StorageSubSystem : ServerSubSystem
 {
     private readonly AppConfiguration AppConfiguration;
-    private SecureFileSystem? SecureFileSystem;
+
+    private SecureFileSystem SecureFileSystem;
     private ServerFileSystem ServerFileSystem;
     private ConsoleSubSystem ConsoleSubSystem;
 
     public string RuntimeVolumePath { get; private set; }
     public string InstallVolumePath { get; private set; }
     public string VirtualDiskPath { get; private set; }
-    public bool IsInitialized { get; private set; }
+
     public bool IsVirtualDiskMounted { get; private set; }
+    public bool IsInitialized { get; private set; } = false;
+    public bool IsFileSystemAccessorCreated { get; private set; } = false;
 
     public StorageSubSystem(
         Server server,
@@ -57,43 +61,53 @@ public class StorageSubSystem : ServerSubSystem
         VirtualDiskPath = virtualDiskPath;
     }
 
-    public override Task Initialize()
+    public override async Task Initialize()
     {
-        Logger.LogDebug("Lazy initializing server file system");
-
         ConsoleSubSystem = Server.GetRequiredSubSystem<ConsoleSubSystem>();
 
-        Task.Run(async () =>
+        try
         {
-            try
-            {
-                await EnsureRuntimeVolume();
+            await Reinitialize();
+        }
+        catch (Exception e)
+        {
+            await ConsoleSubSystem.WriteMoonlight(
+                "Unable to initialize server file system. Please contact the administrator"
+            );
 
-                // If we don't use a virtual disk the EnsureRuntimeVolume() method is
-                // all we need in order to serve access to the file system
-                if (!Configuration.UseVirtualDisk)
-                    await CreateFileSystemAccessor();
+            Logger.LogError("An unhandled error occured while lazy initializing server file system: {e}", e);
 
-                IsInitialized = true;
-            }
-            catch (Exception e)
-            {
-                var consoleSubSystem = Server.GetRequiredSubSystem<ConsoleSubSystem>();
-
-                await consoleSubSystem.WriteMoonlight(
-                    "Unable to initialize server file system. Please contact the administrator");
-
-                Logger.LogError("An unhandled error occured while lazy initializing server file system: {e}", e);
-            }
-        });
-
-        return Task.CompletedTask;
+            throw;
+        }
     }
 
     public override async Task Delete()
     {
-        await DeleteInstallVolume();
+        if (Configuration.UseVirtualDisk)
+            await DeleteVirtualDisk();
+
         await DeleteRuntimeVolume();
+        await DeleteInstallVolume();
+    }
+
+    public async Task Reinitialize()
+    {
+        IsInitialized = false;
+
+        await EnsureRuntimeVolumeCreated();
+
+        if (Configuration.UseVirtualDisk)
+        {
+            // Load the state of a possible mount already existing.
+            // This ensures we are aware of the mount state after a restart.
+            // Without that we would get errors when mounting
+            IsVirtualDiskMounted = await CheckVirtualDiskMounted();
+
+            // Ensure we have the virtual disk created and in the correct size
+            await EnsureVirtualDisk();
+        }
+
+        IsInitialized = true;
     }
 
     #region Runtime
@@ -110,68 +124,75 @@ public class StorageSubSystem : ServerSubSystem
     // The return value specifies if the request to the runtime volume is possible or not
     public async Task<bool> RequestRuntimeVolume(bool skipPermissions = false)
     {
+        // If the initialization is still running we don't want to allow access to the runtime volume at all
         if (!IsInitialized)
             return false;
 
-        if (!Configuration.UseVirtualDisk)
-            return true; // This is the default return for all servers without a virtual disk which has been initialized
-        
-        // If the disk isn't already mounted, we need to mount it now
-        if (!IsVirtualDiskMounted)
-        {
+        // If we use virtual disks and the disk isn't already mounted, we need to mount it now
+        if (Configuration.UseVirtualDisk && !IsVirtualDiskMounted)
             await MountVirtualDisk();
-            
-            // And in order to serve the file system we need to create the accessor for it
-            await CreateFileSystemAccessor();
-        }
 
-        if(!skipPermissions)
+        if (!IsFileSystemAccessorCreated)
+            await CreateFileSystemAccessor();
+
+        if (!skipPermissions)
             await EnsureRuntimePermissions();
 
-        return IsVirtualDiskMounted;
+        return true;
     }
 
-    private async Task EnsureRuntimeVolume()
+    private Task EnsureRuntimeVolumeCreated()
     {
+        // Create the volume directory if required
         if (!Directory.Exists(RuntimeVolumePath))
             Directory.CreateDirectory(RuntimeVolumePath);
 
-        if (Configuration.UseVirtualDisk)
-            await EnsureVirtualDiskCreated();
+        return Task.CompletedTask;
     }
 
     private async Task DeleteRuntimeVolume()
     {
+        // Already deleted? Then we don't want to care about anything at all
         if (!Directory.Exists(RuntimeVolumePath))
             return;
 
+        // If we use a virtual disk there are no files to delete via the
+        // secure file system as the virtual disk is already gone by now
         if (Configuration.UseVirtualDisk)
         {
-            if (IsVirtualDiskMounted)
-            {
-                // Ensure the secure file system is no longer open
-                if(SecureFileSystem != null && !SecureFileSystem.IsDisposed)
-                    SecureFileSystem.Dispose();
-                
-                await UnmountVirtualDisk();
-            }
-            
-            File.Delete(VirtualDiskPath);
+            Directory.Delete(RuntimeVolumePath, true);
+            return;
         }
-        else
-        {
-            if (SecureFileSystem == null) // If we are not already initialized, we are initializing now just the part we need
-                SecureFileSystem = new SecureFileSystem(RuntimeVolumePath);
 
+        // If we still habe a file system accessor, we reuse it :)
+        if (IsFileSystemAccessorCreated)
+        {
             foreach (var entry in SecureFileSystem.ReadDir("/"))
             {
-                if(entry.IsFile)
+                if (entry.IsFile)
                     SecureFileSystem.Remove(entry.Name);
                 else
                     SecureFileSystem.RemoveAll(entry.Name);
             }
-            
-            SecureFileSystem.Dispose();
+
+            await DestroyFileSystemAccessor();
+        }
+        else
+        {
+            // If the file system accessor has already been removed we create a temporary one.
+            // This handles the case when a server was never accessed and as such there is no accessor created yet
+
+            var sfs = new SecureFileSystem(RuntimeVolumePath);
+
+            foreach (var entry in sfs.ReadDir("/"))
+            {
+                if (entry.IsFile)
+                    sfs.Remove(entry.Name);
+                else
+                    sfs.RemoveAll(entry.Name);
+            }
+
+            sfs.Dispose();
         }
 
         Directory.Delete(RuntimeVolumePath, true);
@@ -180,7 +201,7 @@ public class StorageSubSystem : ServerSubSystem
     private Task EnsureRuntimePermissions()
     {
         ArgumentNullException.ThrowIfNull(SecureFileSystem);
-        
+
         //TODO: Config
         var uid = (int)Syscall.getuid();
         var gid = (int)Syscall.getgid();
@@ -191,6 +212,7 @@ public class StorageSubSystem : ServerSubSystem
             gid = 998;
         }
 
+        // Chown all content of the runtime volume
         foreach (var entry in SecureFileSystem.ReadDir("/"))
         {
             if (entry.IsFile)
@@ -199,7 +221,12 @@ public class StorageSubSystem : ServerSubSystem
                 SecureFileSystem.ChownAll(entry.Name, uid, gid);
         }
 
-        Syscall.chown(RuntimeVolumePath, uid, gid);
+        // Chown also the main path of the volume
+        if (Syscall.chown(RuntimeVolumePath, uid, gid) != 0)
+        {
+            var error = Stdlib.GetLastError();
+            throw new SyscallException(error, "An error occured while chowning runtime volume");
+        }
 
         return Task.CompletedTask;
     }
@@ -208,7 +235,19 @@ public class StorageSubSystem : ServerSubSystem
     {
         SecureFileSystem = new(RuntimeVolumePath);
         ServerFileSystem = new(SecureFileSystem);
-        
+
+        IsFileSystemAccessorCreated = true;
+
+        return Task.CompletedTask;
+    }
+
+    private Task DestroyFileSystemAccessor()
+    {
+        if (!SecureFileSystem.IsDisposed)
+            SecureFileSystem.Dispose();
+
+        IsFileSystemAccessorCreated = false;
+
         return Task.CompletedTask;
     }
 
@@ -220,7 +259,7 @@ public class StorageSubSystem : ServerSubSystem
     {
         if (!Directory.Exists(InstallVolumePath))
             Directory.CreateDirectory(InstallVolumePath);
-        
+
         return Task.CompletedTask;
     }
 
@@ -239,49 +278,129 @@ public class StorageSubSystem : ServerSubSystem
 
     private async Task MountVirtualDisk()
     {
-        // Check if we need to mount the virtual disk
-        if (await ExecuteCommand("findmnt", RuntimeVolumePath) != 0)
-        {
-            await ConsoleSubSystem.WriteMoonlight("Mounting virtual disk. Please be patient");
-            await ExecuteCommand("mount", $"-t auto -o loop {VirtualDiskPath} {RuntimeVolumePath}", true);
-        }
-        
+        await ConsoleSubSystem.WriteMoonlight("Mounting virtual disk");
+        await ExecuteCommand("mount", $"-t auto -o loop {VirtualDiskPath} {RuntimeVolumePath}", true);
+
         IsVirtualDiskMounted = true;
     }
 
     private async Task UnmountVirtualDisk()
     {
-        // Check if we need to unmount the virtual disk
-        if (await ExecuteCommand("findmnt", RuntimeVolumePath) != 0)
-            return;
+        await ConsoleSubSystem.WriteMoonlight("Unmounting virtual disk");
+        await ExecuteCommand("umount", RuntimeVolumePath, handleExitCode: true);
 
-        await ExecuteCommand("umount", $"{RuntimeVolumePath}");
+        IsVirtualDiskMounted = false;
     }
 
-    private async Task EnsureVirtualDiskCreated()
+    private async Task<bool> CheckVirtualDiskMounted()
+        => await ExecuteCommand("findmnt", RuntimeVolumePath) == 0;
+
+    private async Task EnsureVirtualDisk()
     {
-        // TODO: Handle resize
-        
-        if(File.Exists(VirtualDiskPath))
-            return;
+        var existingDiskInfo = new FileInfo(VirtualDiskPath);
 
-        // Create the image file and adjust the size
-        await ConsoleSubSystem.WriteMoonlight("Creating virtual disk file. Please be patient");
+        // Check if we need to create the disk or just check for the size
+        if (existingDiskInfo.Exists)
+        {
+            var expectedSize = ByteConverter.FromMegaBytes(Configuration.Disk).Bytes;
 
-        var fileStream = File.Open(VirtualDiskPath, FileMode.CreateNew, FileAccess.Write, FileShare.None);
+            if (expectedSize > existingDiskInfo.Length)
+            {
+                Logger.LogDebug("Detected smaller disk size as expected. Resizing now");
+                await ConsoleSubSystem.WriteMoonlight("Preparing to resize virtual disk");
 
-        fileStream.SetLength(
-            ByteConverter.FromMegaBytes(Configuration.Disk).Bytes
-        );
+                // If the file system accessor is still open we need to destroy it in order to to resize
+                if (IsFileSystemAccessorCreated)
+                    await DestroyFileSystemAccessor();
 
-        await fileStream.FlushAsync();
-        fileStream.Close();
-        await fileStream.DisposeAsync();
+                // If the disk is still mounted we need to unmount it in order to resize
+                if (IsVirtualDiskMounted)
+                    await UnmountVirtualDisk();
 
-        // Now we want to format it
-        await ConsoleSubSystem.WriteMoonlight("Formatting virtual disk. This can take a bit");
+                // Resize the disk image file
+                Logger.LogDebug("Resizing virtual disk file");
 
-        await ExecuteCommand("mkfs", $"-t ext4 {VirtualDiskPath}", true);
+                var fileStream = File.Open(VirtualDiskPath, FileMode.Open, FileAccess.ReadWrite, FileShare.None);
+
+                fileStream.SetLength(expectedSize);
+
+                await fileStream.FlushAsync();
+                fileStream.Close();
+                await fileStream.DisposeAsync();
+
+                // Now we need to run the file system check on the disk
+                Logger.LogDebug("Checking virtual disk for corruptions using e2fsck");
+                await ConsoleSubSystem.WriteMoonlight("Checking virtual disk for any corruptions");
+
+                await ExecuteCommand(
+                    "e2fsck",
+                    $"{AppConfiguration.Storage.VirtualDiskOptions.E2FsckParameters} {VirtualDiskPath}",
+                    handleExitCode: true
+                );
+
+                // Resize the file system
+                Logger.LogDebug("Resizing filesystem of virtual disk using resize2fs");
+                await ConsoleSubSystem.WriteMoonlight("Resizing virtual disk");
+
+                await ExecuteCommand("resize2fs", VirtualDiskPath, handleExitCode: true);
+
+                // Done :>
+                Logger.LogDebug("Successfully resized virtual disk");
+                await ConsoleSubSystem.WriteMoonlight("Resize of virtual disk completed");
+            }
+            else if (existingDiskInfo.Length > expectedSize)
+            {
+                Logger.LogDebug("Shrink from {expected} to {existing} detected", expectedSize, existingDiskInfo.Length);
+
+                await ConsoleSubSystem.WriteMoonlight(
+                    "Unable to shrink virtual disk. Virtual disk will stay unmodified"
+                );
+
+                Logger.LogWarning(
+                    "Server disk limit was lower then the size of the virtual disk. Virtual disk wont be resized to prevent loss of files");
+            }
+        }
+        else
+        {
+            // Create the image file and adjust the size
+            Logger.LogDebug("Creating virtual disk");
+            await ConsoleSubSystem.WriteMoonlight("Creating virtual disk file. Please be patient");
+
+            var fileStream = File.Open(VirtualDiskPath, FileMode.CreateNew, FileAccess.Write, FileShare.None);
+
+            fileStream.SetLength(
+                ByteConverter.FromMegaBytes(Configuration.Disk).Bytes
+            );
+
+            await fileStream.FlushAsync();
+            fileStream.Close();
+            await fileStream.DisposeAsync();
+
+            // Now we want to format it
+            Logger.LogDebug("Formatting virtual disk");
+            await ConsoleSubSystem.WriteMoonlight("Formatting virtual disk. This can take a bit");
+
+            await ExecuteCommand(
+                "mkfs",
+                $"-t {AppConfiguration.Storage.VirtualDiskOptions.FileSystemType} {VirtualDiskPath}",
+                handleExitCode: true
+            );
+
+            // Done :)
+            Logger.LogDebug("Successfully created virtual disk");
+            await ConsoleSubSystem.WriteMoonlight("Virtual disk created");
+        }
+    }
+
+    private async Task DeleteVirtualDisk()
+    {
+        if (IsFileSystemAccessorCreated)
+            await DestroyFileSystemAccessor();
+
+        if (IsVirtualDiskMounted)
+            await UnmountVirtualDisk();
+
+        File.Delete(VirtualDiskPath);
     }
 
     private async Task<int> ExecuteCommand(string command, string arguments, bool handleExitCode = false)
@@ -312,11 +431,10 @@ public class StorageSubSystem : ServerSubSystem
 
     #endregion
 
-    public override ValueTask DisposeAsync()
+    public override async ValueTask DisposeAsync()
     {
-        if (SecureFileSystem != null && !SecureFileSystem.IsDisposed)
-            SecureFileSystem.Dispose();
-
-        return ValueTask.CompletedTask;
+        // We check for that just to ensure that we no longer access the file system 
+        if (IsFileSystemAccessorCreated)
+            await DestroyFileSystemAccessor();
     }
 }

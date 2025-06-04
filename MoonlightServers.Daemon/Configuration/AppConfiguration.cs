@@ -48,6 +48,14 @@ public class AppConfiguration
         public string VirtualDisks { get; set; } = PathBuilder.Dir("virtualDisks");
         public string Backups { get; set; } = PathBuilder.Dir("backups");
         public string Install { get; set; } = PathBuilder.Dir("install");
+
+        public VirtualDiskData VirtualDiskOptions { get; set; } = new();
+    }
+
+    public record VirtualDiskData
+    {
+        public string FileSystemType { get; set; } = "ext4";
+        public string E2FsckParameters { get; set; } = "-pf";
     }
     
     public class FilesData
