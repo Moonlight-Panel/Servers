@@ -69,14 +69,23 @@ public class Server : IAsyncDisposable
         StateMachine.Configure(ServerState.Installing)
             .Permit(ServerTrigger.FailSafe, ServerState.Offline)
             .Permit(ServerTrigger.Exited, ServerState.Offline);
-
-        // Configure task reset when server goes offline
+        
         StateMachine.Configure(ServerState.Offline)
             .OnEntryAsync(async () =>
             {
+                // Configure task reset when server goes offline
+                
                 if (!TaskCancellationSource.IsCancellationRequested)
                     await TaskCancellationSource.CancelAsync();
-
+            })
+            .OnExit(() =>
+            {
+                // Activate tasks when the server goes online
+                // If we don't separate the disabling and enabling
+                // of the tasks and would do both it in just the offline handler
+                // we would have edge cases where reconnect loops would already have the new task activated
+                // while they are supposed to shut down. I tested the handling of the state machine,
+                // and it executes on exit before the other listeners from the other sub systems
                 TaskCancellationSource = new();
             });
 

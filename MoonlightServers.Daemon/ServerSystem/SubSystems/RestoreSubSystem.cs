@@ -31,6 +31,8 @@ public class RestoreSubSystem : ServerSubSystem
                 provisionSubSystem.CurrentContainerId = runtimeContainer.ID;
                 Server.OverrideState(ServerState.Online);
 
+                // Update and attach console
+                
                 var consoleSubSystem = Server.GetRequiredSubSystem<ConsoleSubSystem>();
 
                 var logStream = await DockerClient.Containers.GetContainerLogsAsync(runtimeContainerName, true, new ()
@@ -53,6 +55,11 @@ public class RestoreSubSystem : ServerSubSystem
 
                 await consoleSubSystem.Attach(provisionSubSystem.CurrentContainerId);
                 
+                // Attach stats
+                var statsSubSystem = Server.GetRequiredSubSystem<StatsSubSystem>();
+                await statsSubSystem.Attach(provisionSubSystem.CurrentContainerId);
+                
+                // Done :>
                 Logger.LogInformation("Restored runtime container successfully");
                 return;
             }

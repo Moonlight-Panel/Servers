@@ -85,7 +85,8 @@ public class ServerService : IHostedLifecycleService
             typeof(ConsoleSubSystem),
             typeof(RestoreSubSystem),
             typeof(OnlineDetectionService),
-            typeof(InstallationSubSystem)
+            typeof(InstallationSubSystem),
+            typeof(StatsSubSystem)
         ];
 
         await server.Initialize(subSystems);

@@ -15,7 +15,6 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <Folder Include="DaemonSide\"/>
         <Folder Include="DaemonSide\Http\Responses\Servers\Files\"/>
     </ItemGroup>
 

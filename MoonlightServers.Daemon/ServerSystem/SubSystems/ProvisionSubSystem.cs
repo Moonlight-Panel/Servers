@@ -66,7 +66,8 @@ public class ProvisionSubSystem : ServerSubSystem
         // 4. Ensure the docker image has been downloaded
         // 5. Create the docker container
         // 6. Attach the console
-        // 7. Start the container
+        // 7. Attach to stats
+        // 8. Start the container
 
         // Define some shared variables:
         var containerName = $"moonlight-runtime-{Configuration.Id}";
@@ -161,7 +162,13 @@ public class ProvisionSubSystem : ServerSubSystem
         Logger.LogDebug("Attaching console");
         await consoleSubSystem.Attach(CurrentContainerId);
         
-        // 7. Start the docker container
+        // 7. Attach stats stream
+
+        var statsSubSystem = Server.GetRequiredSubSystem<StatsSubSystem>();
+
+        await statsSubSystem.Attach(CurrentContainerId);
+        
+        // 8. Start the docker container
         
         Logger.LogDebug("Starting docker container");
         await consoleSubSystem.WriteMoonlight("Starting container");
