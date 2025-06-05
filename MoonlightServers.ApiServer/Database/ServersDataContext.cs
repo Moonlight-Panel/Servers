@@ -13,6 +13,7 @@ public class ServersDataContext : DatabaseContext
     public DbSet<Node> Nodes { get; set; }
     public DbSet<Server> Servers { get; set; }
     public DbSet<ServerBackup> ServerBackups { get; set; }
+    public DbSet<ServerShare> ServerShares { get; set; }
     public DbSet<ServerVariable> ServerVariables { get; set; }
     public DbSet<Star> Stars { get; set; }
     public DbSet<StarDockerImage> StarDockerImages { get; set; }

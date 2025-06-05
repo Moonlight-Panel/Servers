@@ -1,6 +1,7 @@
+@using MoonCore.Helpers
 @using MoonlightServers.Frontend.Services
 @using MoonlightServers.Shared.Enums
-@using MoonlightServers.Shared.Http.Responses.Users.Servers
+@using MoonlightServers.Shared.Http.Responses.Client.Servers
 
 @inject ServerService ServerService
 @inject ILogger<ServerCard> Logger
@@ -57,7 +58,7 @@
                         <i class="icon-cpu"></i>
                     </div>
 
-                    <div class="ms-3">56,8%</div>
+                    <div class="ms-3">@(Stats.CpuUsage)%</div>
                 </div>
 
                 <div class="bg-gray-900 bg-opacity-45 py-1 px-2 rounded-lg flex flex-row">
@@ -65,7 +66,7 @@
                         <i class="icon-memory-stick"></i>
                     </div>
 
-                    <div class="ms-3">4,2 GB / 8 GB</div>
+                    <div class="ms-3">@(Formatter.FormatSize(Stats.MemoryUsage)) / @(Formatter.FormatSize(ByteConverter.FromMegaBytes(Server.Memory).Bytes))</div>
                 </div>
 
                 <div class="bg-gray-900 bg-opacity-45 py-1 px-2 rounded-lg flex flex-row">
@@ -147,6 +148,7 @@
     [Parameter] public ServerDetailResponse Server { get; set; }
 
     private ServerStatusResponse Status;
+    private ServerStatsResponse Stats;
 
     private bool IsFailed = false;
     private bool IsLoaded = false;
@@ -159,6 +161,7 @@
         try
         {
             Status = await ServerService.GetStatus(Server.Id);
+            Stats = await ServerService.GetStats(Server.Id);
         }
         catch (Exception e)
         {

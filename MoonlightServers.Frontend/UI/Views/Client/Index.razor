@@ -4,13 +4,21 @@
 @using MoonCore.Blazor.Tailwind.Components
 @using MoonCore.Models
 @using MoonlightServers.Frontend.Services
-@using MoonlightServers.Shared.Http.Responses.Users.Servers
+@using MoonlightServers.Shared.Http.Responses.Client.Servers
 
 @inject ServerService ServerService
 
 <LazyLoader Load="Load">
-    <div class="flex flex-col gap-y-5">
-        @* Folder design idea
+    @if (Servers.Length == 0)
+    {
+        <IconAlert Title="No servers found" Color="text-primary" Icon="icon-search">
+            There are no servers linked to your account
+        </IconAlert>
+    }
+    else
+    {
+        <div class="flex flex-col gap-y-5">
+            @* Folder design idea
         <div class="w-full bg-gray-800 px-5 py-3.5 rounded-xl">
             <div class="flex items-center">
                 <div class="bg-gray-900 bg-opacity-45 py-1 px-2 rounded-lg flex items-center">
@@ -28,11 +36,12 @@
             </div>
         </div>
 *@
-        @foreach (var server in Servers)
-        {
-            <ServerCard Server="server"/>
-        }
-    </div>
+            @foreach (var server in Servers)
+            {
+                <ServerCard Server="server"/>
+            }
+        </div>
+    }
 </LazyLoader>
 
 @code

@@ -130,6 +130,19 @@ public class ServerService
         }
     }
 
+    public async Task<ServerStatsResponse> GetStats(Server server)
+    {
+        try
+        {
+            using var apiClient = await GetApiClient(server);
+            return await apiClient.GetJson<ServerStatsResponse>($"api/servers/{server.Id}/stats");
+        }
+        catch (HttpRequestException e)
+        {
+            throw new HttpApiException("Unable to access the node the server is running on", 502);
+        }
+    }
+
     #region Helpers
 
     public bool IsAllowedToAccess(User user, Server server)

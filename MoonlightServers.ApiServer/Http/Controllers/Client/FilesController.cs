@@ -7,6 +7,7 @@ using Moonlight.ApiServer.Database.Entities;
 using MoonlightServers.ApiServer.Database.Entities;
 using MoonlightServers.ApiServer.Services;
 using MoonlightServers.DaemonShared.Enums;
+using MoonlightServers.Shared.Enums;
 using MoonlightServers.Shared.Http.Requests.Client.Servers.Files;
 using MoonlightServers.Shared.Http.Responses.Client.Servers.Files;
 
@@ -15,33 +16,30 @@ namespace MoonlightServers.ApiServer.Http.Controllers.Client;
 [Authorize]
 [ApiController]
 [Route("api/client/servers")]
-public class ServerFileSystemController : Controller
+public class FilesController : Controller
 {
     private readonly DatabaseRepository<Server> ServerRepository;
-    private readonly DatabaseRepository<User> UserRepository;
     private readonly ServerFileSystemService ServerFileSystemService;
-    private readonly ServerService ServerService;
     private readonly NodeService NodeService;
+    private readonly ServerAuthorizeService AuthorizeService;
 
-    public ServerFileSystemController(
+    public FilesController(
         DatabaseRepository<Server> serverRepository,
-        DatabaseRepository<User> userRepository,
         ServerFileSystemService serverFileSystemService,
-        ServerService serverService,
-        NodeService nodeService
+        NodeService nodeService,
+        ServerAuthorizeService authorizeService
     )
     {
         ServerRepository = serverRepository;
-        UserRepository = userRepository;
         ServerFileSystemService = serverFileSystemService;
-        ServerService = serverService;
         NodeService = nodeService;
+        AuthorizeService = authorizeService;
     }
 
     [HttpGet("{serverId:int}/files/list")]
     public async Task<ServerFilesEntryResponse[]> List([FromRoute] int serverId, [FromQuery] string path)
     {
-        var server = await GetServerById(serverId);
+        var server = await GetServerById(serverId, ServerPermissionType.Read);
 
         var entries = await ServerFileSystemService.List(server, path);
 
@@ -58,7 +56,7 @@ public class ServerFileSystemController : Controller
     [HttpPost("{serverId:int}/files/move")]
     public async Task Move([FromRoute] int serverId, [FromQuery] string oldPath, [FromQuery] string newPath)
     {
-        var server = await GetServerById(serverId);
+        var server = await GetServerById(serverId, ServerPermissionType.ReadWrite);
 
         await ServerFileSystemService.Move(server, oldPath, newPath);
     }
@@ -66,7 +64,7 @@ public class ServerFileSystemController : Controller
     [HttpDelete("{serverId:int}/files/delete")]
     public async Task Delete([FromRoute] int serverId, [FromQuery] string path)
     {
-        var server = await GetServerById(serverId);
+        var server = await GetServerById(serverId, ServerPermissionType.ReadWrite);
 
         await ServerFileSystemService.Delete(server, path);
     }
@@ -74,7 +72,7 @@ public class ServerFileSystemController : Controller
     [HttpPost("{serverId:int}/files/mkdir")]
     public async Task Mkdir([FromRoute] int serverId, [FromQuery] string path)
     {
-        var server = await GetServerById(serverId);
+        var server = await GetServerById(serverId, ServerPermissionType.ReadWrite);
 
         await ServerFileSystemService.Mkdir(server, path);
     }
@@ -82,7 +80,7 @@ public class ServerFileSystemController : Controller
     [HttpGet("{serverId:int}/files/upload")]
     public async Task<ServerFilesUploadResponse> Upload([FromRoute] int serverId)
     {
-        var server = await GetServerById(serverId);
+        var server = await GetServerById(serverId, ServerPermissionType.ReadWrite);
 
         var accessToken = NodeService.CreateAccessToken(
             server.Node,
@@ -93,7 +91,7 @@ public class ServerFileSystemController : Controller
             },
             TimeSpan.FromMinutes(1)
         );
-        
+
         var url = "";
 
         url += server.Node.UseSsl ? "https://" : "http://";
@@ -105,11 +103,11 @@ public class ServerFileSystemController : Controller
             UploadUrl = url
         };
     }
-    
+
     [HttpGet("{serverId:int}/files/download")]
     public async Task<ServerFilesDownloadResponse> Download([FromRoute] int serverId, [FromQuery] string path)
     {
-        var server = await GetServerById(serverId);
+        var server = await GetServerById(serverId, ServerPermissionType.Read);
 
         var accessToken = NodeService.CreateAccessToken(
             server.Node,
@@ -121,7 +119,7 @@ public class ServerFileSystemController : Controller
             },
             TimeSpan.FromMinutes(1)
         );
-        
+
         var url = "";
 
         url += server.Node.UseSsl ? "https://" : "http://";
@@ -137,18 +135,18 @@ public class ServerFileSystemController : Controller
     [HttpPost("{serverId:int}/files/compress")]
     public async Task Compress([FromRoute] int serverId, [FromBody] ServerFilesCompressRequest request)
     {
-        var server = await GetServerById(serverId);
+        var server = await GetServerById(serverId, ServerPermissionType.ReadWrite);
 
         if (!Enum.TryParse(request.Type, true, out CompressType type))
             throw new HttpApiException("Invalid compress type provided", 400);
 
         await ServerFileSystemService.Compress(server, type, request.Items, request.Destination);
     }
-    
+
     [HttpPost("{serverId:int}/files/decompress")]
     public async Task Decompress([FromRoute] int serverId, [FromBody] ServerFilesDecompressRequest request)
     {
-        var server = await GetServerById(serverId);
+        var server = await GetServerById(serverId, ServerPermissionType.ReadWrite);
 
         if (!Enum.TryParse(request.Type, true, out CompressType type))
             throw new HttpApiException("Invalid compress type provided", 400);
@@ -156,7 +154,7 @@ public class ServerFileSystemController : Controller
         await ServerFileSystemService.Decompress(server, type, request.Path, request.Destination);
     }
 
-    private async Task<Server> GetServerById(int serverId)
+    private async Task<Server> GetServerById(int serverId, ServerPermissionType type)
     {
         var server = await ServerRepository
             .Get()
@@ -166,11 +164,7 @@ public class ServerFileSystemController : Controller
         if (server == null)
             throw new HttpApiException("No server with this id found", 404);
 
-        var userIdClaim = User.Claims.First(x => x.Type == "userId");
-        var userId = int.Parse(userIdClaim.Value);
-        var user = await UserRepository.Get().FirstAsync(x => x.Id == userId);
-
-        if (!ServerService.IsAllowedToAccess(user, server))
+        if (!await AuthorizeService.Authorize(User, server, permission => permission.Name == "files" && permission.Type >= type))
             throw new HttpApiException("No server with this id found", 404);
 
         return server;

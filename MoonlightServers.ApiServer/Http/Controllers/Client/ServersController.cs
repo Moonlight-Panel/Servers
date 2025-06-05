@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -7,35 +8,49 @@ using MoonCore.Models;
 using Moonlight.ApiServer.Database.Entities;
 using MoonlightServers.ApiServer.Database.Entities;
 using MoonlightServers.ApiServer.Extensions;
+using MoonlightServers.ApiServer.Models;
 using MoonlightServers.ApiServer.Services;
-using MoonlightServers.Shared.Http.Responses.User.Allocations;
-using MoonlightServers.Shared.Http.Responses.Users.Servers;
+using MoonlightServers.Shared.Enums;
+using MoonlightServers.Shared.Http.Responses.Client.Servers;
+using MoonlightServers.Shared.Http.Responses.Client.Servers.Allocations;
 
 namespace MoonlightServers.ApiServer.Http.Controllers.Client;
 
+[Authorize]
 [ApiController]
 [Route("api/client/servers")]
 public class ServersController : Controller
 {
     private readonly ServerService ServerService;
     private readonly DatabaseRepository<Server> ServerRepository;
-    private readonly DatabaseRepository<User> UserRepository;
+    private readonly DatabaseRepository<ServerShare> ShareRepository;
     private readonly NodeService NodeService;
+    private readonly ServerAuthorizeService AuthorizeService;
 
-    public ServersController(DatabaseRepository<Server> serverRepository, NodeService nodeService, ServerService serverService, DatabaseRepository<User> userRepository)
+    public ServersController(
+        DatabaseRepository<Server> serverRepository,
+        NodeService nodeService,
+        ServerService serverService,
+        ServerAuthorizeService authorizeService,
+        DatabaseRepository<ServerShare> shareRepository
+    )
     {
         ServerRepository = serverRepository;
         NodeService = nodeService;
         ServerService = serverService;
-        UserRepository = userRepository;
+        AuthorizeService = authorizeService;
+        ShareRepository = shareRepository;
     }
 
     [HttpGet]
-    [Authorize]
     public async Task<PagedData<ServerDetailResponse>> GetAll([FromQuery] int page, [FromQuery] int pageSize)
     {
-        var userIdClaim = User.Claims.First(x => x.Type == "userId");
-        var userId = int.Parse(userIdClaim.Value);
+        var userIdClaim = User.FindFirstValue("userId");
+
+        if (string.IsNullOrEmpty(userIdClaim))
+            throw new HttpApiException("Only users are able to use this endpoint", 400);
+
+        var userId = int.Parse(userIdClaim);
 
         var query = ServerRepository
             .Get()
@@ -53,6 +68,55 @@ public class ServersController : Controller
             Name = x.Name,
             NodeName = x.Node.Name,
             StarName = x.Star.Name,
+            Cpu = x.Cpu,
+            Memory = x.Memory,
+            Disk = x.Disk,
+            Allocations = x.Allocations.Select(y => new AllocationDetailResponse()
+            {
+                Id = y.Id,
+                Port = y.Port,
+                IpAddress = y.IpAddress
+            }).ToArray()
+        }).ToArray();
+
+        return new PagedData<ServerDetailResponse>()
+        {
+            Items = mappedItems,
+            CurrentPage = page,
+            PageSize = pageSize,
+            TotalItems = count,
+            TotalPages = count == 0 ? 0 : count / pageSize
+        };
+    }
+
+    [HttpGet("shared")]
+    public async Task<PagedData<ServerDetailResponse>> GetAllShared([FromQuery] int page, [FromQuery] int pageSize)
+    {
+        var userIdClaim = User.FindFirstValue("userId");
+
+        if (string.IsNullOrEmpty(userIdClaim))
+            throw new HttpApiException("Only users are able to use this endpoint", 400);
+
+        var userId = int.Parse(userIdClaim);
+
+        var query = ShareRepository
+            .Get()
+            .Include(x => x.Server)
+            .Where(x => x.UserId == userId)
+            .Select(x => x.Server);
+
+        var count = await query.CountAsync();
+        var items = await query.Skip(page * pageSize).Take(pageSize).ToArrayAsync();
+
+        var mappedItems = items.Select(x => new ServerDetailResponse()
+        {
+            Id = x.Id,
+            Name = x.Name,
+            NodeName = x.Node.Name,
+            StarName = x.Star.Name,
+            Cpu = x.Cpu,
+            Memory = x.Memory,
+            Disk = x.Disk,
             Allocations = x.Allocations.Select(y => new AllocationDetailResponse()
             {
                 Id = y.Id,
@@ -72,7 +136,6 @@ public class ServersController : Controller
     }
 
     [HttpGet("{serverId:int}")]
-    [Authorize]
     public async Task<ServerDetailResponse> Get([FromRoute] int serverId)
     {
         var server = await ServerRepository
@@ -81,15 +144,11 @@ public class ServersController : Controller
             .Include(x => x.Star)
             .Include(x => x.Node)
             .FirstOrDefaultAsync(x => x.Id == serverId);
-        
-        if(server == null)
+
+        if (server == null)
             throw new HttpApiException("No server with this id found", 404);
-        
-        var userIdClaim = User.Claims.First(x => x.Type == "userId");
-        var userId = int.Parse(userIdClaim.Value);
-        var user = await UserRepository.Get().FirstAsync(x => x.Id == userId);
-        
-        if(!ServerService.IsAllowedToAccess(user, server))
+
+        if (!await AuthorizeService.Authorize(User, server))
             throw new HttpApiException("No server with this id found", 404);
 
         return new ServerDetailResponse()
@@ -98,6 +157,9 @@ public class ServersController : Controller
             Name = server.Name,
             NodeName = server.Node.Name,
             StarName = server.Star.Name,
+            Cpu = server.Cpu,
+            Memory = server.Memory,
+            Disk = server.Disk,
             Allocations = server.Allocations.Select(y => new AllocationDetailResponse()
             {
                 Id = y.Id,
@@ -108,10 +170,10 @@ public class ServersController : Controller
     }
 
     [HttpGet("{serverId:int}/status")]
-    [Authorize]
     public async Task<ServerStatusResponse> GetStatus([FromRoute] int serverId)
     {
         var server = await GetServerById(serverId);
+
         var status = await ServerService.GetStatus(server);
 
         return new ServerStatusResponse()
@@ -119,12 +181,14 @@ public class ServersController : Controller
             State = status.State.ToServerPowerState()
         };
     }
-    
+
     [HttpGet("{serverId:int}/ws")]
-    [Authorize]
     public async Task<ServerWebSocketResponse> GetWebSocket([FromRoute] int serverId)
     {
-        var server = await GetServerById(serverId);
+        var server = await GetServerById(
+            serverId,
+            permission => permission is { Name: "console", Type: >= ServerPermissionType.Read }
+        );
 
         // TODO: Handle transparent node proxy
 
@@ -133,7 +197,7 @@ public class ServersController : Controller
             parameters.Add("type", "websocket");
             parameters.Add("serverId", server.Id);
         }, TimeSpan.FromMinutes(15)); // TODO: Configurable
-        
+
         var url = "";
 
         url += server.Node.UseSsl ? "https://" : "http://";
@@ -145,36 +209,54 @@ public class ServersController : Controller
             AccessToken = accessToken
         };
     }
-    
+
     [HttpGet("{serverId:int}/logs")]
-    [Authorize]
     public async Task<ServerLogsResponse> GetLogs([FromRoute] int serverId)
     {
-        var server = await GetServerById(serverId);
+        var server = await GetServerById(
+            serverId,
+            permission => permission is { Name: "console", Type: >= ServerPermissionType.Read }
+        );
 
         var logs = await ServerService.GetLogs(server);
-        
+
         return new ServerLogsResponse()
         {
             Messages = logs.Messages
         };
     }
 
-    private async Task<Server> GetServerById(int serverId)
+    [HttpGet("{serverId:int}/stats")]
+    public async Task<ServerStatsResponse> GetStats([FromRoute] int serverId)
+    {
+        var server = await GetServerById(
+            serverId
+        );
+
+        var stats = await ServerService.GetStats(server);
+
+        return new ServerStatsResponse()
+        {
+            CpuUsage = stats.CpuUsage,
+            MemoryUsage = stats.MemoryUsage,
+            NetworkRead = stats.NetworkRead,
+            NetworkWrite = stats.NetworkWrite,
+            IoRead = stats.IoRead,
+            IoWrite = stats.IoWrite
+        };
+    }
+
+    private async Task<Server> GetServerById(int serverId, Func<ServerSharePermission, bool>? filter = null)
     {
         var server = await ServerRepository
             .Get()
             .Include(x => x.Node)
             .FirstOrDefaultAsync(x => x.Id == serverId);
-        
-        if(server == null)
+
+        if (server == null)
             throw new HttpApiException("No server with this id found", 404);
-        
-        var userIdClaim = User.Claims.First(x => x.Type == "userId");
-        var userId = int.Parse(userIdClaim.Value);
-        var user = await UserRepository.Get().FirstAsync(x => x.Id == userId);
-        
-        if(!ServerService.IsAllowedToAccess(user, server))
+
+        if (!await AuthorizeService.Authorize(User, server, filter))
             throw new HttpApiException("No server with this id found", 404);
 
         return server;

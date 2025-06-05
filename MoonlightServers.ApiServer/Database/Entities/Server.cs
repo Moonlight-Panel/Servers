@@ -10,6 +10,7 @@ public class Server
     public List<Allocation> Allocations { get; set; } = new();
     public List<ServerVariable> Variables { get; set; } = new();
     public List<ServerBackup> Backups { get; set; } = new();
+    public List<ServerShare> Shares { get; set; } = new();
 
     // Meta
     public string Name { get; set; }

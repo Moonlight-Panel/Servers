@@ -78,12 +78,14 @@ public class ServerService : IHostedLifecycleService
 
         Type[] subSystems =
         [
+            // The restore sub system needs to be on top in order for the state machine having the
+            // correct state when all other sub systems initialize
+            typeof(RestoreSubSystem),
             typeof(ProvisionSubSystem),
             typeof(StorageSubSystem),
             typeof(DebugSubSystem),
             typeof(ShutdownSubSystem),
             typeof(ConsoleSubSystem),
-            typeof(RestoreSubSystem),
             typeof(OnlineDetectionService),
             typeof(InstallationSubSystem),
             typeof(StatsSubSystem)

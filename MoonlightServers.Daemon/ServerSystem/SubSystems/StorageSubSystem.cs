@@ -92,6 +92,14 @@ public class StorageSubSystem : ServerSubSystem
 
     public async Task Reinitialize()
     {
+        if (IsInitialized && StateMachine.State != ServerState.Offline)
+        {
+            throw new HttpApiException(
+                "Unable to reinitialize storage sub system while the server is not offline",
+                400
+            );
+        }
+
         IsInitialized = false;
 
         await EnsureRuntimeVolumeCreated();
@@ -303,6 +311,22 @@ public class StorageSubSystem : ServerSubSystem
         if (existingDiskInfo.Exists)
         {
             var expectedSize = ByteConverter.FromMegaBytes(Configuration.Disk).Bytes;
+            
+            // If the disk size matches, we are done here
+            if (expectedSize == existingDiskInfo.Length)
+            {
+                Logger.LogDebug("Virtual disk size matches expected size");
+                return;
+            }
+
+            // We cant resize while the server is running as this would lead to possible file corruptions
+            // and crashes of the software the server is running
+            if (StateMachine.State != ServerState.Offline)
+            {
+                Logger.LogDebug("Skipping disk resizing while server is not offline");
+                await ConsoleSubSystem.WriteMoonlight("Skipping disk resizing as the server is not offline");
+                return;
+            }
 
             if (expectedSize > existingDiskInfo.Length)
             {

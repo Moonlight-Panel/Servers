@@ -1,4 +1,4 @@
-namespace MoonlightServers.Shared.Http.Responses.User.Allocations;
+namespace MoonlightServers.Shared.Http.Responses.Client.Servers.Allocations;
 
 public class AllocationDetailResponse
 {

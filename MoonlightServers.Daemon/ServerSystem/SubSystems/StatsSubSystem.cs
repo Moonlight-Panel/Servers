@@ -8,6 +8,8 @@ namespace MoonlightServers.Daemon.ServerSystem.SubSystems;
 
 public class StatsSubSystem : ServerSubSystem
 {
+    public ServerStats CurrentStats { get; private set; }
+    
     private readonly DockerClient DockerClient;
     private readonly IHubContext<ServerWebSocketHub> HubContext;
 
@@ -20,6 +22,8 @@ public class StatsSubSystem : ServerSubSystem
     {
         DockerClient = dockerClient;
         HubContext = hubContext;
+
+        CurrentStats = new();
     }
 
     public Task Attach(string containerId)
@@ -44,6 +48,9 @@ public class StatsSubSystem : ServerSubSystem
                             {
                                 var stats = ConvertToStats(response);
 
+                                // Update current stats for usage of other components
+                                CurrentStats = stats;
+
                                 await HubContext.Clients
                                     .Group(Configuration.Id.ToString())
                                     .SendAsync("StatsUpdated", stats);
@@ -66,6 +73,9 @@ public class StatsSubSystem : ServerSubSystem
                 }
             }
 
+            // Reset current stats
+            CurrentStats = new();
+            
             Logger.LogDebug("Stopped fetching container stats");
         });
 
@@ -76,20 +86,16 @@ public class StatsSubSystem : ServerSubSystem
     {
         var result = new ServerStats();
         
-        // When killed this field will be null so we just return
-        if (response.CPUStats.CPUUsage == null)
-            return result;
-        
         #region CPU
-
-        if(response.CPUStats is { CPUUsage.PercpuUsage: not null }) // Sometimes some values are just null >:/
+        
+        if(response.CPUStats != null && response.PreCPUStats.CPUUsage != null) // Sometimes some values are just null >:/
         {
             var cpuDelta = (float)response.CPUStats.CPUUsage.TotalUsage - response.PreCPUStats.CPUUsage.TotalUsage;
             var cpuSystemDelta = (float)response.CPUStats.SystemUsage - response.PreCPUStats.SystemUsage;
 
             var cpuCoreCount = (int)response.CPUStats.OnlineCPUs;
 
-            if (cpuCoreCount == 0)
+            if (cpuCoreCount == 0 && response.CPUStats.CPUUsage.PercpuUsage != null)
                 cpuCoreCount = response.CPUStats.CPUUsage.PercpuUsage.Count;
 
             var cpuPercent = 0f;
@@ -115,10 +121,13 @@ public class StatsSubSystem : ServerSubSystem
 
         #region Network
 
-        foreach (var network in response.Networks)
+        if (response.Networks != null)
         {
-            result.NetworkRead += network.Value.RxBytes;
-            result.NetworkWrite += network.Value.TxBytes;
+            foreach (var network in response.Networks)
+            {
+                result.NetworkRead += network.Value.RxBytes;
+                result.NetworkWrite += network.Value.TxBytes;
+            }
         }
 
         #endregion

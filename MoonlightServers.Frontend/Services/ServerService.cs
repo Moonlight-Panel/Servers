@@ -2,8 +2,8 @@ using MoonCore.Attributes;
 using MoonCore.Helpers;
 using MoonCore.Models;
 using MoonlightServers.Shared.Http.Requests.Client.Servers.Variables;
+using MoonlightServers.Shared.Http.Responses.Client.Servers;
 using MoonlightServers.Shared.Http.Responses.Client.Servers.Variables;
-using MoonlightServers.Shared.Http.Responses.Users.Servers;
 
 namespace MoonlightServers.Frontend.Services;
 
@@ -42,6 +42,13 @@ public class ServerService
     {
         return await HttpApiClient.GetJson<ServerLogsResponse>(
             $"api/client/servers/{serverId}/logs"
+        );
+    }
+
+    public async Task<ServerStatsResponse> GetStats(int serverId)
+    {
+        return await HttpApiClient.GetJson<ServerStatsResponse>(
+            $"api/client/servers/{serverId}/stats"
         );
     }
 

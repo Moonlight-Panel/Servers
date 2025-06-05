@@ -64,4 +64,25 @@ public class ServersController : Controller
             Messages = messages
         };
     }
+
+    [HttpGet("{serverId:int}/stats")]
+    public Task<ServerStatsResponse> GetStats([FromRoute] int serverId)
+    {
+        var server = ServerService.Find(serverId);
+
+        if (server == null)
+            throw new HttpApiException("No server with this id found", 404);
+
+        var statsSubSystem = server.GetRequiredSubSystem<StatsSubSystem>();
+
+        return Task.FromResult<ServerStatsResponse>(new()
+        {
+            CpuUsage = statsSubSystem.CurrentStats.CpuUsage,
+            MemoryUsage = statsSubSystem.CurrentStats.MemoryUsage,
+            NetworkRead = statsSubSystem.CurrentStats.NetworkRead,
+            NetworkWrite = statsSubSystem.CurrentStats.NetworkWrite,
+            IoRead = statsSubSystem.CurrentStats.IoRead,
+            IoWrite = statsSubSystem.CurrentStats.IoWrite
+        });
+    }
 }

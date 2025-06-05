@@ -1,5 +1,5 @@
 using MoonlightServers.Frontend.Models;
-using MoonlightServers.Shared.Http.Responses.Users.Servers;
+using MoonlightServers.Shared.Http.Responses.Client.Servers;
 
 namespace MoonlightServers.Frontend.Interfaces;
 

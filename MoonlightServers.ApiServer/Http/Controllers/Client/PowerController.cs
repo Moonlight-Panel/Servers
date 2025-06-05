@@ -7,27 +7,31 @@ using MoonCore.Helpers;
 using Moonlight.ApiServer.Database.Entities;
 using MoonlightServers.ApiServer.Database.Entities;
 using MoonlightServers.ApiServer.Services;
+using MoonlightServers.Shared.Enums;
 
 namespace MoonlightServers.ApiServer.Http.Controllers.Client;
 
 [ApiController]
 [Authorize]
 [Route("api/client/servers")]
-public class ServerPowerController : Controller
+public class PowerController : Controller
 {
     private readonly DatabaseRepository<Server> ServerRepository;
     private readonly DatabaseRepository<User> UserRepository;
     private readonly ServerService ServerService;
+    private readonly ServerAuthorizeService AuthorizeService;
 
-    public ServerPowerController(
+    public PowerController(
         DatabaseRepository<Server> serverRepository,
         DatabaseRepository<User> userRepository,
-        ServerService serverService
+        ServerService serverService,
+        ServerAuthorizeService authorizeService
     )
     {
         ServerRepository = serverRepository;
         UserRepository = userRepository;
         ServerService = serverService;
+        AuthorizeService = authorizeService;
     }
 
     [HttpPost("{serverId:int}/start")]
@@ -54,14 +58,6 @@ public class ServerPowerController : Controller
         await ServerService.Kill(server);
     }
 
-    [HttpPost("{serverId:int}/install")]
-    [Authorize]
-    public async Task Install([FromRoute] int serverId)
-    {
-        var server = await GetServerById(serverId);
-        await ServerService.Install(server);
-    }
-
     private async Task<Server> GetServerById(int serverId)
     {
         var server = await ServerRepository
@@ -72,11 +68,7 @@ public class ServerPowerController : Controller
         if (server == null)
             throw new HttpApiException("No server with this id found", 404);
 
-        var userIdClaim = User.Claims.First(x => x.Type == "userId");
-        var userId = int.Parse(userIdClaim.Value);
-        var user = await UserRepository.Get().FirstAsync(x => x.Id == userId);
-
-        if (!ServerService.IsAllowedToAccess(user, server))
+        if (!await AuthorizeService.Authorize(User, server, permission => permission is { Name: "power", Type: ServerPermissionType.ReadWrite }))
             throw new HttpApiException("No server with this id found", 404);
 
         return server;
