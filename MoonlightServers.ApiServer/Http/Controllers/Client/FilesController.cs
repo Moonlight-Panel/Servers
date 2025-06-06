@@ -164,8 +164,13 @@ public class FilesController : Controller
         if (server == null)
             throw new HttpApiException("No server with this id found", 404);
 
-        if (!await AuthorizeService.Authorize(User, server, permission => permission.Name == "files" && permission.Type >= type))
-            throw new HttpApiException("No server with this id found", 404);
+        var authorizeResult = await AuthorizeService.Authorize(
+            User, server,
+            permission => permission.Name == "files" && permission.Type >= type
+        );
+
+        if (!authorizeResult.Succeeded)
+            throw new HttpApiException("No permission for the requested resource", 403);
 
         return server;
     }

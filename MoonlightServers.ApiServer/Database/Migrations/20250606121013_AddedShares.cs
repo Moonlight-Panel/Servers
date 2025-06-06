@@ -7,7 +7,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace MoonlightServers.ApiServer.Database.Migrations
 {
     /// <inheritdoc />
-    public partial class AddedServerShares : Migration
+    public partial class AddedShares : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -20,9 +20,9 @@ namespace MoonlightServers.ApiServer.Database.Migrations
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     UserId = table.Column<int>(type: "integer", nullable: false),
                     ServerId = table.Column<int>(type: "integer", nullable: false),
-                    Permissions = table.Column<string>(type: "jsonb", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
+                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    Content = table.Column<string>(type: "jsonb", nullable: false)
                 },
                 constraints: table =>
                 {

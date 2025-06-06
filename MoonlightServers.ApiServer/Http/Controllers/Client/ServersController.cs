@@ -148,7 +148,9 @@ public class ServersController : Controller
         if (server == null)
             throw new HttpApiException("No server with this id found", 404);
 
-        if (!await AuthorizeService.Authorize(User, server))
+        var authorizationResult = await AuthorizeService.Authorize(User, server);
+        
+        if (!authorizationResult.Succeeded)
             throw new HttpApiException("No server with this id found", 404);
 
         return new ServerDetailResponse()
@@ -256,8 +258,10 @@ public class ServersController : Controller
         if (server == null)
             throw new HttpApiException("No server with this id found", 404);
 
-        if (!await AuthorizeService.Authorize(User, server, filter))
-            throw new HttpApiException("No server with this id found", 404);
+        var authorizeResult = await AuthorizeService.Authorize(User, server, filter);
+
+        if (!authorizeResult.Succeeded)
+            throw new HttpApiException("No permission for the requested resource", 403);
 
         return server;
     }

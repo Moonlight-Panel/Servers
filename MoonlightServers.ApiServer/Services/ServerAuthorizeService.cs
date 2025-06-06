@@ -24,50 +24,54 @@ public class ServerAuthorizeService
         ShareRepository = shareRepository;
     }
 
-    public async Task<bool> Authorize(ClaimsPrincipal user, Server server, Func<ServerSharePermission, bool>? filter = null)
+    public async Task<AuthorizationResult> Authorize(ClaimsPrincipal user, Server server, Func<ServerSharePermission, bool>? filter = null)
     {
         var userIdClaim = user.FindFirst("userId");
 
         // User specific authorization
-        if (userIdClaim != null && await AuthorizeViaUser(userIdClaim, server, filter))
-            return true;
+        if (userIdClaim != null)
+        {
+            var result = await AuthorizeViaUser(userIdClaim, server, filter);
+
+            if (result.Succeeded)
+                return result;
+        }
         
         // Permission specific authorization
         return await AuthorizeViaPermission(user);
     }
 
-    private async Task<bool> AuthorizeViaUser(Claim userIdClaim, Server server, Func<ServerSharePermission, bool>? filter = null)
+    private async Task<AuthorizationResult> AuthorizeViaUser(Claim userIdClaim, Server server, Func<ServerSharePermission, bool>? filter = null)
     {
         var userId = int.Parse(userIdClaim.Value);
 
         if (server.OwnerId == userId)
-            return true;
+            return AuthorizationResult.Success();
 
         var possibleShare = await ShareRepository
             .Get()
             .FirstOrDefaultAsync(x => x.Server.Id == server.Id && x.UserId == userId);
 
         if (possibleShare == null)
-            return false;
+            return AuthorizationResult.Failed();
 
         // If no filter has been specified every server share is valid
         // no matter which permission the share actually has
         if (filter == null)
-            return true;
+            return AuthorizationResult.Success();
 
-        var permissionsOfShare = ParsePermissions(possibleShare.Permissions);
+        if(possibleShare.Content.Permissions.Any(filter))
+            return AuthorizationResult.Success();
 
-        return permissionsOfShare.Any(filter);
+        return AuthorizationResult.Failed();
     }
 
-    private async Task<bool> AuthorizeViaPermission(ClaimsPrincipal user)
+    private async Task<AuthorizationResult> AuthorizeViaPermission(ClaimsPrincipal user)
     {
-        var authorizeResult = await AuthorizationService.AuthorizeAsync(
+        return await AuthorizationService.AuthorizeAsync(
             user,
             "permissions:admin.servers.get"
         );
-
-        return authorizeResult.Succeeded;
     }
 
     private ServerSharePermission[] ParsePermissions(string permissionsString)
@@ -95,35 +99,5 @@ public class ServerAuthorizeService
         }
 
         return result.ToArray();
-    }
-
-    private bool CheckSharePermission(ServerShare share, string permission, ServerPermissionType type)
-    {
-        if (string.IsNullOrEmpty(share.Permissions))
-            return false;
-
-        var permissions = share.Permissions.Split(';', StringSplitOptions.RemoveEmptyEntries);
-
-        foreach (var sharePermission in permissions)
-        {
-            if (!sharePermission.StartsWith(permission))
-                continue;
-
-            var typeParts = sharePermission.Split(':', StringSplitOptions.RemoveEmptyEntries);
-
-            // Missing permission type
-            if (typeParts.Length != 2)
-                return false;
-
-            // Parse type id
-            if (!int.TryParse(typeParts[1], out var typeId))
-                return false; // Malformed
-
-            var requiredId = (int)type;
-
-            return typeId >= requiredId;
-        }
-
-        return false;
     }
 }

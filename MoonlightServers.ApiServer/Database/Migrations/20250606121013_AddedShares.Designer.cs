@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace MoonlightServers.ApiServer.Database.Migrations
 {
     [DbContext(typeof(ServersDataContext))]
-    [Migration("20250605210823_AddedServerShares")]
-    partial class AddedServerShares
+    [Migration("20250606121013_AddedShares")]
+    partial class AddedShares
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -193,10 +193,6 @@ namespace MoonlightServers.ApiServer.Database.Migrations
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("Permissions")
-                        .IsRequired()
-                        .HasColumnType("jsonb");
 
                     b.Property<int>("ServerId")
                         .HasColumnType("integer");
@@ -432,6 +428,50 @@ namespace MoonlightServers.ApiServer.Database.Migrations
                         .WithMany("Shares")
                         .HasForeignKey("ServerId")
                         .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.OwnsOne("MoonlightServers.ApiServer.Models.ServerShareContent", "Content", b1 =>
+                        {
+                            b1.Property<int>("ServerShareId")
+                                .HasColumnType("integer");
+
+                            b1.HasKey("ServerShareId");
+
+                            b1.ToTable("Servers_ServerShares");
+
+                            b1.ToJson("Content");
+
+                            b1.WithOwner()
+                                .HasForeignKey("ServerShareId");
+
+                            b1.OwnsMany("MoonlightServers.ApiServer.Models.ServerSharePermission", "Permissions", b2 =>
+                                {
+                                    b2.Property<int>("ServerShareContentServerShareId")
+                                        .HasColumnType("integer");
+
+                                    b2.Property<int>("__synthesizedOrdinal")
+                                        .ValueGeneratedOnAdd()
+                                        .HasColumnType("integer");
+
+                                    b2.Property<string>("Name")
+                                        .IsRequired()
+                                        .HasColumnType("text");
+
+                                    b2.Property<int>("Type")
+                                        .HasColumnType("integer");
+
+                                    b2.HasKey("ServerShareContentServerShareId", "__synthesizedOrdinal");
+
+                                    b2.ToTable("Servers_ServerShares");
+
+                                    b2.WithOwner()
+                                        .HasForeignKey("ServerShareContentServerShareId");
+                                });
+
+                            b1.Navigation("Permissions");
+                        });
+
+                    b.Navigation("Content")
                         .IsRequired();
 
                     b.Navigation("Server");

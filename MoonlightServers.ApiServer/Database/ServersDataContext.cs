@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using MoonCore.Extended.SingleDb;
 using Moonlight.ApiServer.Configuration;
 using MoonlightServers.ApiServer.Database.Entities;
+using MoonlightServers.ApiServer.Models;
 
 namespace MoonlightServers.ApiServer.Database;
 
@@ -29,5 +30,27 @@ public class ServersDataContext : DatabaseContext
             Password = configuration.Database.Password,
             Database = configuration.Database.Database
         };
+    }
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        base.OnModelCreating(modelBuilder);
+
+        #region Shares
+
+        modelBuilder.Ignore<ServerShareContent>();
+        modelBuilder.Ignore<ServerSharePermission>();
+        
+        modelBuilder.Entity<ServerShare>(builder =>
+        {
+            builder.OwnsOne(x => x.Content, navigationBuilder =>
+            {
+                navigationBuilder.ToJson();
+
+                navigationBuilder.OwnsMany(x => x.Permissions);
+            });
+        });
+
+        #endregion
     }
 }
