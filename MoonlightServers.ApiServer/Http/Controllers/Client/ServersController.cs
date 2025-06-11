@@ -13,6 +13,7 @@ using MoonlightServers.ApiServer.Services;
 using MoonlightServers.Shared.Enums;
 using MoonlightServers.Shared.Http.Responses.Client.Servers;
 using MoonlightServers.Shared.Http.Responses.Client.Servers.Allocations;
+using MoonlightServers.Shared.Models;
 
 namespace MoonlightServers.ApiServer.Http.Controllers.Client;
 
@@ -24,6 +25,7 @@ public class ServersController : Controller
     private readonly ServerService ServerService;
     private readonly DatabaseRepository<Server> ServerRepository;
     private readonly DatabaseRepository<ServerShare> ShareRepository;
+    private readonly DatabaseRepository<User> UserRepository;
     private readonly NodeService NodeService;
     private readonly ServerAuthorizeService AuthorizeService;
 
@@ -32,7 +34,8 @@ public class ServersController : Controller
         NodeService nodeService,
         ServerService serverService,
         ServerAuthorizeService authorizeService,
-        DatabaseRepository<ServerShare> shareRepository
+        DatabaseRepository<ServerShare> shareRepository,
+        DatabaseRepository<User> userRepository
     )
     {
         ServerRepository = serverRepository;
@@ -40,6 +43,7 @@ public class ServersController : Controller
         ServerService = serverService;
         AuthorizeService = authorizeService;
         ShareRepository = shareRepository;
+        UserRepository = userRepository;
     }
 
     [HttpGet]
@@ -102,27 +106,46 @@ public class ServersController : Controller
         var query = ShareRepository
             .Get()
             .Include(x => x.Server)
-            .Where(x => x.UserId == userId)
-            .Select(x => x.Server);
+            .ThenInclude(x => x.Node)
+            .Include(x => x.Server)
+            .ThenInclude(x => x.Star)
+            .Include(x => x.Server)
+            .ThenInclude(x => x.Allocations)
+            .Where(x => x.UserId == userId);
 
         var count = await query.CountAsync();
         var items = await query.Skip(page * pageSize).Take(pageSize).ToArrayAsync();
 
+        var ownerIds = items
+            .Select(x => x.Server.OwnerId)
+            .Distinct()
+            .ToArray();
+
+        var owners = await UserRepository
+            .Get()
+            .Where(x => ownerIds.Contains(x.Id))
+            .ToArrayAsync();
+
         var mappedItems = items.Select(x => new ServerDetailResponse()
         {
-            Id = x.Id,
-            Name = x.Name,
-            NodeName = x.Node.Name,
-            StarName = x.Star.Name,
-            Cpu = x.Cpu,
-            Memory = x.Memory,
-            Disk = x.Disk,
-            Allocations = x.Allocations.Select(y => new AllocationDetailResponse()
+            Id = x.Server.Id,
+            Name = x.Server.Name,
+            NodeName = x.Server.Node.Name,
+            StarName = x.Server.Star.Name,
+            Cpu = x.Server.Cpu,
+            Memory = x.Server.Memory,
+            Disk = x.Server.Disk,
+            Allocations = x.Server.Allocations.Select(y => new AllocationDetailResponse()
             {
                 Id = y.Id,
                 Port = y.Port,
                 IpAddress = y.IpAddress
-            }).ToArray()
+            }).ToArray(),
+            Share = new()
+            {
+                SharedBy = owners.First(y => y.Id == x.Server.OwnerId).Username,
+                Permissions = x.Content.Permissions.ToArray()
+            }
         }).ToArray();
 
         return new PagedData<ServerDetailResponse>()
@@ -149,11 +172,17 @@ public class ServersController : Controller
             throw new HttpApiException("No server with this id found", 404);
 
         var authorizationResult = await AuthorizeService.Authorize(User, server);
-        
-        if (!authorizationResult.Succeeded)
-            throw new HttpApiException("No server with this id found", 404);
 
-        return new ServerDetailResponse()
+        if (!authorizationResult.Succeeded)
+        {
+            throw new HttpApiException(
+                authorizationResult.Message ?? "No server with this id found",
+                404
+            );
+        }
+
+        // Create mapped response
+        var response = new ServerDetailResponse()
         {
             Id = server.Id,
             Name = server.Name,
@@ -169,6 +198,22 @@ public class ServersController : Controller
                 IpAddress = y.IpAddress
             }).ToArray()
         };
+
+        // Handle requests on shared servers
+        if (authorizationResult.Share != null)
+        {
+            var owner = await UserRepository
+                .Get()
+                .FirstAsync(x => x.Id == server.OwnerId);
+
+            response.Share = new()
+            {
+                SharedBy = owner.Username,
+                Permissions = authorizationResult.Share.Content.Permissions.ToArray()
+            };
+        }
+
+        return response;
     }
 
     [HttpGet("{serverId:int}/status")]
@@ -261,7 +306,12 @@ public class ServersController : Controller
         var authorizeResult = await AuthorizeService.Authorize(User, server, filter);
 
         if (!authorizeResult.Succeeded)
-            throw new HttpApiException("No permission for the requested resource", 403);
+        {
+            throw new HttpApiException(
+                authorizeResult.Message ?? "No permission for the requested resource",
+                403
+            );
+        }
 
         return server;
     }

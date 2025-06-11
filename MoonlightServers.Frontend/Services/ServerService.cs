@@ -23,6 +23,13 @@ public class ServerService
             $"api/client/servers?page={page}&pageSize={perPage}"
         );
     }
+    
+    public async Task<PagedData<ServerDetailResponse>> GetSharedServers(int page, int perPage)
+    {
+        return await HttpApiClient.GetJson<PagedData<ServerDetailResponse>>(
+            $"api/client/servers/shared?page={page}&pageSize={perPage}"
+        );
+    }
 
     public async Task<ServerDetailResponse> GetServer(int serverId)
     {

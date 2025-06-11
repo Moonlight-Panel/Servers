@@ -124,21 +124,34 @@
 
         <div class="hidden 2xl:flex items-center justify-end gap-x-3 2xl:col-span-2">
 
-            <div class="bg-gray-900 bg-opacity-45 py-1 px-2 rounded-lg flex flex-row">
-                <div>
-                    <i class="icon-sparkles"></i>
+            @if (Server.Share != null)
+            {
+                <div class="bg-gray-900 bg-opacity-45 py-1 px-2 rounded-lg flex flex-row col-span-2">
+                    <div>
+                        <i class="icon-share-2"></i>
+                    </div>
+
+                    <div class="ms-3">Shared by <span class="text-primary">@Server.Share.SharedBy</span></div>
+                </div>
+            }
+            else
+            {
+                <div class="bg-gray-900 bg-opacity-45 py-1 px-2 rounded-lg flex flex-row">
+                    <div>
+                        <i class="icon-sparkles"></i>
+                    </div>
+
+                    <div class="ms-3">@Server.StarName</div>
                 </div>
 
-                <div class="ms-3">@Server.StarName</div>
-            </div>
+                <div class="bg-gray-900 bg-opacity-45 py-1 px-2 rounded-lg flex flex-row">
+                    <div>
+                        <i class="icon-database"></i>
+                    </div>
 
-            <div class="bg-gray-900 bg-opacity-45 py-1 px-2 rounded-lg flex flex-row">
-                <div>
-                    <i class="icon-database"></i>
+                    <div class="ms-3">@Server.NodeName</div>
                 </div>
-
-                <div class="ms-3">@Server.NodeName</div>
-            </div>
+            }
         </div>
     </div>
 </a>

@@ -138,7 +138,12 @@ public class VariablesController : Controller
         );
 
         if (!authorizeResult.Succeeded)
-            throw new HttpApiException("No permission for the requested resource", 403);
+        {
+            throw new HttpApiException(
+                authorizeResult.Message ?? "No permission for the requested resource",
+                403
+            );
+        }
 
         return server;
     }

@@ -1,0 +1,105 @@
+@using MoonCore.Blazor.Tailwind.Components
+@using MoonlightServers.Shared.Enums
+@using MoonlightServers.Shared.Http.Requests.Client.Servers.Shares
+@using MoonlightServers.Shared.Models
+
+@inherits MoonCore.Blazor.Tailwind.Modals.Components.BaseModal
+
+<div class="text-lg font-semibold mb-5">
+    Create a new share
+</div>
+
+<HandleForm @ref="HandleForm" Model="Request" OnValidSubmit="OnValidSubmit">
+    <div class="mb-8">
+        <label class="block text-sm font-medium leading-6 text-white">Username</label>
+        <input @bind="Request.Username" type="text" class="form-input w-full"/>
+    </div>
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-y-5 lg:gap-y-3">
+        @foreach (var name in Names)
+        {
+            var i = Permissions.TryGetValue(name, out var permission) ? (int)permission : -1;
+            
+            <div class="col-span-1 flex flex-row items-center justify-center lg:justify-start">
+                @name
+            </div>
+
+            <div class="col-span-1 flex flex-row items-center justify-center lg:justify-end">
+                <div class="tabs">
+                    <button @onclick="() => Reset(name)"
+                            class="tabs-segment @(i == -1 ? "tabs-segment-active" : "")">
+                        None
+                    </button>
+                    <button @onclick="() => Set(name, ServerPermissionType.Read)"
+                            class="tabs-segment @(i == 0 ? "tabs-segment-active" : "")">
+                        Read
+                    </button>
+                    <button @onclick="() => Set(name, ServerPermissionType.ReadWrite)"
+                            class="tabs-segment @(i == 1 ? "tabs-segment-active" : "")">
+                        Read & Write
+                    </button>
+                </div>
+            </div>
+        }
+    </div>
+</HandleForm>
+
+<div class="mt-8 flex space-x-2">
+    <WButton OnClick="_ => Hide()" CssClasses="btn btn-secondary grow">Cancel</WButton>
+    <WButton OnClick="_ => Submit()" CssClasses="btn btn-primary grow">Create</WButton>
+</div>
+
+@code
+{
+    [Parameter] public string Username { get; set; }
+    [Parameter] public Func<CreateShareRequest, Task> OnSubmit { get; set; }
+
+    private HandleForm HandleForm;
+    private CreateShareRequest Request;
+
+    private Dictionary<string, ServerPermissionType> Permissions = new();
+
+    private string[] Names =
+    [
+        "console",
+        "power",
+        "shares",
+        "files",
+        "variables",
+        "settings"
+    ];
+
+    protected override void OnInitialized()
+    {
+        Request = new()
+        {
+            Username = Username
+        };
+    }
+
+    private async Task Set(string name, ServerPermissionType type)
+    {
+        Permissions[name] = type;
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task Reset(string name)
+    {
+        Permissions.Remove(name);
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task Submit()
+        => await HandleForm.Submit();
+
+    private async Task OnValidSubmit()
+    {
+        Request.Permissions = Permissions.Select(x => new ServerSharePermission()
+        {
+            Name = x.Key,
+            Type = x.Value
+        }).ToList();
+
+        await OnSubmit.Invoke(Request);
+        await Hide();
+    }
+}

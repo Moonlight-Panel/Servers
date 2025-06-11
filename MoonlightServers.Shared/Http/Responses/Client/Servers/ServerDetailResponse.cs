@@ -1,8 +1,9 @@
 using MoonlightServers.Shared.Http.Responses.Client.Servers.Allocations;
+using MoonlightServers.Shared.Models;
 
 namespace MoonlightServers.Shared.Http.Responses.Client.Servers;
 
-public class ServerDetailResponse
+public record ServerDetailResponse
 {
     public int Id { get; set; }
 
@@ -16,4 +17,12 @@ public class ServerDetailResponse
     public string StarName { get; set; }
 
     public AllocationDetailResponse[] Allocations { get; set; }
+
+    public ShareData? Share { get; set; } = null;
+
+    public record ShareData
+    {
+        public string SharedBy { get; set; }
+        public ServerSharePermission[] Permissions { get; set; }
+    }
 }

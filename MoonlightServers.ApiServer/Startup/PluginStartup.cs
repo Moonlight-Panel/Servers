@@ -4,6 +4,8 @@ using Moonlight.ApiServer.Models;
 using Moonlight.ApiServer.Plugins;
 using MoonlightServers.ApiServer.Database;
 using MoonlightServers.ApiServer.Helpers;
+using MoonlightServers.ApiServer.Implementations.ServerAuthFilters;
+using MoonlightServers.ApiServer.Interfaces;
 
 namespace MoonlightServers.ApiServer.Startup;
 
@@ -37,6 +39,11 @@ public class PluginStartup : IPluginStartup
                 Styles = ["css/XtermBlazor.min.css"]
             });
         }
+        
+        //  Add server auth filters
+        builder.Services.AddSingleton<IServerAuthorizationFilter, OwnerAuthFilter>();
+        builder.Services.AddScoped<IServerAuthorizationFilter, AdminAuthFilter>();
+        builder.Services.AddScoped<IServerAuthorizationFilter, ShareAuthFilter>();
 
         return Task.CompletedTask;
     }

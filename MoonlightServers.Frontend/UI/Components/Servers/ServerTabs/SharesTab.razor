@@ -1,0 +1,121 @@
+@using MoonCore.Blazor.Tailwind.Alerts
+@using MoonCore.Blazor.Tailwind.Components
+@using MoonCore.Blazor.Tailwind.Modals
+@using MoonCore.Blazor.Tailwind.Toasts
+@using MoonCore.Models
+@using MoonlightServers.Frontend.Services
+@using MoonlightServers.Shared.Http.Requests.Client.Servers.Shares
+@using MoonlightServers.Shared.Http.Responses.Client.Servers.Shares
+
+@inherits BaseServerTab
+
+@inject ServerShareService ShareService
+@inject ModalService ModalService
+@inject ToastService ToastService
+@inject AlertService AlertService
+
+<div class="flex flex-row mb-5">
+    <input @bind="UsernameInput" class="form-input grow placeholder-gray-500 me-1.5" autocomplete="none" placeholder="Enter a username"/>
+    <button @onclick="OpenCreateModal" class="btn btn-primary">
+        <i class="icon-send me-1"></i>
+        <span>Invite</span>
+    </button>
+</div>
+
+<LazyLoader @ref="LazyLoader" Load="Load">
+    @if (Shares.Length == 0)
+    {
+        <IconAlert Title="No shares found" Color="text-primary" Icon="icon-search">
+            Enter a username and press invite to share this server to another user
+        </IconAlert>
+    }
+    else
+    {
+        <div class="grid grid-col-1 gap-y-3">
+            @foreach (var share in Shares)
+            {
+                <div class="col-span-1 card card-body px-5 py-3 flex flex-row items-center justify-between">
+                    <div class="flex justify-start font-semibold">
+                        <i class="icon-user-round me-2"></i>
+                        <span>@share.Username</span>
+                    </div>
+                    <div class="flex justify-end">
+                        <WButton OnClick="_ => OpenUpdateModal(share)" CssClasses="btn btn-primary me-1.5">
+                            <i class="icon-settings-2 me-1"></i>
+                            <span>Edit</span>
+                        </WButton>
+                        <WButton OnClick="_ => Delete(share)" CssClasses="btn btn-danger">
+                            <i class="icon-trash-2 me-1"></i>
+                            <span>Delete</span>
+                        </WButton>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</LazyLoader>
+
+@code
+{
+    private ServerShareResponse[] Shares;
+
+    private string UsernameInput = "";
+
+    private LazyLoader LazyLoader;
+
+    private async Task Load(LazyLoader _)
+    {
+        Shares = await PagedData<ServerShareResponse>.All(async (page, pageSize)
+            => await ShareService.Get(Server.Id, page, pageSize)
+        );
+    }
+
+    private async Task OpenCreateModal()
+    {
+        await ModalService.Launch<CreateShareModal>(parameters =>
+        {
+            parameters["Username"] = UsernameInput;
+            parameters["OnSubmit"] = SubmitCreate;
+        }, size: "max-w-2xl");
+    }
+
+    private async Task SubmitCreate(CreateShareRequest request)
+    {
+        await ShareService.Create(Server.Id, request);
+
+        await ToastService.Success("Share successfully created");
+        await LazyLoader.Reload();
+    }
+
+    private async Task OpenUpdateModal(ServerShareResponse share)
+    {
+        await ModalService.Launch<UpdateShareModal>(parameters =>
+        {
+            parameters["Share"] = share;
+            parameters["OnSubmit"] = (UpdateShareRequest request) => SubmitUpdate(share.Id, request);
+        }, size: "max-w-2xl");
+    }
+    
+    private async Task SubmitUpdate(int shareId, UpdateShareRequest request)
+    {
+        await ShareService.Update(Server.Id, shareId, request);
+
+        await ToastService.Success("Share successfully updated");
+        await LazyLoader.Reload();
+    }
+
+    private async Task Delete(ServerShareResponse share)
+    {
+        await AlertService.ConfirmDanger(
+            "Share deletion",
+            $"Do you really want to delete the share for the user '{share.Username}'? This cannot be undone",
+            async () =>
+            {
+                await ShareService.Delete(Server.Id, share.Id);
+
+                await ToastService.Success("Successfully deleted share");
+                await LazyLoader.Reload();
+            }
+        );
+    }
+}

@@ -13,9 +13,5 @@
         <PackageTags>shared</PackageTags>
         <IsPackable>true</IsPackable>
     </PropertyGroup>
-
-    <ItemGroup>
-      <Folder Include="Http\Responses\Users\Servers\" />
-    </ItemGroup>
     
 </Project>

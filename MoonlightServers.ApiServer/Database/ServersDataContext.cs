@@ -3,6 +3,7 @@ using MoonCore.Extended.SingleDb;
 using Moonlight.ApiServer.Configuration;
 using MoonlightServers.ApiServer.Database.Entities;
 using MoonlightServers.ApiServer.Models;
+using MoonlightServers.Shared.Models;
 
 namespace MoonlightServers.ApiServer.Database;
 

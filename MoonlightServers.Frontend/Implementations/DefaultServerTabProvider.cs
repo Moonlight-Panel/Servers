@@ -11,10 +11,11 @@ public class DefaultServerTabProvider : IServerTabProvider
     {
         ServerTab[] tabs =
         [
-            ServerTab.CreateFromComponent<ConsoleTab>("Console", "console", 0),
-            ServerTab.CreateFromComponent<FilesTab>("Files", "files", 1),
-            ServerTab.CreateFromComponent<VariablesTab>("Variables", "variables", 2),
-            ServerTab.CreateFromComponent<SettingsTab>("Settings", "settings", 10),
+            ServerTab.CreateFromComponent<ConsoleTab>("Console", "console", 0, permission => permission.Name == "console"),
+            ServerTab.CreateFromComponent<FilesTab>("Files", "files", 1, permission => permission.Name == "files"),
+            ServerTab.CreateFromComponent<SharesTab>("Shares", "shares", 2, permission => permission.Name == "shares"),
+            ServerTab.CreateFromComponent<VariablesTab>("Variables", "variables", 9, permission => permission.Name == "variables"),
+            ServerTab.CreateFromComponent<SettingsTab>("Settings", "settings", 10, permission => permission.Name == "settings"),
         ];
 
         return Task.FromResult(tabs);

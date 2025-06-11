@@ -1,7 +1,6 @@
 @page "/servers/{ServerId:int}"
 @page "/servers/{ServerId:int}/{TabPath:alpha}"
 
-@using Microsoft.AspNetCore.Http.Connections
 @using Microsoft.AspNetCore.SignalR.Client
 @using MoonCore.Blazor.Tailwind.Components
 @using MoonCore.Exceptions
@@ -66,12 +65,62 @@
             </div>
             <div class="flex flex-row items-center">
                 <div class="flex gap-x-1.5">
-                    @if (State == ServerState.Offline)
+                    @if (HasPermissionTo("power", ServerPermissionType.ReadWrite))
                     {
-                        <WButton CssClasses="btn btn-success" OnClick="_ => Start()">
-                            <i class="icon-play me-1 align-middle"></i>
-                            <span class="align-middle">Start</span>
-                        </WButton>
+                        @if (State == ServerState.Offline)
+                        {
+                            <WButton CssClasses="btn btn-success" OnClick="_ => Start()">
+                                <i class="icon-play me-1 align-middle"></i>
+                                <span class="align-middle">Start</span>
+                            </WButton>
+                        }
+                        else
+                        {
+                            <button type="button" class="btn btn-success" disabled="disabled">
+                                <i class="icon-play me-1 align-middle"></i>
+                                <span class="align-middle">Start</span>
+                            </button>
+                        }
+
+                        @if (State == ServerState.Online)
+                        {
+                            <button type="button" class="btn btn-primary">
+                                <i class="icon-rotate-ccw me-1 align-middle"></i>
+                                <span class="align-middle">Restart</span>
+                            </button>
+                        }
+                        else
+                        {
+                            <button type="button" class="btn btn-primary" disabled="disabled">
+                                <i class="icon-rotate-ccw me-1 align-middle"></i>
+                                <span class="align-middle">Restart</span>
+                            </button>
+                        }
+
+                        @if (State == ServerState.Starting || State == ServerState.Online || State == ServerState.Stopping)
+                        {
+                            if (State == ServerState.Stopping)
+                            {
+                                <WButton CssClasses="btn btn-danger" OnClick="_ => Kill()">
+                                    <i class="icon-bomb me-1 align-middle"></i>
+                                    <span class="align-middle">Kill</span>
+                                </WButton>
+                            }
+                            else
+                            {
+                                <WButton CssClasses="btn btn-danger" OnClick="_ => Stop()">
+                                    <i class="icon-squircle me-1 align-middle"></i>
+                                    <span class="align-middle">Stop</span>
+                                </WButton>
+                            }
+                        }
+                        else
+                        {
+                            <button type="button" class="btn btn-danger" disabled="disabled">
+                                <i class="icon-squircle me-1 align-middle"></i>
+                                <span class="align-middle">Stop</span>
+                            </button>
+                        }
                     }
                     else
                     {
@@ -79,42 +128,12 @@
                             <i class="icon-play me-1 align-middle"></i>
                             <span class="align-middle">Start</span>
                         </button>
-                    }
-
-                    @if (State == ServerState.Online)
-                    {
-                        <button type="button" class="btn btn-primary">
-                            <i class="icon-rotate-ccw me-1 align-middle"></i>
-                            <span class="align-middle">Restart</span>
-                        </button>
-                    }
-                    else
-                    {
+                        
                         <button type="button" class="btn btn-primary" disabled="disabled">
                             <i class="icon-rotate-ccw me-1 align-middle"></i>
                             <span class="align-middle">Restart</span>
                         </button>
-                    }
-
-                    @if (State == ServerState.Starting || State == ServerState.Online || State == ServerState.Stopping)
-                    {
-                        if (State == ServerState.Stopping)
-                        {
-                            <WButton CssClasses="btn btn-danger" OnClick="_ => Kill()">
-                                <i class="icon-bomb me-1 align-middle"></i>
-                                <span class="align-middle">Kill</span>
-                            </WButton>
-                        }
-                        else
-                        {
-                            <WButton CssClasses="btn btn-danger" OnClick="_ => Stop()">
-                                <i class="icon-squircle me-1 align-middle"></i>
-                                <span class="align-middle">Stop</span>
-                            </WButton>
-                        }
-                    }
-                    else
-                    {
+                        
                         <button type="button" class="btn btn-danger" disabled="disabled">
                             <i class="icon-squircle me-1 align-middle"></i>
                             <span class="align-middle">Stop</span>
@@ -148,19 +167,26 @@
                 }
             </ul>
 
-            @{
-                var rf = ComponentHelper.FromType(CurrentTab!.ComponentType, parameters =>
-                {
-                    parameters.Add("Server", Server);
-                    parameters.Add("State", State);
-                    parameters.Add("InitialConsoleMessage", InitialConsoleMessage);
-                    parameters.Add("HubConnection", HubConnection);
-                    parameters.Add("Parent", this);
-                });
-            }
-
             <div class="mt-5">
-                @rf
+                @if (CurrentTab == null)
+                {
+                    <IconAlert Title="No tabs found" Color="text-primary" Icon="icon-app-window">
+                        Seems like you are missing access to all tabs or no tabs for this server could be found
+                    </IconAlert>
+                }
+                else
+                {
+                    var rf = ComponentHelper.FromType(CurrentTab!.ComponentType, parameters =>
+                    {
+                        parameters.Add("Server", Server);
+                        parameters.Add("State", State);
+                        parameters.Add("InitialConsoleMessage", InitialConsoleMessage);
+                        parameters.Add("HubConnection", HubConnection!);
+                        parameters.Add("Parent", this);
+                    });
+
+                    @rf
+                }
             </div>
         </div>
     }
@@ -177,9 +203,9 @@
     private ServerDetailResponse Server;
     private bool NotFound = false;
     private ServerState State;
-    private string InitialConsoleMessage;
+    private string InitialConsoleMessage = "";
 
-    private HubConnection HubConnection;
+    private HubConnection? HubConnection;
 
     private async Task Load(LazyLoader _)
     {
@@ -194,23 +220,38 @@
             foreach (var serverTabProvider in TabProviders)
                 tmpTabs.AddRange(await serverTabProvider.GetTabs(Server));
 
+            // If we are accessing a shared server, we need to handle permissions
+            if (Server.Share != null)
+            {
+                // This removes all tabs where the permission filter is not set
+                tmpTabs.RemoveAll(tab =>
+                {
+                    if (tab.PermissionFilter == null)
+                        return false;
+
+                    return !Server.Share.Permissions.Any(tab.PermissionFilter);
+                });
+            }
+
             Tabs = tmpTabs.OrderBy(x => x.Priority).ToArray();
 
             // Find current tab
             if (!string.IsNullOrEmpty(TabPath))
             {
-                CurrentTab = Tabs.FirstOrDefault(
-                    x => TabPath.Equals(x.Path, StringComparison.InvariantCultureIgnoreCase)
+                CurrentTab = Tabs.FirstOrDefault(x => TabPath.Equals(x.Path, StringComparison.InvariantCultureIgnoreCase)
                 );
             }
 
             if (CurrentTab == null)
-                CurrentTab = Tabs.First();
+                CurrentTab = Tabs.FirstOrDefault();
 
             // Load initial status for first render
             var status = await ServerService.GetStatus(ServerId);
 
             State = status.State;
+
+            if (!HasPermissionTo("console", ServerPermissionType.Read))
+                return; // Exit early if we don't have permissions to load the console
 
             // Load initial messages
             var initialLogs = await ServerService.GetLogs(ServerId);
@@ -265,6 +306,15 @@
         }
     }
 
+    private bool HasPermissionTo(string name, ServerPermissionType type)
+    {
+        // All non shares have permissions
+        if (Server.Share == null)
+            return true;
+
+        return Server.Share.Permissions.Any(x => x.Name == name && x.Type >= type);
+    }
+
     private async Task SwitchTab(ServerTab tab)
     {
         CurrentTab = tab;
@@ -284,9 +334,12 @@
 
     public async ValueTask DisposeAsync()
     {
-        if (HubConnection.State == HubConnectionState.Connected)
-            await HubConnection.StopAsync();
+        if (HubConnection != null)
+        {
+            if (HubConnection.State == HubConnectionState.Connected)
+                await HubConnection.StopAsync();
 
-        await HubConnection.DisposeAsync();
+            await HubConnection.DisposeAsync();
+        }
     }
 }

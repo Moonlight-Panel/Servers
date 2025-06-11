@@ -1,8 +1,8 @@
 using MoonlightServers.Shared.Enums;
 
-namespace MoonlightServers.ApiServer.Models;
+namespace MoonlightServers.Shared.Models;
 
-public class ServerSharePermission
+public record ServerSharePermission
 {
     public string Name { get; set; }
     public ServerPermissionType Type { get; set; }

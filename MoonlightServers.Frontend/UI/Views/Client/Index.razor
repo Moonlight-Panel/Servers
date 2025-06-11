@@ -8,17 +8,19 @@
 
 @inject ServerService ServerService
 
-<LazyLoader Load="Load">
-    @if (Servers.Length == 0)
-    {
-        <IconAlert Title="No servers found" Color="text-primary" Icon="icon-search">
-            There are no servers linked to your account
-        </IconAlert>
-    }
-    else
-    {
-        <div class="flex flex-col gap-y-5">
-            @* Folder design idea
+<Tabs>
+    <Tab Name="Your servers">
+        <LazyLoader Load="LoadOwnServers">
+            @if (OwnServers.Length == 0)
+            {
+                <IconAlert Title="No servers found" Color="text-primary" Icon="icon-search">
+                    There are no servers linked to your account
+                </IconAlert>
+            }
+            else
+            {
+                <div class="flex flex-col gap-y-5">
+                    @* Folder design idea
         <div class="w-full bg-gray-800 px-5 py-3.5 rounded-xl">
             <div class="flex items-center">
                 <div class="bg-gray-900 bg-opacity-45 py-1 px-2 rounded-lg flex items-center">
@@ -36,22 +38,51 @@
             </div>
         </div>
 *@
-            @foreach (var server in Servers)
-            {
-                <ServerCard Server="server"/>
+                    @foreach (var server in OwnServers)
+                    {
+                        <ServerCard Server="server"/>
+                    }
+                </div>
             }
-        </div>
-    }
-</LazyLoader>
+        </LazyLoader>
+    </Tab>
+    <Tab Name="Shared servers">
+        <LazyLoader Load="LoadSharedServers">
+            @if (SharedServers.Length == 0)
+            {
+                <IconAlert Title="No shared servers found" Color="text-primary" Icon="icon-share-2">
+                    There are no shared servers linked to your account
+                </IconAlert>
+            }
+            else
+            {
+                <div class="flex flex-col gap-y-5">
+                    @foreach (var server in SharedServers)
+                    {
+                        <ServerCard Server="server"/>
+                    }
+                </div>
+            }
+        </LazyLoader>
+    </Tab>
+</Tabs>
 
 @code
 {
-    private ServerDetailResponse[] Servers;
+    private ServerDetailResponse[] OwnServers;
+    private ServerDetailResponse[] SharedServers;
 
-    private async Task Load(LazyLoader lazyLoader)
+    private async Task LoadOwnServers(LazyLoader lazyLoader)
     {
-        Servers = await PagedData<ServerDetailResponse>.All(async (page, pageSize) =>
+        OwnServers = await PagedData<ServerDetailResponse>.All(async (page, pageSize) =>
             await ServerService.GetServers(page, pageSize)
+        );
+    }
+    
+    private async Task LoadSharedServers(LazyLoader lazyLoader)
+    {
+        SharedServers = await PagedData<ServerDetailResponse>.All(async (page, pageSize) =>
+            await ServerService.GetSharedServers(page, pageSize)
         );
     }
 }

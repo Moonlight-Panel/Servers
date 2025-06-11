@@ -1,8 +1,8 @@
 using MoonlightServers.Shared.Models;
 
-namespace MoonlightServers.ApiServer.Models;
+namespace MoonlightServers.Shared.Http.Requests.Client.Servers.Shares;
 
-public class ServerShareContent
+public record UpdateShareRequest
 {
     public List<ServerSharePermission> Permissions { get; set; } = [];
 }
