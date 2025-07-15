@@ -1,12 +1,12 @@
+using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authorization;
 using MoonCore.Exceptions;
 using MoonCore.Extended.Abstractions;
-using MoonCore.Extended.Helpers;
-using MoonCore.Helpers;
 using MoonCore.Models;
 using MoonlightServers.ApiServer.Database.Entities;
+using MoonlightServers.ApiServer.Mappers;
 using MoonlightServers.Shared.Http.Requests.Admin.StarVariables;
 using MoonlightServers.Shared.Http.Responses.Admin.StarVariables;
 
@@ -16,91 +16,147 @@ namespace MoonlightServers.ApiServer.Http.Controllers.Admin.Stars;
 [Route("api/admin/servers/stars")]
 public class StarVariablesController : Controller
 {
-    private readonly CrudHelper<StarVariable, StarVariableDetailResponse> CrudHelper;
     private readonly DatabaseRepository<Star> StarRepository;
-    private readonly DatabaseRepository<StarVariable> StarVariableRepository;
-
-    private Star Star;
+    private readonly DatabaseRepository<StarVariable> VariableRepository;
 
     public StarVariablesController(
-        CrudHelper<StarVariable, StarVariableDetailResponse> crudHelper,
         DatabaseRepository<Star> starRepository,
-        DatabaseRepository<StarVariable> starVariableRepository)
+        DatabaseRepository<StarVariable> variableRepository)
     {
-        CrudHelper = crudHelper;
         StarRepository = starRepository;
-        StarVariableRepository = starVariableRepository;
-    }
-
-    private async Task ApplyStar(int id)
-    {
-        var star = await StarRepository
-            .Get()
-            .FirstOrDefaultAsync(x => x.Id == id);
-
-        if (star == null)
-            throw new HttpApiException("A star with this id could not be found", 404);
-
-        Star = star;
-
-        CrudHelper.QueryModifier = variables =>
-            variables.Where(x => x.Star.Id == star.Id);
+        VariableRepository = variableRepository;
     }
 
     [HttpGet("{starId:int}/variables")]
     [Authorize(Policy = "permissions:admin.servers.stars.get")]
-    public async Task<IPagedData<StarVariableDetailResponse>> Get([FromRoute] int starId, [FromQuery] int page, [FromQuery] int pageSize)
+    public async Task<IPagedData<StarVariableDetailResponse>> Get(
+        [FromRoute] int starId,
+        [FromQuery] [Range(0, int.MaxValue)] int page,
+        [FromQuery] [Range(1, 100)] int pageSize
+    )
     {
-        await ApplyStar(starId);
+        var starExists = StarRepository
+            .Get()
+            .Any(x => x.Id == starId);
 
-        return await CrudHelper.Get(page, pageSize);
+        if (!starExists)
+            throw new HttpApiException("No star with this id found", 404);
+
+        var query = VariableRepository
+            .Get()
+            .Where(x => x.Star.Id == starId);
+
+        var count = await query.CountAsync();
+
+        var items = await query
+            .Skip(page * pageSize)
+            .Take(pageSize)
+            .ToArrayAsync();
+
+        var mappedItems = items
+            .Select(StarVariableMapper.ToAdminResponse)
+            .ToArray();
+
+        return new PagedData<StarVariableDetailResponse>()
+        {
+            Items = mappedItems,
+            CurrentPage = page,
+            PageSize = pageSize,
+            TotalItems = count,
+            TotalPages = count == 0 ? 0 : count / pageSize
+        };
     }
 
     [HttpGet("{starId:int}/variables/{id:int}")]
     [Authorize(Policy = "permissions:admin.servers.stars.get")]
-    public async Task<StarVariableDetailResponse> GetSingle([FromRoute] int starId, [FromRoute] int id)
+    public async Task<StarVariableDetailResponse> GetSingle(
+        [FromRoute] int starId,
+        [FromRoute] int id
+    )
     {
-        await ApplyStar(starId);
-        
-        return await CrudHelper.GetSingle(id);
+        var starExists = StarRepository
+            .Get()
+            .Any(x => x.Id == starId);
+
+        if (!starExists)
+            throw new HttpApiException("No star with this id found", 404);
+
+        var starVariable = await VariableRepository
+            .Get()
+            .FirstOrDefaultAsync(x => x.Id == id && x.Star.Id == starId);
+
+        if (starVariable == null)
+            throw new HttpApiException("No variable with this id found", 404);
+
+        return StarVariableMapper.ToAdminResponse(starVariable);
     }
 
     [HttpPost("{starId:int}/variables")]
     [Authorize(Policy = "permissions:admin.servers.stars.create")]
-    public async Task<StarVariableDetailResponse> Create([FromRoute] int starId, [FromBody] CreateStarVariableRequest request)
+    public async Task<StarVariableDetailResponse> Create([FromRoute] int starId,
+        [FromBody] CreateStarVariableRequest request)
     {
-        await ApplyStar(starId);
-        
-        var starVariable = Mapper.Map<StarVariable>(request);
-        starVariable.Star = Star;
+        var star = StarRepository
+            .Get()
+            .FirstOrDefault(x => x.Id == starId);
 
-        var finalVariable = await StarVariableRepository.Add(starVariable);
+        if (star == null)
+            throw new HttpApiException("No star with this id found", 404);
 
-        return CrudHelper.MapToResult(finalVariable);
+        var starVariable = StarVariableMapper.ToStarVariable(request);
+        starVariable.Star = star;
+
+        await VariableRepository.Add(starVariable);
+
+        return StarVariableMapper.ToAdminResponse(starVariable);
     }
 
     [HttpPatch("{starId:int}/variables/{id:int}")]
     [Authorize(Policy = "permissions:admin.servers.stars.update")]
-    public async Task<StarVariableDetailResponse> Update([FromRoute] int starId, [FromRoute] int id,
-        [FromBody] UpdateStarVariableRequest request)
+    public async Task<StarVariableDetailResponse> Update(
+        [FromRoute] int starId,
+        [FromRoute] int id,
+        [FromBody] UpdateStarVariableRequest request
+    )
     {
-        await ApplyStar(starId);
-        
-        var variable = await CrudHelper.GetSingleModel(id);
+        var starExists = StarRepository
+            .Get()
+            .Any(x => x.Id == starId);
 
-        variable = Mapper.Map(variable, request);
+        if (!starExists)
+            throw new HttpApiException("No star with this id found", 404);
+
+        var starVariable = await VariableRepository
+            .Get()
+            .FirstOrDefaultAsync(x => x.Id == id && x.Star.Id == starId);
+
+        if (starVariable == null)
+            throw new HttpApiException("No variable with this id found", 404);
         
-        await StarVariableRepository.Update(variable);
+        starVariable = StarVariableMapper.Merge(request, starVariable);
+        await VariableRepository.Update(starVariable);
         
-        return CrudHelper.MapToResult(variable);
+        return StarVariableMapper.ToAdminResponse(starVariable);
     }
 
     [HttpDelete("{starId:int}/variables/{id:int}")]
     [Authorize(Policy = "permissions:admin.servers.stars.delete")]
     public async Task Delete([FromRoute] int starId, [FromRoute] int id)
     {
-        await ApplyStar(starId);
+        var starExists = StarRepository
+            .Get()
+            .Any(x => x.Id == starId);
+
+        if (!starExists)
+            throw new HttpApiException("No star with this id found", 404);
+
+        var starVariable = await VariableRepository
+            .Get()
+            .FirstOrDefaultAsync(x => x.Id == id && x.Star.Id == starId);
+
+        if (starVariable == null)
+            throw new HttpApiException("No variable with this id found", 404);
         
-        await CrudHelper.Delete(id);
+        await VariableRepository.Remove(starVariable);
     }
 }

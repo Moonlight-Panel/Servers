@@ -1,15 +1,14 @@
+using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authorization;
+using MoonCore.Exceptions;
 using MoonCore.Extended.Abstractions;
-using MoonCore.Extended.Helpers;
-using MoonCore.Helpers;
 using MoonCore.Models;
 using MoonlightServers.ApiServer.Database.Entities;
+using MoonlightServers.ApiServer.Mappers;
 using MoonlightServers.Shared.Http.Requests.Admin.Stars;
-using MoonlightServers.Shared.Http.Responses.Admin.StarDockerImages;
 using MoonlightServers.Shared.Http.Responses.Admin.Stars;
-using MoonlightServers.Shared.Http.Responses.Admin.StarVariables;
 
 namespace MoonlightServers.ApiServer.Http.Controllers.Admin.Stars;
 
@@ -17,35 +16,62 @@ namespace MoonlightServers.ApiServer.Http.Controllers.Admin.Stars;
 [Route("api/admin/servers/stars")]
 public class StarsController : Controller
 {
-    private readonly CrudHelper<Star, StarDetailResponse> CrudHelper;
     private readonly DatabaseRepository<Star> StarRepository;
 
-    public StarsController(CrudHelper<Star, StarDetailResponse> crudHelper, DatabaseRepository<Star> starRepository)
+    public StarsController(DatabaseRepository<Star> starRepository)
     {
-        CrudHelper = crudHelper;
         StarRepository = starRepository;
     }
 
     [HttpGet]
-    [Authorize(Policy = "permissions:admin.servers.stars.get")]
-    public async Task<IPagedData<StarDetailResponse>> Get([FromQuery] int page, [FromQuery] int pageSize)
+    [Authorize(Policy = "permissions:admin.servers.stars.read")]
+    public async Task<IPagedData<StarDetailResponse>> Get(
+        [FromQuery] [Range(0, int.MaxValue)] int page,
+        [FromQuery] [Range(1, 100)] int pageSize
+    )
     {
-        return await CrudHelper.Get(page, pageSize);
+        var count = await StarRepository.Get().CountAsync();
+
+        var items = await StarRepository
+            .Get()
+            .Skip(page * pageSize)
+            .Take(pageSize)
+            .ToArrayAsync();
+
+        var mappedItems = items
+            .Select(StarMapper.ToAdminResponse)
+            .ToArray();
+
+        return new PagedData<StarDetailResponse>()
+        {
+            CurrentPage = page,
+            Items = mappedItems,
+            PageSize = pageSize,
+            TotalItems = count,
+            TotalPages = count == 0 ? 0 : count / pageSize
+        };
     }
 
     [HttpGet("{id:int}")]
-    [Authorize(Policy = "permissions:admin.servers.stars.get")]
+    [Authorize(Policy = "permissions:admin.servers.stars.read")]
     public async Task<StarDetailResponse> GetSingle([FromRoute] int id)
     {
-        return await CrudHelper.GetSingle(id);
+        var star = await StarRepository
+            .Get()
+            .FirstOrDefaultAsync(x => x.Id == id);
+
+        if (star == null)
+            throw new HttpApiException("No star with that id found", 404);
+
+        return StarMapper.ToAdminResponse(star);
     }
 
     [HttpPost]
     [Authorize(Policy = "permissions:admin.servers.stars.create")]
     public async Task<StarDetailResponse> Create([FromBody] CreateStarRequest request)
     {
-        var star = Mapper.Map<Star>(request);
-        
+        var star = StarMapper.ToStar(request);
+
         // Default values
         star.DonateUrl = null;
         star.UpdateUrl = null;
@@ -63,20 +89,40 @@ public class StarsController : Controller
 
         var finalStar = await StarRepository.Add(star);
 
-        return CrudHelper.MapToResult(finalStar);
+        return StarMapper.ToAdminResponse(finalStar);
     }
 
     [HttpPatch("{id:int}")]
     [Authorize(Policy = "permissions:admin.servers.stars.update")]
-    public async Task<StarDetailResponse> Update([FromRoute] int id, [FromBody] UpdateStarRequest request)
+    public async Task<StarDetailResponse> Update(
+        [FromRoute] int id,
+        [FromBody] UpdateStarRequest request
+    )
     {
-        return await CrudHelper.Update(id, request);
+        var star = await StarRepository
+            .Get()
+            .FirstOrDefaultAsync(x => x.Id == id);
+
+        if (star == null)
+            throw new HttpApiException("No star with that id found", 404);
+        
+        star = StarMapper.Merge(request, star);
+        await StarRepository.Update(star);
+        
+        return StarMapper.ToAdminResponse(star);
     }
 
     [HttpDelete("{id:int}")]
     [Authorize(Policy = "permissions:admin.servers.stars.delete")]
     public async Task Delete([FromRoute] int id)
     {
-        await CrudHelper.Delete(id);
+        var star = await StarRepository
+            .Get()
+            .FirstOrDefaultAsync(x => x.Id == id);
+
+        if (star == null)
+            throw new HttpApiException("No star with that id found", 404);
+        
+        await StarRepository.Remove(star);
     }
 }

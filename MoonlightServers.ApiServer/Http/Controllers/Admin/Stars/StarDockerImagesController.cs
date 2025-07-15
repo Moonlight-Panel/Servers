@@ -15,22 +15,22 @@ using MoonlightServers.Shared.Http.Responses.Admin.StarDockerImages;
 namespace MoonlightServers.ApiServer.Http.Controllers.Admin.Stars;
 
 [ApiController]
-[Route("api/admin/servers/stars")]
+[Route("api/admin/servers/stars/{starId:int}/dockerImages")]
 public class StarDockerImagesController : Controller
 {
     private readonly DatabaseRepository<Star> StarRepository;
-    private readonly DatabaseRepository<StarDockerImage> StarDockerImageRepository;
+    private readonly DatabaseRepository<StarDockerImage> DockerImageRepository;
 
     public StarDockerImagesController(
         DatabaseRepository<Star> starRepository,
-        DatabaseRepository<StarDockerImage> starDockerImageRepository
+        DatabaseRepository<StarDockerImage> dockerImageRepository
     )
     {
         StarRepository = starRepository;
-        StarDockerImageRepository = starDockerImageRepository;
+        DockerImageRepository = dockerImageRepository;
     }
 
-    [HttpGet("{starId:int}/dockerImages")]
+    [HttpGet]
     [Authorize(Policy = "permissions:admin.servers.stars.get")]
     public async Task<IPagedData<StarDockerImageDetailResponse>> Get(
         [FromRoute] int starId,
@@ -41,16 +41,16 @@ public class StarDockerImagesController : Controller
         var starExists = StarRepository
             .Get()
             .Any(x => x.Id == starId);
-        
-        if(starExists)
+
+        if (!starExists)
             throw new HttpApiException("No star with this id found", 404);
 
-        var query = StarDockerImageRepository
+        var query = DockerImageRepository
             .Get()
             .Where(x => x.Star.Id == starId);
 
         var count = await query.CountAsync();
-        
+
         var items = await query
             .Skip(page * pageSize)
             .Take(pageSize)
@@ -70,46 +70,95 @@ public class StarDockerImagesController : Controller
         };
     }
 
-    [HttpGet("{starId:int}/dockerImages/{id:int}")]
-    [Authorize(Policy = "permissions:admin.servers.stars.get")]
+    [HttpGet("{id:int}")]
+    [Authorize(Policy = "permissions:admin.servers.stars.read")]
     public async Task<StarDockerImageDetailResponse> GetSingle([FromRoute] int starId, [FromRoute] int id)
     {
-        await ApplyStar(starId);
+        var starExists = StarRepository
+            .Get()
+            .Any(x => x.Id == starId);
 
-        return await CrudHelper.GetSingle(id);
+        if (!starExists)
+            throw new HttpApiException("No star with this id found", 404);
+
+        var dockerImage = await DockerImageRepository
+            .Get()
+            .FirstOrDefaultAsync(x => x.Id == id && x.Star.Id == starId);
+
+        if (dockerImage == null)
+            throw new HttpApiException("No star docker image with this id found", 404);
+
+        return DockerImageMapper.ToAdminResponse(dockerImage);
     }
 
-    [HttpPost("{starId:int}/dockerImages")]
-    [Authorize(Policy = "permissions:admin.servers.stars.create")]
-    public async Task<StarDockerImageDetailResponse> Create([FromRoute] int starId,
-        [FromBody] CreateStarDockerImageRequest request)
+    [HttpPost("")]
+    [Authorize(Policy = "permissions:admin.servers.stars.write")]
+    public async Task<StarDockerImageDetailResponse> Create(
+        [FromRoute] int starId,
+        [FromBody] CreateStarDockerImageRequest request
+    )
     {
-        await ApplyStar(starId);
+        var star = await StarRepository
+            .Get()
+            .FirstOrDefaultAsync(x => x.Id == starId);
 
-        var starDockerImage = Mapper.Map<StarDockerImage>(request);
-        starDockerImage.Star = Star;
+        if (star == null)
+            throw new HttpApiException("No star with this id found", 404);
 
-        var finalVariable = await StarDockerImageRepository.Add(starDockerImage);
+        var dockerImage = DockerImageMapper.ToDockerImage(request);
+        dockerImage.Star = star;
 
-        return CrudHelper.MapToResult(finalVariable);
+        var finalDockerImage = await DockerImageRepository.Add(dockerImage);
+
+        return DockerImageMapper.ToAdminResponse(finalDockerImage);
     }
 
-    [HttpPatch("{starId:int}/dockerImages/{id:int}")]
-    [Authorize(Policy = "permissions:admin.servers.stars.update")]
-    public async Task<StarDockerImageDetailResponse> Update([FromRoute] int starId, [FromRoute] int id,
-        [FromBody] UpdateStarDockerImageRequest request)
+    [HttpPatch("{id:int}")]
+    [Authorize(Policy = "permissions:admin.servers.stars.write")]
+    public async Task<StarDockerImageDetailResponse> Update(
+        [FromRoute] int starId,
+        [FromRoute] int id,
+        [FromBody] UpdateStarDockerImageRequest request
+    )
     {
-        await ApplyStar(starId);
+        var starExists = StarRepository
+            .Get()
+            .Any(x => x.Id == starId);
 
-        return await CrudHelper.Update(id, request);
+        if (!starExists)
+            throw new HttpApiException("No star with this id found", 404);
+
+        var dockerImage = await DockerImageRepository
+            .Get()
+            .FirstOrDefaultAsync(x => x.Id == id && x.Star.Id == starId);
+
+        if (dockerImage == null)
+            throw new HttpApiException("No star docker image with this id found", 404);
+
+        dockerImage = DockerImageMapper.Merge(request, dockerImage);
+        await DockerImageRepository.Update(dockerImage);
+
+        return DockerImageMapper.ToAdminResponse(dockerImage);
     }
 
-    [HttpDelete("{starId:int}/dockerImages/{id:int}")]
-    [Authorize(Policy = "permissions:admin.servers.stars.delete")]
+    [HttpDelete("{id:int}")]
+    [Authorize(Policy = "permissions:admin.servers.stars.write")]
     public async Task Delete([FromRoute] int starId, [FromRoute] int id)
     {
-        await ApplyStar(starId);
+        var starExists = StarRepository
+            .Get()
+            .Any(x => x.Id == starId);
 
-        await CrudHelper.Delete(id);
+        if (!starExists)
+            throw new HttpApiException("No star with this id found", 404);
+
+        var dockerImage = await DockerImageRepository
+            .Get()
+            .FirstOrDefaultAsync(x => x.Id == id && x.Star.Id == starId);
+
+        if (dockerImage == null)
+            throw new HttpApiException("No star docker image with this id found", 404);
+        
+        await DockerImageRepository.Remove(dockerImage);
     }
 }

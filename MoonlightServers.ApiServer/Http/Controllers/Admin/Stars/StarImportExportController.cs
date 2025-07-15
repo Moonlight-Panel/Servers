@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using MoonCore.Exceptions;
 using MoonCore.Helpers;
+using MoonlightServers.ApiServer.Mappers;
 using MoonlightServers.ApiServer.Services;
 using MoonlightServers.Shared.Http.Responses.Admin.Stars;
 
@@ -48,6 +49,6 @@ public class StarImportExportController : Controller
 
         var star = await ImportExportService.Import(content);
 
-        return Mapper.Map<StarDetailResponse>(star);
+        return StarMapper.ToAdminResponse(star);
     }
 }

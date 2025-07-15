@@ -149,12 +149,8 @@ public class ServerService
     {
         if (server.OwnerId == user.Id)
             return true;
-
-        var permissions = JsonSerializer.Deserialize<string[]>(
-            user.PermissionsJson
-        ) ?? [];
-
-        return PermissionHelper.HasPermission(permissions, "admin.servers.get");
+        
+        return PermissionHelper.HasPermission(user.Permissions, "admin.servers.get");
     }
     
     private async Task<HttpApiClient> GetApiClient(Server server)

@@ -13,7 +13,6 @@ using MoonlightServers.ApiServer.Interfaces;
 
 namespace MoonlightServers.ApiServer.Startup;
 
-[PluginStartup]
 public class PluginStartup : IPluginStartup
 {
     public Task BuildApplication(IServiceProvider serviceProvider, IHostApplicationBuilder builder)
@@ -30,7 +29,7 @@ public class PluginStartup : IPluginStartup
 
         var configuration = serviceProvider.GetRequiredService<AppConfiguration>();
 
-        if (configuration.Client.Enable)
+        if (configuration.Frontend.EnableHosting)
         {
             builder.Services.AddSingleton(new FrontendConfigurationOption()
             {
