@@ -15,6 +15,12 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		plugin.json = plugin.json
 	EndProjectSection
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Runtime", "Runtime", "{7836BC34-096D-440C-9DF9-81116EACAABA}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MoonlightServers.ApiServer.Runtime", "MoonlightServers.ApiServer.Runtime\MoonlightServers.ApiServer.Runtime.csproj", "{9F4370FA-C38D-4E84-892F-12ED5DD40FC6}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MoonlightServers.Frontend.Runtime", "MoonlightServers.Frontend.Runtime\MoonlightServers.Frontend.Runtime.csproj", "{97BDDD86-6FE1-42E0-BF16-152DFABC8287}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -41,5 +47,17 @@ Global
 		{15EBCC5D-2440-4B5B-A046-F8327E0C1CB8}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{15EBCC5D-2440-4B5B-A046-F8327E0C1CB8}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{15EBCC5D-2440-4B5B-A046-F8327E0C1CB8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9F4370FA-C38D-4E84-892F-12ED5DD40FC6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9F4370FA-C38D-4E84-892F-12ED5DD40FC6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9F4370FA-C38D-4E84-892F-12ED5DD40FC6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9F4370FA-C38D-4E84-892F-12ED5DD40FC6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{97BDDD86-6FE1-42E0-BF16-152DFABC8287}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{97BDDD86-6FE1-42E0-BF16-152DFABC8287}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{97BDDD86-6FE1-42E0-BF16-152DFABC8287}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{97BDDD86-6FE1-42E0-BF16-152DFABC8287}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{9F4370FA-C38D-4E84-892F-12ED5DD40FC6} = {7836BC34-096D-440C-9DF9-81116EACAABA}
+		{97BDDD86-6FE1-42E0-BF16-152DFABC8287} = {7836BC34-096D-440C-9DF9-81116EACAABA}
 	EndGlobalSection
 EndGlobal

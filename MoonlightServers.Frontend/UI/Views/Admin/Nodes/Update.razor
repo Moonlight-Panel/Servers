@@ -1,5 +1,7 @@
 @page "/admin/servers/nodes/update/{Id:int}"
 
+@using MoonCore.Blazor.FlyonUi.Components
+@using MoonCore.Blazor.FlyonUi.Toasts
 @using MoonCore.Blazor.Tailwind.Components
 @using MoonCore.Blazor.Tailwind.Toasts
 @using MoonCore.Helpers
@@ -56,11 +58,11 @@
 
     private HandleForm Form;
     private UpdateNodeRequest Request;
-    private NodeDetailResponse Node;
+    private NodeResponse Node;
 
     private async Task Load(LazyLoader _)
     {
-        Node = await ApiClient.GetJson<NodeDetailResponse>($"api/admin/servers/nodes/{Id}");
+        Node = await ApiClient.GetJson<NodeResponse>($"api/admin/servers/nodes/{Id}");
         Request = Mapper.Map<UpdateNodeRequest>(Node);
     }
 

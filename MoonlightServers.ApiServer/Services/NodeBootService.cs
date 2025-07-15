@@ -1,3 +1,5 @@
+using Microsoft.Extensions.Hosting;
+
 namespace MoonlightServers.ApiServer.Services;
 
 public class NodeBootService : IHostedLifecycleService

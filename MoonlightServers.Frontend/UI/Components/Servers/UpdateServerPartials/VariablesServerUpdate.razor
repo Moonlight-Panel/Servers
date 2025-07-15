@@ -1,3 +1,4 @@
+@using MoonCore.Blazor.FlyonUi.Components
 @using MoonlightServers.Shared.Http.Requests.Admin.Servers
 @using MoonCore.Helpers
 @using MoonCore.Blazor.Tailwind.Components
@@ -43,10 +44,10 @@
 @code
 {
     [Parameter] public UpdateServerRequest Request { get; set; }
-    [Parameter] public ServerDetailResponse Server { get; set; }
+    [Parameter] public ServerResponse Server { get; set; }
 
     private StarVariableDetailResponse[] StarVariables;
-    private ServerVariableDetailResponse[] Variables;
+    private ServerVariableResponse[] Variables;
 
     private async Task Load(LazyLoader _)
     {
@@ -56,14 +57,14 @@
             )
         );
 
-        Variables = await PagedData<ServerVariableDetailResponse>.All(async (page, pageSize) =>
-            await ApiClient.GetJson<PagedData<ServerVariableDetailResponse>>(
+        Variables = await PagedData<ServerVariableResponse>.All(async (page, pageSize) =>
+            await ApiClient.GetJson<PagedData<ServerVariableResponse>>(
                 $"api/admin/servers/{Server.Id}/variables?page={page}&pageSize={pageSize}"
             )
         );
     }
 
-    private async Task UpdateValue(ServerVariableDetailResponse serverVariable, ChangeEventArgs args)
+    private async Task UpdateValue(ServerVariableResponse serverVariable, ChangeEventArgs args)
     {
         var value = args.Value?.ToString() ?? "";
 

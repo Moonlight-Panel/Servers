@@ -1,5 +1,8 @@
 @page "/admin/servers/nodes"
 
+@using MoonCore.Blazor.FlyonUi.Alerts
+@using MoonCore.Blazor.FlyonUi.DataTables
+@using MoonCore.Blazor.FlyonUi.Toasts
 @using MoonCore.Blazor.Tailwind.Alerts
 @using MoonCore.Helpers
 @using MoonCore.Models
@@ -31,20 +34,20 @@
     </PageHeader>
 </div>
 
-<DataTable TItem="NodeDetailResponse">
+<DataTable TItem="NodeResponse">
     <Configuration>
-        <Pagination TItem="NodeDetailResponse" ItemSource="LoadData"/>
+        <Pagination TItem="NodeResponse" ItemSource="LoadData"/>
 
-        <DataTableColumn TItem="NodeDetailResponse" Field="@(x => x.Id)" Name="Id"/>
-        <DataTableColumn TItem="NodeDetailResponse" Field="@(x => x.Name)" Name="Name">
+        <DataTableColumn TItem="NodeResponse" Field="@(x => x.Id)" Name="Id"/>
+        <DataTableColumn TItem="NodeResponse" Field="@(x => x.Name)" Name="Name">
             <ColumnTemplate>
                 <a class="text-primary" href="/admin/servers/nodes/update/@(context.Id)">
                     @context.Name
                 </a>
             </ColumnTemplate>
         </DataTableColumn>
-        <DataTableColumn TItem="NodeDetailResponse" Field="@(x => x.Fqdn)" Name="Fqdn"/>
-        <DataTableColumn TItem="NodeDetailResponse" Field="@(x => x.Fqdn)" Name="Status">
+        <DataTableColumn TItem="NodeResponse" Field="@(x => x.Fqdn)" Name="Fqdn"/>
+        <DataTableColumn TItem="NodeResponse" Field="@(x => x.Fqdn)" Name="Status">
             <ColumnTemplate>
                 @{
                     var isFetched = StatusResponses.TryGetValue(context.Id, out var data);
@@ -92,7 +95,7 @@
                 }
             </ColumnTemplate>
         </DataTableColumn>
-        <DataTableColumn TItem="NodeDetailResponse"
+        <DataTableColumn TItem="NodeResponse"
                          Name="Utilization"
                          HeaderCss="p-2 font-semibold text-left hidden xl:table-cell"
                          ColumnCss="p-2 text-left font-normal hidden xl:table-cell">
@@ -138,7 +141,7 @@
                 }
             </ColumnTemplate>
         </DataTableColumn>
-        <DataTableColumn TItem="NodeDetailResponse">
+        <DataTableColumn TItem="NodeResponse">
             <ColumnTemplate>
                 <div class="flex justify-end">
                     <a href="/admin/servers/nodes/update/@(context.Id)" class="text-primary mr-2 sm:mr-3">
@@ -157,17 +160,17 @@
 
 @code
 {
-    private DataTable<NodeDetailResponse> Table;
+    private DataTable<NodeResponse> Table;
 
     private Dictionary<int, NodeSystemStatusResponse?> StatusResponses = new();
     private Dictionary<int, StatisticsResponse?> Statistics = new();
 
-    private async Task<IPagedData<NodeDetailResponse>> LoadData(PaginationOptions options)
+    private async Task<IPagedData<NodeResponse>> LoadData(PaginationOptions options)
     {
         Statistics.Clear();
         StatusResponses.Clear();
 
-        var result = await ApiClient.GetJson<PagedData<NodeDetailResponse>>(
+        var result = await ApiClient.GetJson<PagedData<NodeResponse>>(
             $"api/admin/servers/nodes?page={options.Page}&pageSize={options.PerPage}"
         );
 
@@ -214,14 +217,14 @@
         return result;
     }
 
-    private async Task Delete(NodeDetailResponse detailResponse)
+    private async Task Delete(NodeResponse response)
     {
         await AlertService.ConfirmDanger(
             "Node deletion",
-            $"Do you really want to delete the node '{detailResponse.Name}'",
+            $"Do you really want to delete the node '{response.Name}'",
             async () =>
             {
-                await ApiClient.Delete($"api/admin/servers/nodes/{detailResponse.Id}");
+                await ApiClient.Delete($"api/admin/servers/nodes/{response.Id}");
                 await ToastService.Success("Successfully deleted node");
 
                 await Table.Refresh();

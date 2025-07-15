@@ -1,3 +1,7 @@
+@using MoonCore.Blazor.FlyonUi.Alerts
+@using MoonCore.Blazor.FlyonUi.DataTables
+@using MoonCore.Blazor.FlyonUi.Modals
+@using MoonCore.Blazor.FlyonUi.Toasts
 @using MoonCore.Blazor.Tailwind.Alerts
 @using MoonlightServers.Shared.Http.Responses.Admin.Nodes
 @using MoonCore.Blazor.Tailwind.Dt
@@ -31,13 +35,13 @@
         </div>
     </div>
     <div class="col-span-1 md:col-span-2 -mb-3">
-        <DataTable @ref="Table" TItem="NodeAllocationDetailResponse">
+        <DataTable @ref="Table" TItem="NodeAllocationResponse">
             <Configuration>
-                <Pagination TItem="NodeAllocationDetailResponse" ItemSource="LoadData" />
+                <Pagination TItem="NodeAllocationResponse" ItemSource="LoadData" />
                 
-                <DataTableColumn TItem="NodeAllocationDetailResponse" Field="@(x => x.IpAddress)" Name="IP Address"/>
-                <DataTableColumn TItem="NodeAllocationDetailResponse" Field="@(x => x.Port)" Name="Port"/>
-                <DataTableColumn TItem="NodeAllocationDetailResponse">
+                <DataTableColumn TItem="NodeAllocationResponse" Field="@(x => x.IpAddress)" Name="IP Address"/>
+                <DataTableColumn TItem="NodeAllocationResponse" Field="@(x => x.Port)" Name="Port"/>
+                <DataTableColumn TItem="NodeAllocationResponse">
                     <ColumnTemplate>
                         <div class="flex justify-end items-center">
                             <a @onclick="() => UpdateAllocation(context)" @onclick:preventDefault href="#"
@@ -58,13 +62,13 @@
 
 @code
 {
-    [Parameter] public NodeDetailResponse Node { get; set; }
+    [Parameter] public NodeResponse Node { get; set; }
 
-    private DataTable<NodeAllocationDetailResponse> Table;
+    private DataTable<NodeAllocationResponse> Table;
 
-    private async Task<IPagedData<NodeAllocationDetailResponse>> LoadData(PaginationOptions options)
+    private async Task<IPagedData<NodeAllocationResponse>> LoadData(PaginationOptions options)
     {
-        return await ApiClient.GetJson<PagedData<NodeAllocationDetailResponse>>(
+        return await ApiClient.GetJson<PagedData<NodeAllocationResponse>>(
             $"api/admin/servers/nodes/{Node.Id}/allocations?page={options.Page}&pageSize={options.PerPage}"
         );
     }
@@ -98,7 +102,7 @@
         await ModalService.Launch<CreateAllocationModal>(parameters => { parameters.Add("OnSubmit", onSubmit); });
     }
 
-    private async Task UpdateAllocation(NodeAllocationDetailResponse allocation)
+    private async Task UpdateAllocation(NodeAllocationResponse allocation)
     {
         Func<UpdateNodeAllocationRequest, Task> onSubmit = async request =>
         {
@@ -115,7 +119,7 @@
         });
     }
 
-    private async Task DeleteAllocation(NodeAllocationDetailResponse allocation)
+    private async Task DeleteAllocation(NodeAllocationResponse allocation)
     {
         await AlertService.ConfirmDanger(
             "Delete allocation",

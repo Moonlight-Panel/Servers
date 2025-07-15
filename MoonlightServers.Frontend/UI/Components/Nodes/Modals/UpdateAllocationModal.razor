@@ -1,10 +1,11 @@
+@using MoonCore.Blazor.FlyonUi.Components
 @using MoonCore.Blazor.Tailwind.Modals.Components
 @using MoonCore.Blazor.Tailwind.Components
 @using MoonCore.Helpers
 @using MoonlightServers.Shared.Http.Requests.Admin.NodeAllocations
 @using MoonlightServers.Shared.Http.Responses.Admin.NodeAllocations
 
-@inherits BaseModal
+@inherits MoonCore.Blazor.FlyonUi.Modals.Components.BaseModal
 
 <h1 class="mb-5 font-semibold text-xl">Update allocation</h1>
 
@@ -30,7 +31,7 @@
 @code
 {
     [Parameter] public Func<UpdateNodeAllocationRequest, Task> OnSubmit { get; set; }
-    [Parameter] public NodeAllocationDetailResponse Allocation { get; set; }
+    [Parameter] public NodeAllocationResponse Allocation { get; set; }
 
     private UpdateNodeAllocationRequest Form;
     private HandleForm HandleForm;

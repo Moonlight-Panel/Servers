@@ -25,14 +25,14 @@
 {
     [Parameter] public CreateServerRequest Request { get; set; }
 
-    private async Task<NodeAllocationDetailResponse[]> Loader()
+    private async Task<NodeAllocationResponse[]> Loader()
     {
         // Handle unselected node
         if (Request.NodeId <= 0)
             return [];
 
-        var items = await PagedData<NodeAllocationDetailResponse>.All(async (page, pageSize) =>
-            await ApiClient.GetJson<PagedData<NodeAllocationDetailResponse>>(
+        var items = await PagedData<NodeAllocationResponse>.All(async (page, pageSize) =>
+            await ApiClient.GetJson<PagedData<NodeAllocationResponse>>(
                 $"api/admin/servers/nodes/{Request.NodeId}/allocations/free?page={page}&pageSize={pageSize}"
             )
         );

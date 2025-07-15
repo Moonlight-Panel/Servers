@@ -1,4 +1,5 @@
 using Moonlight.Client;
+using Moonlight.Client.Startup;
 using MoonlightServers.Frontend.Startup;
 
 // Development Client Startup

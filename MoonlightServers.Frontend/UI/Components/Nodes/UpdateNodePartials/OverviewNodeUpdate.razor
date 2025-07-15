@@ -1,3 +1,5 @@
+@using MoonCore.Blazor.FlyonUi.Components
+@using MoonCore.Blazor.FlyonUi.Toasts
 @using MoonCore.Blazor.Tailwind.Components
 @using MoonCore.Blazor.Tailwind.Toasts
 @using MoonCore.Helpers
@@ -170,7 +172,7 @@
 
 @code
 {
-    [Parameter] public NodeDetailResponse Node { get; set; }
+    [Parameter] public NodeResponse Node { get; set; }
 
     private StatisticsResponse Statistics;
     private DockerStatisticsResponse DockerStatistics;

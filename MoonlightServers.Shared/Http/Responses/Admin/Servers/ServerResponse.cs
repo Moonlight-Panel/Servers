@@ -1,9 +1,6 @@
-using MoonlightServers.Shared.Http.Responses.Admin.NodeAllocations;
-using MoonlightServers.Shared.Http.Responses.Admin.ServerVariables;
-
 namespace MoonlightServers.Shared.Http.Responses.Admin.Servers;
 
-public class ServerDetailResponse
+public class ServerResponse
 {
     public int Id { get; set; }
     

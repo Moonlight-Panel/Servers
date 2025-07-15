@@ -1,6 +1,6 @@
 namespace MoonlightServers.Shared.Http.Responses.Admin.Nodes;
 
-public class NodeDetailResponse
+public class NodeResponse
 {
     public int Id { get; set; }
 

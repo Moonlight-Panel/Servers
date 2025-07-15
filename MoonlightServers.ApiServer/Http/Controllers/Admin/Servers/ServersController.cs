@@ -1,6 +1,8 @@
+using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.Extensions.Logging;
 using MoonCore.Exceptions;
 using MoonCore.Extended.Abstractions;
 using MoonCore.Extended.Helpers;
@@ -8,6 +10,7 @@ using MoonCore.Helpers;
 using MoonCore.Models;
 using Moonlight.ApiServer.Database.Entities;
 using MoonlightServers.ApiServer.Database.Entities;
+using MoonlightServers.ApiServer.Mappers;
 using MoonlightServers.ApiServer.Services;
 using MoonlightServers.Shared.Http.Requests.Admin.Servers;
 using MoonlightServers.Shared.Http.Responses.Admin.Servers;
@@ -18,7 +21,6 @@ namespace MoonlightServers.ApiServer.Http.Controllers.Admin.Servers;
 [Route("api/admin/servers")]
 public class ServersController : Controller
 {
-    private readonly CrudHelper<Server, ServerDetailResponse> CrudHelper;
     private readonly DatabaseRepository<Star> StarRepository;
     private readonly DatabaseRepository<Node> NodeRepository;
     private readonly DatabaseRepository<Allocation> AllocationRepository;
@@ -29,7 +31,6 @@ public class ServersController : Controller
     private readonly ServerService ServerService;
 
     public ServersController(
-        CrudHelper<Server, ServerDetailResponse> crudHelper,
         DatabaseRepository<Star> starRepository,
         DatabaseRepository<Node> nodeRepository,
         DatabaseRepository<Allocation> allocationRepository,
@@ -40,7 +41,6 @@ public class ServersController : Controller
         ServerService serverService
     )
     {
-        CrudHelper = crudHelper;
         StarRepository = starRepository;
         NodeRepository = nodeRepository;
         AllocationRepository = allocationRepository;
@@ -49,48 +49,68 @@ public class ServersController : Controller
         UserRepository = userRepository;
         ServerService = serverService;
         Logger = logger;
-
-        CrudHelper.QueryModifier = servers => servers
-            .Include(x => x.Node)
-            .Include(x => x.Allocations)
-            .Include(x => x.Variables)
-            .Include(x => x.Star);
-
-        CrudHelper.LateMapper = (server, response) =>
-        {
-            response.NodeId = server.Node.Id;
-            response.StarId = server.Star.Id;
-            response.AllocationIds = server.Allocations.Select(x => x.Id).ToArray();
-
-            return response;
-        };
     }
 
     [HttpGet]
-    [Authorize(Policy = "permissions:admin.servers.get")]
-    public async Task<IPagedData<ServerDetailResponse>> Get([FromQuery] int page, [FromQuery] int pageSize)
+    [Authorize(Policy = "permissions:admin.servers.read")]
+    public async Task<IPagedData<ServerResponse>> Get(
+        [FromQuery] [Range(0, int.MaxValue)] int page,
+        [FromQuery] [Range(1, 100)] int pageSize
+    )
     {
-        return await CrudHelper.Get(page, pageSize);
+        var count = await ServerRepository.Get().CountAsync();
+
+        var items = await ServerRepository
+            .Get()
+            .Include(x => x.Node)
+            .Include(x => x.Allocations)
+            .Include(x => x.Variables)
+            .Include(x => x.Star)
+            .Skip(page * pageSize)
+            .Take(pageSize)
+            .ToArrayAsync();
+
+        var mappedItems = items
+            .Select(ServerMapper.ToAdminServerResponse)
+            .ToArray();
+
+        return new PagedData<ServerResponse>()
+        {
+            Items = mappedItems,
+            CurrentPage = page,
+            PageSize = pageSize,
+            TotalItems = count,
+            TotalPages = count == 0 ? 0 : count / pageSize
+        };
     }
 
     [HttpGet("{id:int}")]
-    [Authorize(Policy = "permissions:admin.servers.get")]
-    public async Task<ServerDetailResponse> GetSingle([FromRoute] int id)
+    [Authorize(Policy = "permissions:admin.servers.read")]
+    public async Task<ServerResponse> GetSingle([FromRoute] int id)
     {
-        return await CrudHelper.GetSingle(id);
+        var server = await ServerRepository
+            .Get()
+            .Include(x => x.Node)
+            .Include(x => x.Allocations)
+            .Include(x => x.Variables)
+            .Include(x => x.Star)
+            .FirstOrDefaultAsync(x => x.Id == id);
+
+        if (server == null)
+            throw new HttpApiException("No server with that id found", 404);
+        
+        return ServerMapper.ToAdminServerResponse(server);
     }
 
     [HttpPost]
-    [Authorize(Policy = "permissions:admin.servers.create")]
-    public async Task<ServerDetailResponse> Create([FromBody] CreateServerRequest request)
+    [Authorize(Policy = "permissions:admin.servers.write")]
+    public async Task<ServerResponse> Create([FromBody] CreateServerRequest request)
     {
-        // Construct model
-        var server = Mapper.Map<Server>(request);
-
         // Check if owner user exist
         if (UserRepository.Get().All(x => x.Id != request.OwnerId))
             throw new HttpApiException("No user with this id found", 400);
 
+        // Check if the star exists
         var star = await StarRepository
             .Get()
             .Include(x => x.Variables)
@@ -146,6 +166,8 @@ public class ServersController : Controller
                 );
             }
         }
+        
+        var server = ServerMapper.ToServer(request);
 
         // Set allocations
         server.Allocations = allocations;
@@ -181,23 +203,33 @@ public class ServersController : Controller
             Logger.LogError("Unable to sync server to node the server is assigned to: {e}", e);
 
             // We are deleting the server from the database after the creation has failed
-            // to ensure we wont have a bugged server in the database which doesnt exist on the node
+            // to ensure we won't have a bugged server in the database which doesnt exist on the node
             await ServerRepository.Remove(finalServer);
 
             throw;
         }
 
-        return CrudHelper.MapToResult(finalServer);
+        return ServerMapper.ToAdminServerResponse(finalServer);
     }
 
     [HttpPatch("{id:int}")]
-    public async Task<ServerDetailResponse> Update([FromRoute] int id, [FromBody] UpdateServerRequest request)
+    [Authorize(Policy = "permissions.admin.servers.write")]
+    public async Task<ServerResponse> Update([FromRoute] int id, [FromBody] UpdateServerRequest request)
     {
         //TODO: Handle shrinking virtual disk
-        
-        var server = await CrudHelper.GetSingleModel(id);
 
-        server = Mapper.Map(server, request);
+        var server = await ServerRepository
+            .Get()
+            .Include(x => x.Node)
+            .Include(x => x.Allocations)
+            .Include(x => x.Variables)
+            .Include(x => x.Star)
+            .FirstOrDefaultAsync(x => x.Id == id);
+
+        if (server == null)
+            throw new HttpApiException("No server with that id found", 404);
+
+        server = ServerMapper.Merge(request, server);
 
         var allocations = new List<Allocation>();
 
@@ -250,14 +282,20 @@ public class ServersController : Controller
         // Notify the node about the changes
         await ServerService.Sync(server);
 
-        return CrudHelper.MapToResult(server);
+        return ServerMapper.ToAdminServerResponse(server);
     }
 
     [HttpDelete("{id:int}")]
     public async Task Delete([FromRoute] int id, [FromQuery] bool force = false)
     {
-        var server = await CrudHelper.GetSingleModel(id);
-        
+        var server = await ServerRepository
+            .Get()
+            .Include(x => x.Node)
+            .FirstOrDefaultAsync(x => x.Id == id);
+
+        if (server == null)
+            throw new HttpApiException("No server with that id found", 404);
+
         try
         {
             // If the sync fails on the node and we aren't forcing the deletion,
@@ -277,6 +315,6 @@ public class ServersController : Controller
                 throw;
         }
 
-        await CrudHelper.Delete(id);
+        await ServerRepository.Remove(server);
     }
 }

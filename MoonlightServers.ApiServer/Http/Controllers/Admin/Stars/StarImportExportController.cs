@@ -1,6 +1,7 @@
 using System.Text;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using MoonCore.Exceptions;
 using MoonCore.Helpers;
 using MoonlightServers.ApiServer.Services;

@@ -102,10 +102,10 @@
         return items;
     }
 
-    private async Task<NodeDetailResponse[]> LoadNodes()
+    private async Task<NodeResponse[]> LoadNodes()
     {
-        var items = await PagedData<NodeDetailResponse>.All(async (page, pageSize) =>
-            await ApiClient.GetJson<PagedData<NodeDetailResponse>>(
+        var items = await PagedData<NodeResponse>.All(async (page, pageSize) =>
+            await ApiClient.GetJson<PagedData<NodeResponse>>(
                 $"api/admin/servers/nodes?page={page}&pageSize={pageSize}"
             )
         );

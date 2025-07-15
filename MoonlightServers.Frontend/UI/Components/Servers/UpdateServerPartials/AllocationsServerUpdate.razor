@@ -25,12 +25,12 @@
 @code
 {
     [Parameter] public UpdateServerRequest Request { get; set; }
-    [Parameter] public ServerDetailResponse Server { get; set; }
+    [Parameter] public ServerResponse Server { get; set; }
 
-    private async Task<NodeAllocationDetailResponse[]> Loader()
+    private async Task<NodeAllocationResponse[]> Loader()
     {
-        var items = await PagedData<NodeAllocationDetailResponse>.All(async (page, pageSize) =>
-            await ApiClient.GetJson<PagedData<NodeAllocationDetailResponse>>(
+        var items = await PagedData<NodeAllocationResponse>.All(async (page, pageSize) =>
+            await ApiClient.GetJson<PagedData<NodeAllocationResponse>>(
                 $"api/admin/servers/nodes/{Server.NodeId}/allocations/free?page={page}&pageSize={pageSize}&serverId={Server.Id}"
             )
         );

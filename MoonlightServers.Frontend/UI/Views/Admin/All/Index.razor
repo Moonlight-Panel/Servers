@@ -1,5 +1,8 @@
 @page "/admin/servers/all"
 
+@using MoonCore.Blazor.FlyonUi.Alerts
+@using MoonCore.Blazor.FlyonUi.DataTables
+@using MoonCore.Blazor.FlyonUi.Toasts
 @using MoonCore.Blazor.Tailwind.Alerts
 @using MoonCore.Helpers
 @using MoonCore.Models
@@ -28,13 +31,13 @@
     </PageHeader>
 </div>
 
-<DataTable @ref="Table" TItem="ServerDetailResponse">
+<DataTable @ref="Table" TItem="ServerResponse">
     <Configuration>
-        <Pagination TItem="ServerDetailResponse" ItemSource="LoadData" />
+        <Pagination TItem="ServerResponse" ItemSource="LoadData" />
         
-        <DataTableColumn TItem="ServerDetailResponse" Field="@(x => x.Id)" Name="Id"/>
-        <DataTableColumn TItem="ServerDetailResponse" Field="@(x => x.Name)" Name="Name"/>
-        <DataTableColumn TItem="ServerDetailResponse" Field="@(x => x.NodeId)" Name="Node">
+        <DataTableColumn TItem="ServerResponse" Field="@(x => x.Id)" Name="Id"/>
+        <DataTableColumn TItem="ServerResponse" Field="@(x => x.Name)" Name="Name"/>
+        <DataTableColumn TItem="ServerResponse" Field="@(x => x.NodeId)" Name="Node">
             <ColumnTemplate>
                 @{
                     var node = Nodes.FirstOrDefault(x => x.Id == context.NodeId);
@@ -45,7 +48,7 @@
                 </span>
             </ColumnTemplate>
         </DataTableColumn>
-        <DataTableColumn TItem="ServerDetailResponse" Field="@(x => x.StarId)" Name="Star">
+        <DataTableColumn TItem="ServerResponse" Field="@(x => x.StarId)" Name="Star">
             <ColumnTemplate>
                 @{
                     var star = Stars.FirstOrDefault(x => x.Id == context.StarId);
@@ -56,7 +59,7 @@
                 </span>
             </ColumnTemplate>
         </DataTableColumn>
-        <DataTableColumn TItem="ServerDetailResponse">
+        <DataTableColumn TItem="ServerResponse">
             <ColumnTemplate>
                 <div class="flex justify-end">
                     <a href="/admin/servers/all/update/@(context.Id)" class="text-primary mr-2 sm:mr-3">
@@ -75,21 +78,21 @@
 
 @code
 {
-    private DataTable<ServerDetailResponse> Table;
+    private DataTable<ServerResponse> Table;
     
     private List<StarDetailResponse> Stars = new();
-    private List<NodeDetailResponse> Nodes = new();
+    private List<NodeResponse> Nodes = new();
 
-    private async Task<IPagedData<ServerDetailResponse>> LoadData(PaginationOptions options)
+    private async Task<IPagedData<ServerResponse>> LoadData(PaginationOptions options)
     {
         // Clear potential previous data
-        var data = await ApiClient.GetJson<PagedData<ServerDetailResponse>>($"api/admin/servers?page={options.Page}&pageSize={options.PerPage}");
+        var data = await ApiClient.GetJson<PagedData<ServerResponse>>($"api/admin/servers?page={options.Page}&pageSize={options.PerPage}");
 
         foreach (var item in data.Items)
         {
             if (Nodes.All(x => x.Id != item.NodeId))
             {
-                var node = await ApiClient.GetJson<NodeDetailResponse>($"api/admin/servers/nodes/{item.NodeId}");
+                var node = await ApiClient.GetJson<NodeResponse>($"api/admin/servers/nodes/{item.NodeId}");
                 Nodes.Add(node);
             }
 
@@ -103,14 +106,14 @@
         return data;
     }
     
-    private async Task Delete(ServerDetailResponse detailResponse)
+    private async Task Delete(ServerResponse response)
     {
         await AlertService.ConfirmDanger(
             "Server deletion",
-            $"Do you really want to delete the server '{detailResponse.Name}'",
+            $"Do you really want to delete the server '{response.Name}'",
             async () =>
             {
-                await ApiClient.Delete($"api/admin/servers/{detailResponse.Id}");
+                await ApiClient.Delete($"api/admin/servers/{response.Id}");
                 await ToastService.Success("Successfully deleted server");
 
                 await Table.Refresh();

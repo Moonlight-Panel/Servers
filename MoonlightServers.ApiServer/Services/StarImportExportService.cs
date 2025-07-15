@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using MoonCore.Attributes;
 using MoonCore.Exceptions;
 using MoonCore.Extended.Abstractions;
