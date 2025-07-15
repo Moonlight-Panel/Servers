@@ -25,7 +25,7 @@ public class ServerVariablesController : Controller
         ServerRepository = serverRepository;
     }
 
-    [HttpGet("{serverId}/variables")]
+    [HttpGet("{serverId:int}/variables")]
     [Authorize(Policy = "permissions:admin.servers.read")]
     public async Task<PagedData<ServerVariableResponse>> Get(
         [FromRoute] int serverId,

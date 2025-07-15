@@ -13,7 +13,7 @@ using MoonlightServers.Shared.Http.Responses.Admin.StarVariables;
 namespace MoonlightServers.ApiServer.Http.Controllers.Admin.Stars;
 
 [ApiController]
-[Route("api/admin/servers/stars")]
+[Route("api/admin/servers/stars/{starId:int}/variables")]
 public class StarVariablesController : Controller
 {
     private readonly DatabaseRepository<Star> StarRepository;
@@ -27,7 +27,7 @@ public class StarVariablesController : Controller
         VariableRepository = variableRepository;
     }
 
-    [HttpGet("{starId:int}/variables")]
+    [HttpGet]
     [Authorize(Policy = "permissions:admin.servers.stars.get")]
     public async Task<IPagedData<StarVariableDetailResponse>> Get(
         [FromRoute] int starId,
@@ -67,7 +67,7 @@ public class StarVariablesController : Controller
         };
     }
 
-    [HttpGet("{starId:int}/variables/{id:int}")]
+    [HttpGet("{id:int}")]
     [Authorize(Policy = "permissions:admin.servers.stars.get")]
     public async Task<StarVariableDetailResponse> GetSingle(
         [FromRoute] int starId,
@@ -91,7 +91,7 @@ public class StarVariablesController : Controller
         return StarVariableMapper.ToAdminResponse(starVariable);
     }
 
-    [HttpPost("{starId:int}/variables")]
+    [HttpPost("")]
     [Authorize(Policy = "permissions:admin.servers.stars.create")]
     public async Task<StarVariableDetailResponse> Create([FromRoute] int starId,
         [FromBody] CreateStarVariableRequest request)
@@ -111,7 +111,7 @@ public class StarVariablesController : Controller
         return StarVariableMapper.ToAdminResponse(starVariable);
     }
 
-    [HttpPatch("{starId:int}/variables/{id:int}")]
+    [HttpPatch("{id:int}")]
     [Authorize(Policy = "permissions:admin.servers.stars.update")]
     public async Task<StarVariableDetailResponse> Update(
         [FromRoute] int starId,
@@ -139,7 +139,7 @@ public class StarVariablesController : Controller
         return StarVariableMapper.ToAdminResponse(starVariable);
     }
 
-    [HttpDelete("{starId:int}/variables/{id:int}")]
+    [HttpDelete("{id:int}")]
     [Authorize(Policy = "permissions:admin.servers.stars.delete")]
     public async Task Delete([FromRoute] int starId, [FromRoute] int id)
     {
