@@ -291,6 +291,9 @@ public class ServersController : Controller
         var server = await ServerRepository
             .Get()
             .Include(x => x.Node)
+            .Include(x => x.Star)
+            .Include(x => x.Variables)
+            .Include(x => x.Backups)
             .FirstOrDefaultAsync(x => x.Id == id);
 
         if (server == null)

@@ -5,6 +5,7 @@
 @using MoonlightServers.Shared.Http.Responses.Admin.Stars
 @using Moonlight.Shared.Http.Responses.Admin.Users
 @using MoonCore.Blazor.FlyonUi.Forms
+@using MoonlightServers.Frontend.UI.Views.Admin.All
 
 @inject HttpApiClient ApiClient
 
@@ -23,7 +24,7 @@
                        DisplayField="@(x => x.Username)"
                        SearchField="@(x => x.Username)"
                        ItemSource="LoadUsers"
-                       @bind-Value="User">
+                       @bind-Value="Parent.Owner">
             </InputItem>
         </div>
     </div>
@@ -35,7 +36,7 @@
                        DisplayField="@(x => x.Name)"
                        SearchField="@(x => x.Name)"
                        ItemSource="LoadStars"
-                       @bind-Value="Star">
+                       @bind-Value="Parent.Star">
             </InputItem>
         </div>
     </div>
@@ -47,7 +48,7 @@
                        DisplayField="@(x => x.Name)"
                        SearchField="@(x => x.Name)"
                        ItemSource="LoadNodes"
-                       @bind-Value="Node">
+                       @bind-Value="Parent.Node">
             </InputItem>
         </div>
     </div>
@@ -88,10 +89,7 @@
 @code
 {
     [Parameter] public CreateServerRequest Request { get; set; }
-
-    [Parameter] public UserResponse? User { get; set; }
-    [Parameter] public NodeResponse? Node { get; set; }
-    [Parameter] public StarDetailResponse? Star { get; set; }
+    [Parameter] public Create Parent { get; set; }
 
     private async Task<StarDetailResponse[]> LoadStars()
     {

@@ -31,13 +31,13 @@
     <HandleForm @ref="Form" Model="Request" OnValidSubmit="OnSubmit">
         <Tabs>
             <Tab Name="General">
-                <GeneralServerCreate Request="Request" Star="Star" Node="Node" User="Owner" />
+                <GeneralServerCreate Request="Request" Parent="this" />
             </Tab>
             <Tab Name="Allocations">
-                <AllocationsServerCreate Request="Request" Allocations="Allocations" Node="Node" />
+                <AllocationsServerCreate Request="Request" Parent="this" />
             </Tab>
             <Tab Name="Variables">
-                <VariablesServerCreate Request="Request" Star="Star" />
+                <VariablesServerCreate Request="Request" Parent="this" />
             </Tab>
             <Tab Name="Advanced">
                 <AdvancedServerCreate Request="Request" />
@@ -51,10 +51,10 @@
     private HandleForm Form;
     private CreateServerRequest Request;
 
-    private List<NodeAllocationResponse> Allocations = new();
-    private UserResponse? Owner;
-    private StarDetailResponse? Star;
-    private NodeResponse? Node;
+    public List<NodeAllocationResponse> Allocations = new();
+    public UserResponse? Owner;
+    public StarDetailResponse? Star;
+    public NodeResponse? Node;
 
     protected override void OnInitialized()
     {
