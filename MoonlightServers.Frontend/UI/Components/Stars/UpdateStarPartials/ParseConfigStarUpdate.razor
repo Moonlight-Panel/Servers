@@ -1,10 +1,8 @@
 @using System.Text.Json
+@using Microsoft.Extensions.Logging
 @using MoonCore.Blazor.FlyonUi.Alerts
 @using MoonCore.Blazor.FlyonUi.Modals
 @using MoonCore.Blazor.FlyonUi.Toasts
-@using MoonCore.Blazor.Tailwind.Alerts
-@using MoonCore.Blazor.Tailwind.Modals
-@using MoonCore.Blazor.Tailwind.Toasts
 @using MoonlightServers.Frontend.UI.Components.Stars.Modals
 @using MoonlightServers.Shared.Http.Requests.Admin.Stars
 @using MoonlightServers.Shared.Models
@@ -35,11 +33,11 @@ else
                     </div>
 
                     <div class="gap-x-2">
-                        <button @onclick="() => UpdateConfig(configuration)" class="btn btn-primary">
+                        <button type="button" @onclick="() => UpdateConfig(configuration)" class="btn btn-primary">
                             <i class="icon-settings text-base"></i>
                         </button>
 
-                        <button @onclick="() => DeleteConfig(configuration)" class="btn btn-danger">
+                        <button type="button" @onclick="() => DeleteConfig(configuration)" class="btn btn-error">
                             <i class="icon-trash text-base"></i>
                         </button>
                     </div>

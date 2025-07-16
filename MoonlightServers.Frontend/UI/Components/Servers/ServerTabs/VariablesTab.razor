@@ -1,7 +1,5 @@
 @using MoonCore.Blazor.FlyonUi.Components
 @using MoonCore.Blazor.FlyonUi.Toasts
-@using MoonCore.Blazor.Tailwind.Components
-@using MoonCore.Blazor.Tailwind.Toasts
 @using MoonlightServers.Frontend.Services
 @using MoonlightServers.Shared.Http.Responses.Client.Servers.Variables
 
@@ -15,17 +13,17 @@
         @foreach (var variable in Variables)
         {
             <div class="sm:col-span-2 card card-body p-5">
-                <label class="block text-sm font-medium leading-6 text-white">
+                <label class="block text-sm font-medium leading-6 text-base-content">
                     @variable.Name
                 </label>
-                <p class="mt-1 mb-2.5 text-sm leading-6 text-gray-400">
+                <p class="mt-1 mb-2.5 text-sm leading-6 text-base-content/60">
                     @variable.Description
                 </p>
                 <div class="mt-auto">
                     <input @onchange="e => UpdateVariable(variable, e)"
                            value="@variable.Value"
                            type="text"
-                           class="form-input w-full">
+                           class="input w-full">
                 </div>
             </div>
         }

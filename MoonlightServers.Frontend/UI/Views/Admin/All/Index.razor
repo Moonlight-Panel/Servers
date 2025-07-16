@@ -3,15 +3,12 @@
 @using MoonCore.Blazor.FlyonUi.Alerts
 @using MoonCore.Blazor.FlyonUi.DataTables
 @using MoonCore.Blazor.FlyonUi.Toasts
-@using MoonCore.Blazor.Tailwind.Alerts
 @using MoonCore.Helpers
 @using MoonCore.Models
 @using MoonlightServers.Shared.Http.Responses.Admin.Nodes
 @using MoonlightServers.Shared.Http.Responses.Admin.Servers
 @using MoonlightServers.Shared.Http.Responses.Admin.Stars
-@using MoonCore.Blazor.Tailwind.Components
-@using MoonCore.Blazor.Tailwind.Dt
-@using MoonCore.Blazor.Tailwind.Toasts
+@using MoonCore.Blazor.FlyonUi.Components
 
 @inject HttpApiClient ApiClient
 @inject AlertService AlertService
@@ -67,7 +64,7 @@
                     </a>
 
                     <a href="#" @onclick="() => Delete(context)" @onclick:preventDefault
-                       class="text-danger">
+                       class="text-error">
                         <i class="icon-trash text-base"></i>
                     </a>
                 </div>

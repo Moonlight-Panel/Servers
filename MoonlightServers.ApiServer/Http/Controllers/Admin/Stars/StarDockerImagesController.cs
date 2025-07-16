@@ -135,7 +135,7 @@ public class StarDockerImagesController : Controller
         if (dockerImage == null)
             throw new HttpApiException("No star docker image with this id found", 404);
 
-        dockerImage = DockerImageMapper.Merge(request, dockerImage);
+        DockerImageMapper.Merge(request, dockerImage);
         await DockerImageRepository.Update(dockerImage);
 
         return DockerImageMapper.ToAdminResponse(dockerImage);

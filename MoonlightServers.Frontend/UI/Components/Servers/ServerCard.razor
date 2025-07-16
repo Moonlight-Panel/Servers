@@ -1,3 +1,4 @@
+@using Microsoft.Extensions.Logging
 @using MoonCore.Helpers
 @using MoonlightServers.Frontend.Services
 @using MoonlightServers.Shared.Enums
@@ -7,38 +8,38 @@
 @inject ILogger<ServerCard> Logger
 
 @{
-    var gradient = "from-gray-600/20";
-    var border = "border-gray-600";
+    var gradient = "from-base-content/20";
+    var border = "border-base-content";
 
     if (IsLoaded && !IsFailed)
     {
         gradient = Status.State switch
         {
             ServerState.Installing => "from-primary/20",
-            ServerState.Offline => "from-danger/20",
+            ServerState.Offline => "from-error/20",
             ServerState.Starting => "from-warning/20",
             ServerState.Stopping => "from-warning/20",
             ServerState.Online => "from-success/20",
-            _ => "from-gray-600/20"
+            _ => "from-base-content/20"
         };
         
         border = Status.State switch
         {
             ServerState.Installing => "border-primary",
-            ServerState.Offline => "border-danger",
+            ServerState.Offline => "border-error",
             ServerState.Starting => "border-warning",
             ServerState.Stopping => "border-warning",
             ServerState.Online => "border-success",
-            _ => "border-gray-600"
+            _ => "border-base-content"
         };
     }
 }
 
 <a href="/servers/@Server.Id"
-   class="w-full bg-gradient-to-r @gradient to-gray-750 to-25% px-5 py-3.5 rounded-xl border-l-8 @border">
+   class="w-full bg-gradient-to-r @gradient to-base-content/75 to-25% px-5 py-3.5 rounded-xl border-l-8 @border">
     <div class="grid grid-cols-6">
         <div class="flex items-center col-span-6 sm:col-span-2 2xl:col-span-1">
-            <div class="bg-gray-900 bg-opacity-45 py-1 px-2 rounded-lg flex items-center">
+            <div class="bg-base-content/10 bg-opacity-45 py-1 px-2 rounded-lg flex items-center">
                 <i class="icon-server me-3 align-middle"></i>
                 <div class="text-lg align-middle">
                     @Server.Name
@@ -53,7 +54,7 @@
                 Status.State is ServerState.Starting or ServerState.Stopping or ServerState.Online
             )
             {
-                <div class="bg-gray-900 bg-opacity-45 py-1 px-2 rounded-lg flex flex-row">
+                <div class="bg-base-content/35 py-1 px-2 rounded-lg flex flex-row">
                     <div>
                         <i class="icon-cpu"></i>
                     </div>
@@ -61,7 +62,7 @@
                     <div class="ms-3">@(Stats.CpuUsage)%</div>
                 </div>
 
-                <div class="bg-gray-900 bg-opacity-45 py-1 px-2 rounded-lg flex flex-row">
+                <div class="bg-base-content/35 py-1 px-2 rounded-lg flex flex-row">
                     <div>
                         <i class="icon-memory-stick"></i>
                     </div>
@@ -69,7 +70,7 @@
                     <div class="ms-3">@(Formatter.FormatSize(Stats.MemoryUsage)) / @(Formatter.FormatSize(ByteConverter.FromMegaBytes(Server.Memory).Bytes))</div>
                 </div>
 
-                <div class="bg-gray-900 bg-opacity-45 py-1 px-2 rounded-lg flex flex-row">
+                <div class="bg-base-content/35 py-1 px-2 rounded-lg flex flex-row">
                     <div>
                         <i class="icon-hard-drive"></i>
                     </div>
@@ -81,7 +82,7 @@
             {
                 if (!IsLoaded)
                 {
-                    <div class="bg-gray-900 bg-opacity-45 py-1 px-2 rounded-lg flex flex-row text-gray-700">
+                    <div class="bg-base-content/35 py-1 px-2 rounded-lg flex flex-row text-gray-700">
                         <div>
                             <i class="icon-loader"></i>
                         </div>
@@ -91,7 +92,7 @@
                 }
                 else if (IsFailed)
                 {
-                    <div class="bg-gray-900 bg-opacity-45 py-1 px-2 rounded-lg flex flex-row text-danger">
+                    <div class="bg-base-content/35 py-1 px-2 rounded-lg flex flex-row text-error">
                         <div>
                             <i class="icon-cable"></i>
                         </div>
@@ -101,7 +102,7 @@
                 }
                 else if (IsLoaded && !IsFailed && Status.State is ServerState.Offline)
                 {
-                    <div class="bg-gray-900 bg-opacity-45 py-1 px-2 rounded-lg flex flex-row text-danger">
+                    <div class="bg-base-content/35 py-1 px-2 rounded-lg flex flex-row text-error">
                         <div>
                             <i class="icon-power-off"></i>
                         </div>
@@ -111,7 +112,7 @@
                 }
                 else if (IsLoaded && !IsFailed && Status.State is ServerState.Installing)
                 {
-                    <div class="bg-gray-900 bg-opacity-45 py-1 px-2 rounded-lg flex flex-row text-primary">
+                    <div class="bg-base-content/35 py-1 px-2 rounded-lg flex flex-row text-primary">
                         <div>
                             <i class="icon-hammer"></i>
                         </div>
@@ -126,7 +127,7 @@
 
             @if (Server.Share != null)
             {
-                <div class="bg-gray-900 bg-opacity-45 py-1 px-2 rounded-lg flex flex-row col-span-2">
+                <div class="bg-base-content/35 py-1 px-2 rounded-lg flex flex-row col-span-2">
                     <div>
                         <i class="icon-share-2"></i>
                     </div>
@@ -136,7 +137,7 @@
             }
             else
             {
-                <div class="bg-gray-900 bg-opacity-45 py-1 px-2 rounded-lg flex flex-row">
+                <div class="bg-base-content/35 py-1 px-2 rounded-lg flex flex-row">
                     <div>
                         <i class="icon-sparkles"></i>
                     </div>
@@ -144,7 +145,7 @@
                     <div class="ms-3">@Server.StarName</div>
                 </div>
 
-                <div class="bg-gray-900 bg-opacity-45 py-1 px-2 rounded-lg flex flex-row">
+                <div class="bg-base-content/35 py-1 px-2 rounded-lg flex flex-row">
                     <div>
                         <i class="icon-database"></i>
                     </div>

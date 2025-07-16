@@ -3,7 +3,6 @@
 
 @using Microsoft.AspNetCore.SignalR.Client
 @using MoonCore.Blazor.FlyonUi.Components
-@using MoonCore.Blazor.Tailwind.Components
 @using MoonCore.Exceptions
 @using MoonCore.Helpers
 @using MoonlightServers.Frontend.Interfaces
@@ -21,15 +20,9 @@
 <LazyLoader Load="Load">
     @if (NotFound)
     {
-        <div class="flex flex-col justify-center text-center">
-            <img class="h-48 mt-5 mb-3" src="/svg/notfound.svg" alt="Not found illustration">
-            <h3 class="mt-2 font-semibold text-white text-lg">
-                Server not found
-            </h3>
-            <p class="mt-1 text-gray-300">
-                The server you requested does not exist
-            </p>
-        </div>
+        <IconAlert Title="Server not found" Icon="icon-search" Color="text-primary">
+            The requested server could not be found
+        </IconAlert>
     }
     else
     {
@@ -39,7 +32,7 @@
                     var bgColor = State switch
                     {
                         ServerState.Installing => "bg-primary",
-                        ServerState.Offline => "bg-danger",
+                        ServerState.Offline => "bg-error",
                         ServerState.Starting => "bg-warning",
                         ServerState.Stopping => "bg-warning",
                         ServerState.Online => "bg-success",
@@ -51,7 +44,7 @@
 
                 <div class="flex flex-col">
                     <div class="hidden sm:flex text-lg font-semibold">@Server.Name</div>
-                    <div class="hidden text-sm text-gray-400 md:flex gap-x-3">
+                    <div class="hidden text-sm text-base-content/60 md:flex gap-x-3">
                         <span>
                             <i class="icon-sparkles me-0.5 align-middle"></i>
                             <span class="align-middle">@Server.StarName</span>
@@ -102,14 +95,14 @@
                         {
                             if (State == ServerState.Stopping)
                             {
-                                <WButton CssClasses="btn btn-danger" OnClick="_ => Kill()">
+                                <WButton CssClasses="btn btn-error" OnClick="_ => Kill()">
                                     <i class="icon-bomb me-1 align-middle"></i>
                                     <span class="align-middle">Kill</span>
                                 </WButton>
                             }
                             else
                             {
-                                <WButton CssClasses="btn btn-danger" OnClick="_ => Stop()">
+                                <WButton CssClasses="btn btn-error" OnClick="_ => Stop()">
                                     <i class="icon-squircle me-1 align-middle"></i>
                                     <span class="align-middle">Stop</span>
                                 </WButton>
@@ -117,7 +110,7 @@
                         }
                         else
                         {
-                            <button type="button" class="btn btn-danger" disabled="disabled">
+                            <button type="button" class="btn btn-error" disabled="disabled">
                                 <i class="icon-squircle me-1 align-middle"></i>
                                 <span class="align-middle">Stop</span>
                             </button>
@@ -135,7 +128,7 @@
                             <span class="align-middle">Restart</span>
                         </button>
                         
-                        <button type="button" class="btn btn-danger" disabled="disabled">
+                        <button type="button" class="btn btn-error" disabled="disabled">
                             <i class="icon-squircle me-1 align-middle"></i>
                             <span class="align-middle">Stop</span>
                         </button>
@@ -160,7 +153,7 @@
                         {
                             <a href="/servers/@(ServerId)/@(tab.Path)" @onclick:preventDefault
                                @onclick="() => SwitchTab(tab)"
-                               class="inline-flex items-center justify-center text-sm font-medium leading-5 rounded-full px-3 py-1 border border-gray-700/60 hover:border-gray-600 shadow-sm bg-gray-800 text-gray-400 transition">
+                               class="inline-flex items-center justify-center text-sm font-medium leading-5 rounded-full px-3 py-1 border border-gray-700/60 hover:border-gray-600 shadow-sm bg-gray-800 text-base-content/60 transition">
                                 @tab.Name
                             </a>
                         }

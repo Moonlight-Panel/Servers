@@ -1,9 +1,10 @@
+@using Microsoft.Extensions.Logging
 @using XtermBlazor
 
 @inject IJSRuntime JsRuntime
 @inject ILogger<XtermConsole> Logger
 
-<div class="bg-black rounded-lg p-2">
+<div class="bg-background rounded-lg p-2">
     @if (IsInitialized)
     {
         <Xterm @ref="Terminal"

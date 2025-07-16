@@ -4,15 +4,11 @@
 @using MoonCore.Blazor.FlyonUi.DataTables
 @using MoonCore.Blazor.FlyonUi.Helpers
 @using MoonCore.Blazor.FlyonUi.Toasts
-@using MoonCore.Blazor.Tailwind.Alerts
 @using MoonCore.Helpers
 @using MoonCore.Models
 @using MoonlightServers.Shared.Http.Responses.Admin.Stars
-@using MoonCore.Blazor.Tailwind.Components
-@using MoonCore.Blazor.Tailwind.Dt
-@using MoonCore.Blazor.Tailwind.Services
-@using MoonCore.Blazor.Tailwind.Toasts
 @using MoonCore.Exceptions
+@using MoonCore.Blazor.FlyonUi.Components
 
 @inject HttpApiClient ApiClient
 @inject DownloadService DownloadService
@@ -28,7 +24,7 @@
 <div class="mb-5">
     <PageHeader Title="Stars">
         <InputFile id="import-file" hidden="" multiple OnChange="OnImportFiles"/>
-        <label for="import-file" class="btn btn-tertiary cursor-pointer">
+        <label for="import-file" class="btn btn-accent cursor-pointer">
             <i class="icon-file-up mr-2"></i>
             Import
         </label>
@@ -58,7 +54,7 @@
                 <div class="flex justify-end">
                     @if (!string.IsNullOrEmpty(context.DonateUrl))
                     {
-                        <a href="@context.DonateUrl" target="_blank" class="text-red-500 mr-3">
+                        <a href="@context.DonateUrl" target="_blank" class="text-accent mr-3">
                             <i class="icon-heart align-middle"></i>
                             <span class="align-middle">Donate</span>
                         </a>
@@ -66,7 +62,7 @@
 
                     @if (!string.IsNullOrEmpty(context.UpdateUrl))
                     {
-                        <a href="#" @onclick:preventDefault class="text-tertiary mr-3">
+                        <a href="#" @onclick:preventDefault class="text-accent mr-3">
                             <i class="icon-refresh-cw align-middle"></i>
                             <span class="align-middle">Update</span>
                         </a>
@@ -82,7 +78,7 @@
                     </a>
 
                     <a href="#" @onclick="() => Delete(context)" @onclick:preventDefault
-                       class="text-danger">
+                       class="text-error">
                         <i class="icon-trash text-base"></i>
                     </a>
                 </div>
@@ -119,7 +115,7 @@
 
         var formattedFileName = star.Name.Replace(" ", "_") + ".json";
 
-        await DownloadService.DownloadString(formattedFileName, json);
+        await DownloadService.Download(formattedFileName, json);
         await ToastService.Success($"Successfully exported '{star.Name}'");
     }
 
@@ -141,7 +137,7 @@
             {
                 if (!file.Name.EndsWith(".json"))
                 {
-                    await ToastService.Danger($"Failed to import '{file.Name}': Only json files are supported");
+                    await ToastService.Error($"Failed to import '{file.Name}': Only json files are supported");
                     continue;
                 }
 
@@ -155,7 +151,7 @@
             }
             catch (HttpApiException e)
             {
-                await ToastService.Danger($"Failed to import '{file.Name}': {e.Title}");
+                await ToastService.Error($"Failed to import '{file.Name}': {e.Title}");
             }
         }
 

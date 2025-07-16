@@ -2,10 +2,6 @@
 @using MoonCore.Blazor.FlyonUi.Components
 @using MoonCore.Blazor.FlyonUi.Modals
 @using MoonCore.Blazor.FlyonUi.Toasts
-@using MoonCore.Blazor.Tailwind.Alerts
-@using MoonCore.Blazor.Tailwind.Components
-@using MoonCore.Blazor.Tailwind.Modals
-@using MoonCore.Blazor.Tailwind.Toasts
 @using MoonCore.Models
 @using MoonlightServers.Frontend.Services
 @using MoonlightServers.Shared.Http.Requests.Client.Servers.Shares
@@ -19,7 +15,7 @@
 @inject AlertService AlertService
 
 <div class="flex flex-row mb-5">
-    <input @bind="UsernameInput" class="form-input grow placeholder-gray-500 me-1.5" autocomplete="none" placeholder="Enter a username"/>
+    <input @bind="UsernameInput" class="input grow placeholder-base-content/50 me-1.5" autocomplete="none" placeholder="Enter a username"/>
     <button @onclick="OpenCreateModal" class="btn btn-primary">
         <i class="icon-send me-1"></i>
         <span>Invite</span>
@@ -48,7 +44,7 @@
                             <i class="icon-settings-2 me-1"></i>
                             <span>Edit</span>
                         </WButton>
-                        <WButton OnClick="_ => Delete(share)" CssClasses="btn btn-danger">
+                        <WButton OnClick="_ => Delete(share)" CssClasses="btn btn-error">
                             <i class="icon-trash-2 me-1"></i>
                             <span>Delete</span>
                         </WButton>

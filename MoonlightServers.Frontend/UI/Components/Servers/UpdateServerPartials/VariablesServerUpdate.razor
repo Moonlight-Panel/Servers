@@ -1,7 +1,6 @@
 @using MoonCore.Blazor.FlyonUi.Components
 @using MoonlightServers.Shared.Http.Requests.Admin.Servers
 @using MoonCore.Helpers
-@using MoonCore.Blazor.Tailwind.Components
 @using MoonCore.Models
 @using MoonlightServers.Shared.Http.Requests.Admin.ServerVariables
 @using MoonlightServers.Shared.Http.Responses.Admin.Servers
@@ -26,14 +25,14 @@
                 : variable.Value;
 
             <div class="sm:col-span-2">
-                <label class="block text-sm font-medium leading-6 text-white">
+                <label class="block text-sm font-medium leading-6 text-base-content">
                     @starVariable.Name
                 </label>
                 <div class="mt-2">
-                    <input type="text" class="form-input w-full" value="@value"
+                    <input type="text" class="input w-full" value="@value"
                            @onchange="@(args => UpdateValue(variable, args))"/>
                 </div>
-                <p class="mt-1 text-sm leading-6 text-gray-400">
+                <p class="mt-1 text-sm leading-6 text-base-content/60">
                     @starVariable.Description
                 </p>
             </div>

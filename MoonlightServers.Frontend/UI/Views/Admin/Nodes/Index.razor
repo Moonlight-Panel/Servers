@@ -1,18 +1,16 @@
 @page "/admin/servers/nodes"
 
+@using Microsoft.Extensions.Logging
 @using MoonCore.Blazor.FlyonUi.Alerts
 @using MoonCore.Blazor.FlyonUi.DataTables
 @using MoonCore.Blazor.FlyonUi.Toasts
-@using MoonCore.Blazor.Tailwind.Alerts
 @using MoonCore.Helpers
 @using MoonCore.Models
 @using MoonlightServers.Shared.Http.Responses.Admin.Nodes
-@using MoonCore.Blazor.Tailwind.Components
-@using MoonCore.Blazor.Tailwind.Dt
-@using MoonCore.Blazor.Tailwind.Toasts
 @using MoonlightServers.Frontend.Services
 @using MoonlightServers.Shared.Http.Responses.Admin.Nodes.Statistics
 @using MoonlightServers.Shared.Http.Responses.Admin.Nodes.Sys
+@using MoonCore.Blazor.FlyonUi.Components
 
 @inject HttpApiClient ApiClient
 @inject NodeService NodeService
@@ -57,7 +55,7 @@
                 {
                     if (data == null)
                     {
-                        <div class="text-danger flex items-center">
+                        <div class="text-error flex items-center">
                             <i class="icon-server-off text-base me-1"></i>
                             <span>
                                 API Error
@@ -75,13 +73,13 @@
                         }
                         else
                         {
-                            <div class="text-danger flex items-center">
+                            <div class="text-error flex items-center">
                                 <i class="icon-server-off text-base me-1"></i>
                                 <span class="me-2">
                                     Error
                                 </span>
                                 <a @onclick="() => ShowErrorDetails(context.Id)" @onclick:preventDefault
-                                   href="#" class="ms-1 text-gray-600">Details</a>
+                                   href="#" class="ms-1 text-base-content/40">Details</a>
                             </div>
                         }
                     }
@@ -108,7 +106,7 @@
                 {
                     if (data == null)
                     {
-                        <div class="flex items-center text-danger">
+                        <div class="flex items-center text-error">
                             <i class="icon-server-off text-base me-1"></i>
                             <span>
                                 API Error
@@ -149,7 +147,7 @@
                     </a>
 
                     <a href="#" @onclick="() => Delete(context)" @onclick:preventDefault
-                       class="text-danger">
+                       class="text-error">
                         <i class="icon-trash text-base"></i>
                     </a>
                 </div>
@@ -243,6 +241,6 @@
                       (data.RoundtripRemoteFailure ? "(Failed at node)" : "(Failed at api server)") +
                       $" {data.RoundtripError}";
 
-        await AlertService.Danger("Node error details", message);
+        await AlertService.Error("Node error details", message);
     }
 }

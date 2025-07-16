@@ -1,26 +1,22 @@
-@using MoonCore.Blazor.FlyonUi.Helpers
 @using MoonlightServers.Frontend.Services
-@using MoonCore.Blazor.Tailwind.Fm
-@using MoonCore.Blazor.Tailwind.Services
+@using MoonCore.Blazor.FlyonUi.Files.Manager
 @using MoonlightServers.Frontend.Helpers
 
 @inherits BaseServerTab
 
 @inject ServerFileSystemService FileSystemService
-@inject DownloadService DownloadService
 
-<FileManager FileSystemProvider="Provider" MaxUploadSize="4096"/>
+<FileManager FsAccess="FsAccess" />
 
 @code
 {
-    private IFileSystemProvider Provider;
+    private IFsAccess FsAccess;
 
     protected override void OnInitialized()
     {
-        Provider = new ServerFileSystemProvider(
+        FsAccess = new ServerFsAccess(
             Server.Id,
-            FileSystemService,
-            DownloadService
+            FileSystemService
         );
     }
 }

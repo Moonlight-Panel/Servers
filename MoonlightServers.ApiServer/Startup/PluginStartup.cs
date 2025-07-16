@@ -35,11 +35,11 @@ public class PluginStartup : IPluginStartup
             {
                 Scripts =
                 [
-                    "js/XtermBlazor.min.js",
-                    "js/addon-fit.js",
-                    "js/moonlightServers.js"
+                    "/_content/MoonlightServers.Frontend/js/XtermBlazor.min.js",
+                    "/_content/MoonlightServers.Frontend/js/addon-fit.js",
+                    "/_content/MoonlightServers.Frontend/js/moonlightServers.js"
                 ],
-                Styles = ["css/XtermBlazor.min.css"]
+                Styles = ["/_content/MoonlightServers.Frontend/css/XtermBlazor.min.css"]
             });
         }
         

@@ -21,5 +21,5 @@ public static partial class ServerMapper
     private static partial ServerResponse ToAdminServerResponse_Internal(Server server);
     
     public static partial Server ToServer(CreateServerRequest request);
-    public static partial Server Merge(UpdateServerRequest request, Server server);
+    public static partial void Merge(UpdateServerRequest request, Server server);
 }

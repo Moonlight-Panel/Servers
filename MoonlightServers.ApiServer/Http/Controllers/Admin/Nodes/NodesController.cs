@@ -96,7 +96,7 @@ public class NodesController : Controller
         if (node == null)
             throw new HttpApiException("No node with this id found", 404);
 
-        node = NodeMapper.Merge(request, node);
+        NodeMapper.Merge(request, node);
         await NodeRepository.Update(node);
 
         return NodeMapper.ToAdminNodeResponse(node);

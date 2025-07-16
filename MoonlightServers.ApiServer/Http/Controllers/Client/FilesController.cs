@@ -15,7 +15,7 @@ namespace MoonlightServers.ApiServer.Http.Controllers.Client;
 
 [Authorize]
 [ApiController]
-[Route("api/client/servers")]
+[Route("api/client/servers/{serverId:int}/files")]
 public class FilesController : Controller
 {
     private readonly DatabaseRepository<Server> ServerRepository;
@@ -36,7 +36,7 @@ public class FilesController : Controller
         AuthorizeService = authorizeService;
     }
 
-    [HttpGet("{serverId:int}/files/list")]
+    [HttpGet("list")]
     public async Task<ServerFilesEntryResponse[]> List([FromRoute] int serverId, [FromQuery] string path)
     {
         var server = await GetServerById(serverId, ServerPermissionType.Read);
@@ -47,13 +47,13 @@ public class FilesController : Controller
         {
             Name = x.Name,
             Size = x.Size,
-            IsFile = x.IsFile,
+            IsFolder = x.IsFolder,
             CreatedAt = x.CreatedAt,
             UpdatedAt = x.UpdatedAt
         }).ToArray();
     }
 
-    [HttpPost("{serverId:int}/files/move")]
+    [HttpPost("move")]
     public async Task Move([FromRoute] int serverId, [FromQuery] string oldPath, [FromQuery] string newPath)
     {
         var server = await GetServerById(serverId, ServerPermissionType.ReadWrite);
@@ -61,7 +61,7 @@ public class FilesController : Controller
         await ServerFileSystemService.Move(server, oldPath, newPath);
     }
 
-    [HttpDelete("{serverId:int}/files/delete")]
+    [HttpDelete("delete")]
     public async Task Delete([FromRoute] int serverId, [FromQuery] string path)
     {
         var server = await GetServerById(serverId, ServerPermissionType.ReadWrite);
@@ -69,15 +69,23 @@ public class FilesController : Controller
         await ServerFileSystemService.Delete(server, path);
     }
 
-    [HttpPost("{serverId:int}/files/mkdir")]
+    [HttpPost("mkdir")]
     public async Task Mkdir([FromRoute] int serverId, [FromQuery] string path)
     {
         var server = await GetServerById(serverId, ServerPermissionType.ReadWrite);
 
         await ServerFileSystemService.Mkdir(server, path);
     }
+    
+    [HttpPost("touch")]
+    public async Task Touch([FromRoute] int serverId, [FromQuery] string path)
+    {
+        var server = await GetServerById(serverId, ServerPermissionType.ReadWrite);
 
-    [HttpGet("{serverId:int}/files/upload")]
+        await ServerFileSystemService.Mkdir(server, path);
+    }
+
+    [HttpGet("upload")]
     public async Task<ServerFilesUploadResponse> Upload([FromRoute] int serverId)
     {
         var server = await GetServerById(serverId, ServerPermissionType.ReadWrite);
@@ -104,7 +112,7 @@ public class FilesController : Controller
         };
     }
 
-    [HttpGet("{serverId:int}/files/download")]
+    [HttpGet("download")]
     public async Task<ServerFilesDownloadResponse> Download([FromRoute] int serverId, [FromQuery] string path)
     {
         var server = await GetServerById(serverId, ServerPermissionType.Read);
@@ -132,7 +140,7 @@ public class FilesController : Controller
         };
     }
 
-    [HttpPost("{serverId:int}/files/compress")]
+    [HttpPost("compress")]
     public async Task Compress([FromRoute] int serverId, [FromBody] ServerFilesCompressRequest request)
     {
         var server = await GetServerById(serverId, ServerPermissionType.ReadWrite);
@@ -143,7 +151,7 @@ public class FilesController : Controller
         await ServerFileSystemService.Compress(server, type, request.Items, request.Destination);
     }
 
-    [HttpPost("{serverId:int}/files/decompress")]
+    [HttpPost("decompress")]
     public async Task Decompress([FromRoute] int serverId, [FromBody] ServerFilesDecompressRequest request)
     {
         var server = await GetServerById(serverId, ServerPermissionType.ReadWrite);

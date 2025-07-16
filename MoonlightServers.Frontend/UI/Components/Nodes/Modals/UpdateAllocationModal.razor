@@ -1,7 +1,4 @@
 @using MoonCore.Blazor.FlyonUi.Components
-@using MoonCore.Blazor.Tailwind.Modals.Components
-@using MoonCore.Blazor.Tailwind.Components
-@using MoonCore.Helpers
 @using MoonlightServers.Shared.Http.Requests.Admin.NodeAllocations
 @using MoonlightServers.Shared.Http.Responses.Admin.NodeAllocations
 
@@ -12,13 +9,13 @@
 <HandleForm @ref="HandleForm" Model="Form" OnValidSubmit="OnValidSubmit">
     <div class="grid grid-cols-1 gap-2">
         <div class="col-span-1">
-            <label class="block text-sm font-medium leading-6 text-white">IP Address</label>
-            <input @bind="Form.IpAddress" type="text" class="form-input w-full"/>
+            <label class="block text-sm font-medium leading-6 text-base-content">IP Address</label>
+            <input @bind="Form.IpAddress" type="text" class="input w-full"/>
         </div>
 
         <div class="col-span-1">
-            <label class="block text-sm font-medium leading-6 text-white">Port</label>
-            <input @bind="Form.Port" type="text" class="form-input w-full"/>
+            <label class="block text-sm font-medium leading-6 text-base-content">Port</label>
+            <input @bind="Form.Port" type="text" class="input w-full"/>
         </div>
     </div>
 </HandleForm>
@@ -38,7 +35,11 @@
 
     protected override void OnInitialized()
     {
-        Form = Mapper.Map<UpdateNodeAllocationRequest>(Allocation);
+        Form = new UpdateNodeAllocationRequest()
+        {
+            IpAddress = Allocation.IpAddress,
+            Port = Allocation.Port
+        };
     }
 
     private async Task OnValidSubmit()

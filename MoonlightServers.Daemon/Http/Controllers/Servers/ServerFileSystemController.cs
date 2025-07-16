@@ -11,7 +11,7 @@ namespace MoonlightServers.Daemon.Http.Controllers.Servers;
 
 [Authorize]
 [ApiController]
-[Route("api/servers")]
+[Route("api/servers/{id:int}/files")]
 public class ServerFileSystemController : Controller
 {
     private readonly ServerService ServerService;
@@ -21,7 +21,7 @@ public class ServerFileSystemController : Controller
         ServerService = serverService;
     }
     
-    [HttpGet("{id:int}/files/list")]
+    [HttpGet("list")]
     public async Task<ServerFileSystemResponse[]> List([FromRoute] int id, [FromQuery] string path = "")
     {
         var fileSystem = await GetFileSystemById(id);
@@ -29,7 +29,7 @@ public class ServerFileSystemController : Controller
         return await fileSystem.List(path);
     }
 
-    [HttpPost("{id:int}/files/move")]
+    [HttpPost("move")]
     public async Task Move([FromRoute] int id, [FromQuery] string oldPath, [FromQuery] string newPath)
     {
         var fileSystem = await GetFileSystemById(id);
@@ -37,7 +37,7 @@ public class ServerFileSystemController : Controller
         await fileSystem.Move(oldPath, newPath);
     }
     
-    [HttpDelete("{id:int}/files/delete")]
+    [HttpDelete("delete")]
     public async Task Delete([FromRoute] int id, [FromQuery] string path)
     {
         var fileSystem = await GetFileSystemById(id);
@@ -45,15 +45,23 @@ public class ServerFileSystemController : Controller
         await fileSystem.Delete(path);
     }
     
-    [HttpPost("{id:int}/files/mkdir")]
+    [HttpPost("mkdir")]
     public async Task Mkdir([FromRoute] int id, [FromQuery] string path)
     {
         var fileSystem = await GetFileSystemById(id);
 
         await fileSystem.Mkdir(path);
     }
+    
+    [HttpPost("touch")]
+    public async Task Touch([FromRoute] int id, [FromQuery] string path)
+    {
+        var fileSystem = await GetFileSystemById(id);
 
-    [HttpPost("{id:int}/files/compress")]
+        await fileSystem.Touch(path);
+    }
+
+    [HttpPost("compress")]
     public async Task Compress([FromRoute] int id, [FromBody] ServerFilesCompressRequest request)
     {
         var fileSystem = await GetFileSystemById(id);
@@ -65,7 +73,7 @@ public class ServerFileSystemController : Controller
         );
     }
     
-    [HttpPost("{id:int}/files/decompress")]
+    [HttpPost("decompress")]
     public async Task Decompress([FromRoute] int id, [FromBody] ServerFilesDecompressRequest request)
     {
         var fileSystem = await GetFileSystemById(id);

@@ -2,11 +2,13 @@
 
 @using MoonCore.Blazor.FlyonUi.Components
 @using MoonCore.Blazor.FlyonUi.Toasts
-@using MoonCore.Blazor.Tailwind.Components
-@using MoonCore.Blazor.Tailwind.Toasts
 @using MoonCore.Helpers
+@using Moonlight.Shared.Http.Responses.Admin.Users
 @using MoonlightServers.Shared.Http.Requests.Admin.Servers
 @using MoonlightServers.Frontend.UI.Components.Servers.CreateServerPartials
+@using MoonlightServers.Shared.Http.Responses.Admin.NodeAllocations
+@using MoonlightServers.Shared.Http.Responses.Admin.Nodes
+@using MoonlightServers.Shared.Http.Responses.Admin.Stars
 
 @inject HttpApiClient ApiClient
 @inject NavigationManager Navigation
@@ -29,13 +31,13 @@
     <HandleForm @ref="Form" Model="Request" OnValidSubmit="OnSubmit">
         <Tabs>
             <Tab Name="General">
-                <GeneralServerCreate Request="Request" />
+                <GeneralServerCreate Request="Request" Star="Star" Node="Node" User="Owner" />
             </Tab>
             <Tab Name="Allocations">
-                <AllocationsServerCreate Request="Request" />
+                <AllocationsServerCreate Request="Request" Allocations="Allocations" Node="Node" />
             </Tab>
             <Tab Name="Variables">
-                <VariablesServerCreate Request="Request" />
+                <VariablesServerCreate Request="Request" Star="Star" />
             </Tab>
             <Tab Name="Advanced">
                 <AdvancedServerCreate Request="Request" />
@@ -49,6 +51,11 @@
     private HandleForm Form;
     private CreateServerRequest Request;
 
+    private List<NodeAllocationResponse> Allocations = new();
+    private UserResponse? Owner;
+    private StarDetailResponse? Star;
+    private NodeResponse? Node;
+
     protected override void OnInitialized()
     {
         Request = new();
@@ -56,6 +63,14 @@
 
     private async Task OnSubmit()
     {
+        Request.AllocationIds = Allocations
+            .Select(x => x.Id)
+            .ToArray();
+
+        Request.StarId = Star?.Id ?? -1;
+        Request.NodeId = Node?.Id ?? -1;
+        Request.OwnerId = Owner?.Id ?? -1;
+        
         await ApiClient.Post("api/admin/servers", Request);
 
         await ToastService.Success("Successfully created Server");

@@ -106,7 +106,7 @@ public class StarsController : Controller
         if (star == null)
             throw new HttpApiException("No star with that id found", 404);
         
-        star = StarMapper.Merge(request, star);
+        StarMapper.Merge(request, star);
         await StarRepository.Update(star);
         
         return StarMapper.ToAdminResponse(star);

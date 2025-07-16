@@ -5,26 +5,18 @@
 
 @inherits InputBase<bool>
 
-<div class="flex items-center">
-    <div class="form-switch">
-        <input @bind="CurrentValue" type="checkbox" id="@("switch-" + GetHashCode())" class="sr-only">
-        <label class="bg-gray-700" for="switch-@(GetHashCode())">
-            <span class="bg-white shadow-sm" aria-hidden="true"></span>
-            <span class="sr-only">Switch label</span>
-        </label>
-    </div>
-    <div class="text-sm text-gray-500 italic ml-2">
+<div class="flex items-center gap-1">
+    <input @bind="CurrentValue" type="checkbox" class="switch switch-primary" id="switch-@GetHashCode()" />
+    <label class="label-text text-base" for="switch-@GetHashCode()">
         @if (CurrentValue)
         {
             <span>On</span>
         }
         else
         {
-            <span>
-                Off
-            </span>
+            <span>Off</span>
         }
-    </div>
+    </label>
 </div>
 
 @code

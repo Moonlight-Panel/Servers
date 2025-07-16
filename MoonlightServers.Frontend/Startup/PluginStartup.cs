@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
+using Microsoft.Extensions.DependencyInjection;
 using MoonCore.Extensions;
 using Moonlight.Client.Interfaces;
 using Moonlight.Client.Plugins;
@@ -7,7 +8,6 @@ using MoonlightServers.Frontend.Interfaces;
 
 namespace MoonlightServers.Frontend.Startup;
 
-[PluginStartup]
 public class PluginStartup : IPluginStartup
 {
     public Task BuildApplication(IServiceProvider serviceProvider, WebAssemblyHostBuilder builder)

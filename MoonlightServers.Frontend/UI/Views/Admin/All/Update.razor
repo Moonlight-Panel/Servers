@@ -2,12 +2,12 @@
 
 @using MoonCore.Blazor.FlyonUi.Components
 @using MoonCore.Blazor.FlyonUi.Toasts
-@using MoonCore.Blazor.Tailwind.Components
-@using MoonCore.Blazor.Tailwind.Toasts
 @using MoonCore.Helpers
+@using Moonlight.Shared.Http.Responses.Admin.Users
 @using MoonlightServers.Shared.Http.Requests.Admin.Servers
 @using MoonlightServers.Shared.Http.Responses.Admin.Servers
 @using MoonlightServers.Frontend.UI.Components.Servers.UpdateServerPartials
+@using MoonlightServers.Shared.Http.Responses.Admin.NodeAllocations
 
 @inject HttpApiClient ApiClient
 @inject NavigationManager Navigation
@@ -31,16 +31,16 @@
         <HandleForm @ref="Form" Model="Request" OnValidSubmit="OnSubmit">
             <Tabs>
                 <Tab Name="General">
-                    <GeneralServerUpdate Request="Request" />
+                    <GeneralServerUpdate Request="Request" Owner="Owner"/>
                 </Tab>
                 <Tab Name="Allocations">
-                    <AllocationsServerUpdate Request="Request" Server="Server" />
+                    <AllocationsServerUpdate Request="Request" Server="Server" Allocations="Allocations"/>
                 </Tab>
                 <Tab Name="Variables">
-                    <VariablesServerUpdate Request="Request" Server="Server" />
+                    <VariablesServerUpdate Request="Request" Server="Server"/>
                 </Tab>
                 <Tab Name="Advanced">
-                    <AdvancedServerUpdate Request="Request" />
+                    <AdvancedServerUpdate Request="Request"/>
                 </Tab>
             </Tabs>
         </HandleForm>
@@ -55,14 +55,45 @@
     private UpdateServerRequest Request;
     private ServerResponse Server;
 
+    private List<NodeAllocationResponse> Allocations = new();
+    private UserResponse Owner;
+
     private async Task Load(LazyLoader _)
     {
         Server = await ApiClient.GetJson<ServerResponse>($"api/admin/servers/{Id}");
-        Request = Mapper.Map<UpdateServerRequest>(Server);
+
+        Request = new()
+        {
+            Name = Server.Name,
+            AllocationIds = Server.AllocationIds,
+            OwnerId = Server.OwnerId,
+            Bandwidth = Server.Bandwidth,
+            Cpu = Server.Cpu,
+            Disk = Server.Disk,
+            DockerImageIndex = Server.DockerImageIndex,
+            Memory = Server.Memory,
+            StartupOverride = Server.StartupOverride
+        };
+
+        foreach (var allocationId in Server.AllocationIds)
+        {
+            var allocation = await ApiClient.GetJson<NodeAllocationResponse>(
+                $"api/admin/servers/nodes/{Server.NodeId}/allocations/{allocationId}"
+            );
+            
+            Allocations.Add(allocation);
+        }
+
+        Owner = await ApiClient.GetJson<UserResponse>(
+            $"api/admin/users/{Server.OwnerId}"
+        );
     }
 
     private async Task OnSubmit()
     {
+        Request.AllocationIds = Allocations.Select(x => x.Id).ToArray();
+        Request.OwnerId = Owner.Id;
+        
         await ApiClient.Patch($"api/admin/servers/{Id}", Request);
 
         await ToastService.Success("Successfully updated server");

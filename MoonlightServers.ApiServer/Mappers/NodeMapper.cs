@@ -10,5 +10,5 @@ public static partial class NodeMapper
 {
     public static partial NodeResponse ToAdminNodeResponse(Node node);
     public static partial Node ToNode(CreateNodeRequest request);
-    public static partial Node Merge(UpdateNodeRequest request, Node node);
+    public static partial void Merge(UpdateNodeRequest request, Node node);
 }

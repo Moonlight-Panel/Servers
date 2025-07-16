@@ -133,7 +133,7 @@ public class StarVariablesController : Controller
         if (starVariable == null)
             throw new HttpApiException("No variable with this id found", 404);
         
-        starVariable = StarVariableMapper.Merge(request, starVariable);
+        StarVariableMapper.Merge(request, starVariable);
         await VariableRepository.Update(starVariable);
         
         return StarVariableMapper.ToAdminResponse(starVariable);

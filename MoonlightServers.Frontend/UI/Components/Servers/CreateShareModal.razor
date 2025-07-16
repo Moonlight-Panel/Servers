@@ -1,10 +1,9 @@
 @using MoonCore.Blazor.FlyonUi.Components
-@using MoonCore.Blazor.Tailwind.Components
 @using MoonlightServers.Shared.Enums
 @using MoonlightServers.Shared.Http.Requests.Client.Servers.Shares
 @using MoonlightServers.Shared.Models
 
-@inherits MoonCore.Blazor.Tailwind.Modals.Components.BaseModal
+@inherits MoonCore.Blazor.FlyonUi.Modals.Components.BaseModal
 
 <div class="text-lg font-semibold mb-5">
     Create a new share
@@ -12,8 +11,8 @@
 
 <HandleForm @ref="HandleForm" Model="Request" OnValidSubmit="OnValidSubmit">
     <div class="mb-8">
-        <label class="block text-sm font-medium leading-6 text-white">Username</label>
-        <input @bind="Request.Username" type="text" class="form-input w-full"/>
+        <label class="block text-sm font-medium leading-6 text-base-content">Username</label>
+        <input @bind="Request.Username" type="text" class="input w-full"/>
     </div>
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-y-5 lg:gap-y-3">
         @foreach (var name in Names)

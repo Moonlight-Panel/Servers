@@ -10,5 +10,5 @@ public static partial class StarVariableMapper
 {
     public static partial StarVariableDetailResponse ToAdminResponse(StarVariable variable);
     public static partial StarVariable ToStarVariable(CreateStarVariableRequest  request);
-    public static partial StarVariable Merge(UpdateStarVariableRequest request, StarVariable variable);
+    public static partial void Merge(UpdateStarVariableRequest request, StarVariable variable);
 }

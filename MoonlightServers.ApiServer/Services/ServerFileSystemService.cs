@@ -59,6 +59,15 @@ public class ServerFileSystemService
             $"api/servers/{server.Id}/files/mkdir?path={path}"
         );
     }
+    
+    public async Task Touch(Server server, string path)
+    {
+        using var apiClient = await GetApiClient(server);
+
+        await apiClient.Post(
+            $"api/servers/{server.Id}/files/touch?path={path}"
+        );
+    }
 
     public async Task Compress(Server server, CompressType type, string[] items, string destination)
     {

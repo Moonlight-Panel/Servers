@@ -47,4 +47,8 @@
         <None Remove="storage\**\*"/>
     </ItemGroup>
 
+    <ItemGroup>
+      <_ContentIncludedByDefault Remove="Properties\launchSettings.json" />
+    </ItemGroup>
+
 </Project>

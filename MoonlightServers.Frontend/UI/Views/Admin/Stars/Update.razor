@@ -2,8 +2,6 @@
 
 @using MoonCore.Blazor.FlyonUi.Components
 @using MoonCore.Blazor.FlyonUi.Toasts
-@using MoonCore.Blazor.Tailwind.Components
-@using MoonCore.Blazor.Tailwind.Toasts
 @using MoonCore.Helpers
 @using MoonlightServers.Shared.Http.Requests.Admin.Stars
 @using MoonlightServers.Shared.Http.Responses.Admin.Stars
@@ -75,7 +73,24 @@
     private async Task Load(LazyLoader _)
     {
         Detail = await ApiClient.GetJson<StarDetailResponse>($"api/admin/servers/stars/{Id}");
-        Request = Mapper.Map<UpdateStarRequest>(Detail);
+        Request = new()
+        {
+            Name = Detail.Name,
+            AllowDockerImageChange = Detail.AllowDockerImageChange,
+            Author = Detail.Author,
+            DefaultDockerImage = Detail.DefaultDockerImage,
+            DonateUrl = Detail.DonateUrl,
+            InstallDockerImage = Detail.InstallDockerImage,
+            InstallScript = Detail.InstallScript,
+            InstallShell = Detail.InstallShell,
+            OnlineDetection = Detail.OnlineDetection,
+            ParseConfiguration = Detail.ParseConfiguration,
+            RequiredAllocations = Detail.RequiredAllocations,
+            StartupCommand = Detail.StartupCommand,
+            StopCommand = Detail.StopCommand,
+            UpdateUrl = Detail.UpdateUrl,
+            Version = Detail.Version
+        };
     }
 
     private async Task OnSubmit()

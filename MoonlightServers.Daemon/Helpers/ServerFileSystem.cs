@@ -30,12 +30,12 @@ public class ServerFileSystem
         // to hide the folder shown by virtual disk volumes
         if (string.IsNullOrEmpty(inputPath) || inputPath == "/")
             entryQuery = entryQuery.Where(x => x.Name != "lost+found");
-        
+
         var result = entryQuery
             .Select(x => new ServerFileSystemResponse()
             {
                 Name = x.Name,
-                IsFile = x.IsFile,
+                IsFolder = x.IsDirectory,
                 Size = x.Size,
                 UpdatedAt = x.LastChanged,
                 CreatedAt = x.CreatedAt
@@ -73,6 +73,24 @@ public class ServerFileSystem
         return Task.CompletedTask;
     }
 
+    public Task Touch(string inputPath)
+    {
+        var path = Normalize(inputPath);
+
+        var parentDirectory = Path.GetDirectoryName(path);
+
+        if (!string.IsNullOrEmpty(parentDirectory) && parentDirectory != "/")
+            FileSystem.MkdirAll(parentDirectory, FilePermissions.ACCESSPERMS);
+
+        FileSystem.OpenFileWrite(
+            path,
+            _ => { },
+            OpenFlags.O_CREAT
+        ); // We use these custom flags to ensure we aren't overwriting the file
+
+        return Task.CompletedTask;
+    }
+
     public Task CreateChunk(string inputPath, long totalSize, long positionToSkip, Stream chunkStream)
     {
         var path = Normalize(inputPath);
@@ -81,14 +99,14 @@ public class ServerFileSystem
 
         if (!string.IsNullOrEmpty(parentDirectory) && parentDirectory != "/")
             FileSystem.MkdirAll(parentDirectory, FilePermissions.ACCESSPERMS);
-        
+
         FileSystem.OpenFileWrite(path, fileStream =>
         {
             if (fileStream.Length != totalSize)
                 fileStream.SetLength(totalSize);
 
             fileStream.Position = positionToSkip;
-            
+
             chunkStream.CopyTo(fileStream);
             fileStream.Flush();
         }, OpenFlags.O_CREAT | OpenFlags.O_RDWR); // We use these custom flags to ensure we aren't overwriting the file
@@ -183,7 +201,7 @@ public class ServerFileSystem
             FileSystem.OpenFileRead(path, fileStream =>
             {
                 var zipInputStream = new ZipInputStream(fileStream);
-                
+
                 ExtractZip(zipInputStream, destination);
             });
         }
@@ -193,11 +211,11 @@ public class ServerFileSystem
             {
                 var gzInputStream = new GZipInputStream(fileStream);
                 var zipInputStream = new TarInputStream(gzInputStream, Encoding.UTF8);
-                
+
                 ExtractTar(zipInputStream, destination);
             });
         }
-        
+
         return Task.CompletedTask;
     }
 
@@ -259,10 +277,7 @@ public class ServerFileSystem
 
             outputStream.PutNextEntry(entry);
 
-            FileSystem.OpenFileRead(path, stream =>
-            {
-                stream.CopyTo(outputStream);
-            });
+            FileSystem.OpenFileRead(path, stream => { stream.CopyTo(outputStream); });
 
             outputStream.CloseEntry();
         }
@@ -273,54 +288,54 @@ public class ServerFileSystem
         while (true)
         {
             var entry = inputStream.GetNextEntry();
-            
-            if(entry == null)
+
+            if (entry == null)
                 break;
-            
-            if(entry.IsDirectory)
+
+            if (entry.IsDirectory)
                 continue;
 
             var fileDestination = Path.Combine(destination, entry.Name);
-            
+
             var parentDirectory = Path.GetDirectoryName(fileDestination);
 
             if (!string.IsNullOrEmpty(parentDirectory) && parentDirectory != "/")
                 FileSystem.MkdirAll(parentDirectory, FilePermissions.ACCESSPERMS);
-            
+
             FileSystem.OpenFileWrite(fileDestination, stream =>
             {
                 stream.Position = 0;
-                
+
                 inputStream.CopyTo(stream);
 
                 stream.Flush();
             }); // This will override the file if it exists
         }
     }
-    
+
     private void ExtractTar(TarInputStream inputStream, string destination)
     {
         while (true)
         {
             var entry = inputStream.GetNextEntry();
-            
-            if(entry == null)
+
+            if (entry == null)
                 break;
-            
-            if(entry.IsDirectory)
+
+            if (entry.IsDirectory)
                 continue;
 
             var fileDestination = Path.Combine(destination, entry.Name);
-            
+
             var parentDirectory = Path.GetDirectoryName(fileDestination);
 
             if (!string.IsNullOrEmpty(parentDirectory) && parentDirectory != "/")
                 FileSystem.MkdirAll(parentDirectory, FilePermissions.ACCESSPERMS);
-            
+
             FileSystem.OpenFileWrite(fileDestination, stream =>
             {
                 stream.Position = 0;
-                
+
                 inputStream.CopyTo(stream);
 
                 stream.Flush();

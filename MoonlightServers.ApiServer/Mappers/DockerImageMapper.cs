@@ -10,5 +10,5 @@ public static partial class DockerImageMapper
 {
     public static partial StarDockerImageDetailResponse ToAdminResponse(StarDockerImage dockerImage);
     public static partial StarDockerImage ToDockerImage(CreateStarDockerImageRequest request);
-    public static partial StarDockerImage Merge(UpdateStarDockerImageRequest request, StarDockerImage variable);
+    public static partial void Merge(UpdateStarDockerImageRequest request, StarDockerImage variable);
 }

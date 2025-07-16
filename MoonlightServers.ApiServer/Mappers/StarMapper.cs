@@ -11,5 +11,5 @@ public static partial class StarMapper
 {
     public static partial StarDetailResponse ToAdminResponse(Star star);
     public static partial Star ToStar(CreateStarRequest request);
-    public static partial Star Merge(UpdateStarRequest request, Star star);
+    public static partial void Merge(UpdateStarRequest request, Star star);
 }

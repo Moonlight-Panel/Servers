@@ -13,7 +13,7 @@ using MoonlightServers.Shared.Http.Responses.Admin.NodeAllocations;
 namespace MoonlightServers.ApiServer.Http.Controllers.Admin.Nodes;
 
 [ApiController]
-[Route("api/admin/servers/nodes")]
+[Route("api/admin/servers/nodes/{nodeId:int}/allocations")]
 public class NodeAllocationsController : Controller
 {
     private readonly DatabaseRepository<Node> NodeRepository;
@@ -28,7 +28,7 @@ public class NodeAllocationsController : Controller
         AllocationRepository = allocationRepository;
     }
 
-    [HttpGet("{nodeId:int}/allocations")]
+    [HttpGet("")]
     [Authorize(Policy = "permissions:admin.servers.nodes.get")]
     public async Task<IPagedData<NodeAllocationResponse>> Get(
         [FromRoute] int nodeId,
@@ -59,7 +59,7 @@ public class NodeAllocationsController : Controller
         };
     }
 
-    [HttpGet("{nodeId:int}/allocations/{id:int}")]
+    [HttpGet("{id:int}")]
     [Authorize(Policy = "permissions:admin.servers.nodes.get")]
     public async Task<NodeAllocationResponse> GetSingle([FromRoute] int nodeId, [FromRoute] int id)
     {
@@ -74,7 +74,7 @@ public class NodeAllocationsController : Controller
         return AllocationMapper.ToNodeAllocation(allocation);
     }
 
-    [HttpPost("{nodeId:int}/allocations")]
+    [HttpPost("")]
     [Authorize(Policy = "permissions:admin.servers.nodes.create")]
     public async Task<NodeAllocationResponse> Create(
         [FromRoute] int nodeId,
@@ -95,7 +95,7 @@ public class NodeAllocationsController : Controller
         return AllocationMapper.ToNodeAllocation(finalAllocation);
     }
 
-    [HttpPatch("{nodeId:int}/allocations/{id:int}")]
+    [HttpPatch("{id:int}")]
     public async Task<NodeAllocationResponse> Update(
         [FromRoute] int nodeId,
         [FromRoute] int id,
@@ -116,7 +116,7 @@ public class NodeAllocationsController : Controller
         return AllocationMapper.ToNodeAllocation(allocation);
     }
 
-    [HttpDelete("{nodeId:int}/allocations/{id:int}")]
+    [HttpDelete("{id:int}")]
     public async Task Delete([FromRoute] int nodeId, [FromRoute] int id)
     {
         var allocation = await AllocationRepository
@@ -130,7 +130,7 @@ public class NodeAllocationsController : Controller
         await AllocationRepository.Remove(allocation);
     }
 
-    [HttpPost("{nodeId:int}/allocations/range")]
+    [HttpPost("range")]
     public async Task CreateRange([FromRoute] int nodeId, [FromBody] CreateNodeAllocationRangeRequest rangeRequest)
     {
         var node = await NodeRepository
@@ -168,7 +168,7 @@ public class NodeAllocationsController : Controller
         await AllocationRepository.RunTransaction(async set => { await set.AddRangeAsync(allocations); });
     }
 
-    [HttpDelete("{nodeId:int}/allocations/all")]
+    [HttpDelete("all")]
     public async Task DeleteAll([FromRoute] int nodeId)
     {
         var allocations = AllocationRepository
@@ -179,7 +179,7 @@ public class NodeAllocationsController : Controller
         await AllocationRepository.RunTransaction(set => { set.RemoveRange(allocations); });
     }
 
-    [HttpGet("{nodeId:int}/allocations/free")]
+    [HttpGet("free")]
     [Authorize(Policy = "permissions:admin.servers.nodes.get")]
     public async Task<IPagedData<NodeAllocationResponse>> GetFree(
         [FromRoute] int nodeId,

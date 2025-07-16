@@ -1,9 +1,9 @@
 @using MoonCore.Blazor.FlyonUi.Components
 @using MoonlightServers.Shared.Http.Requests.Admin.Servers
 @using MoonCore.Helpers
-@using MoonCore.Blazor.Tailwind.Components
 @using MoonCore.Models
 @using MoonlightServers.Shared.Http.Requests.Admin.ServerVariables
+@using MoonlightServers.Shared.Http.Responses.Admin.Stars
 @using MoonlightServers.Shared.Http.Responses.Admin.StarVariables
 
 @inject HttpApiClient ApiClient
@@ -19,17 +19,17 @@
                 : variable.DefaultValue;
 
             <div class="sm:col-span-2">
-                <label class="block text-sm font-medium leading-6 text-white">
+                <label class="block text-sm font-medium leading-6 text-base-content">
                     @variable.Name
                 </label>
                 <div class="mt-2">
                     <input type="text"
-                           class="form-input placeholder-gray-500 w-full"
+                           class="input placeholder-base-content/50 w-full"
                            value="@value"
                            placeholder="@variable.DefaultValue"
                            @onchange="@(args => UpdateValue(variable, args))"/>
                 </div>
-                <p class="mt-1 text-sm leading-6 text-gray-400">
+                <p class="mt-1 text-sm leading-6 text-base-content/60">
                     @variable.Description
                 </p>
             </div>
@@ -40,12 +40,13 @@
 @code
 {
     [Parameter] public CreateServerRequest Request { get; set; }
+    [Parameter] public StarDetailResponse? Star { get; set; }
 
     private StarVariableDetailResponse[] StarVariables;
 
     private async Task Load(LazyLoader _)
     {
-        if (Request.StarId <= 0)
+        if (Star == null)
         {
             StarVariables = [];
             return;

@@ -1,23 +1,22 @@
 @using MoonlightServers.Shared.Http.Requests.Admin.Servers
-@using MoonCore.Blazor.Tailwind.Inputs
 @using MoonCore.Helpers
 @using MoonCore.Models
 @using MoonlightServers.Shared.Http.Responses.Admin.NodeAllocations
 @using MoonlightServers.Shared.Http.Responses.Admin.Servers
+@using MoonCore.Blazor.FlyonUi.Forms
 
 @inject HttpApiClient ApiClient
 
 <div class="grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-6">
     <div class="sm:col-span-2">
-        <label class="block text-sm font-medium leading-6 text-white">Allocations</label>
+        <label class="block text-sm font-medium leading-6 text-base-content">Allocations</label>
         <div class="mt-2">
-            <InputMultiSelect TItem="NodeAllocationDetailResponse"
-                              TProperty="int"
-                              @bind-Value="Request.AllocationIds"
-                              Loader="Loader"
-                              AllowSearch="true"
-                              DisplayProperty="@(x => $"{x.IpAddress}:{x.Port}")"
-                              ValueProperty="@(x => x.Id)"/>
+            <InputMultipleItem TItem="NodeAllocationResponse"
+                               Value="Allocations"
+                               DisplayField="@(x => $"{x.IpAddress}:{x.Port}")"
+                               SearchField="@(x => $"{x.IpAddress}:{x.Port}")"
+                               ItemSource="Loader">
+            </InputMultipleItem>
         </div>
     </div>
 </div>
@@ -26,15 +25,14 @@
 {
     [Parameter] public UpdateServerRequest Request { get; set; }
     [Parameter] public ServerResponse Server { get; set; }
+    [Parameter] public List<NodeAllocationResponse> Allocations { get; set; }
 
     private async Task<NodeAllocationResponse[]> Loader()
     {
-        var items = await PagedData<NodeAllocationResponse>.All(async (page, pageSize) =>
+        return await PagedData<NodeAllocationResponse>.All(async (page, pageSize) =>
             await ApiClient.GetJson<PagedData<NodeAllocationResponse>>(
                 $"api/admin/servers/nodes/{Server.NodeId}/allocations/free?page={page}&pageSize={pageSize}&serverId={Server.Id}"
             )
         );
-            
-        return items;
     }
 }

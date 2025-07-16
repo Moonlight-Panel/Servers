@@ -43,6 +43,13 @@ public class ServerFileSystemService
             $"api/client/servers/{serverId}/files/mkdir?path={path}"
         );
     }
+    
+    public async Task Touch(int serverId, string path)
+    {
+        await ApiClient.Post(
+            $"api/client/servers/{serverId}/files/touch?path={path}"
+        );
+    }
 
     public async Task<ServerFilesUploadResponse> Upload(int serverId)
     {

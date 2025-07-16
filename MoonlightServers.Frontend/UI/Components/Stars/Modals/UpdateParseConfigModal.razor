@@ -1,8 +1,5 @@
 @using MoonCore.Blazor.FlyonUi.Components
-@using MoonCore.Blazor.Tailwind.Modals.Components
 @using MoonlightServers.Shared.Enums
-@using MoonCore.Blazor.Tailwind.Components
-@using MoonCore.Helpers
 @using MoonlightServers.Shared.Models
 
 @inherits MoonCore.Blazor.FlyonUi.Modals.Components.BaseModal
@@ -12,13 +9,13 @@
 <HandleForm @ref="HandleForm" Model="Form" OnValidSubmit="OnValidSubmit">
     <div class="grid grid-cols-2 gap-x-2 gap-y-4">
         <div class="col-span-1">
-            <label class="block text-sm font-medium leading-6 text-white">File</label>
-            <input @bind="Form.File" type="text" class="form-input w-full"/>
+            <label class="block text-sm font-medium leading-6 text-base-content">File</label>
+            <input @bind="Form.File" type="text" class="input w-full"/>
         </div>
 
         <div class="col-span-1">
-            <label class="block text-sm font-medium leading-6 text-white">Type</label>
-            <select @bind="Form.Parser" class="form-select w-full">
+            <label class="block text-sm font-medium leading-6 text-base-content">Type</label>
+            <select @bind="Form.Parser" class="select w-full">
                 @foreach (var val in Enum.GetValues<FileParsers>())
                 {
                     <option value="@val">@val</option>
@@ -27,16 +24,16 @@
         </div>
 
         <div class="col-span-2">
-            <button @onclick="AddEntry" class="btn btn-primary w-full">Add entry</button>
+            <button type="button" @onclick="AddEntry" class="btn btn-primary w-full">Add entry</button>
         </div>
 
         @foreach (var entry in Form.Entries)
         {
             <div class="col-span-2">
                 <div class="flex flex-row">
-                    <input @bind="entry.Key" placeholder="Key" class="form-input placeholder-gray-500 grow rounded-r-none"/>
-                    <input @bind="entry.Value" placeholder="Value" class="form-input placeholder-gray-500 grow rounded-none"/>
-                    <button @onclick="() => RemoveEntry(entry)" class="btn btn-danger grow-0 rounded-l-none">
+                    <input @bind="entry.Key" placeholder="Key" class="input placeholder-base-content/50 grow rounded-r-none"/>
+                    <input @bind="entry.Value" placeholder="Value" class="input placeholder-base-content/50 grow rounded-none"/>
+                    <button type="button" @onclick="() => RemoveEntry(entry)" class="btn btn-error grow-0 rounded-l-none">
                         <i class="icon-x"></i>
                     </button>
                 </div>

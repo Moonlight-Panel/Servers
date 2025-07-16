@@ -1,5 +1,4 @@
 @using MoonCore.Blazor.FlyonUi.Components
-@using MoonCore.Blazor.Tailwind.Components
 @using MoonCore.Helpers
 @using MoonCore.Models
 @using MoonlightServers.Shared.Http.Requests.Admin.Stars
@@ -13,15 +12,15 @@
     <div>
         <div class="grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-6">
             <div class="sm:col-span-2">
-                <label class="block text-sm font-medium leading-6 text-white">Allow docker image change</label>
+                <label class="block text-sm font-medium leading-6 text-base-content">Allow docker image change</label>
                 <div class="mt-2">
                     <Switch @bind-Value="Request.AllowDockerImageChange" />
                 </div>
             </div>
             <div class="sm:col-span-2">
-                <label class="block text-sm font-medium leading-6 text-white">Default docker image</label>
+                <label class="block text-sm font-medium leading-6 text-base-content">Default docker image</label>
                 <div class="mt-2">
-                    <select @bind="Request.DefaultDockerImage" class="form-select w-full">
+                    <select @bind="Request.DefaultDockerImage" class="select w-full">
                         @foreach (var dockerImage in DockerImages)
                         {
                             var index = DockerImages.IndexOf(dockerImage);

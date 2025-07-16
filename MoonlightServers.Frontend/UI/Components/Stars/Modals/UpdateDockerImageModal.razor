@@ -1,8 +1,5 @@
 @using MoonCore.Blazor.FlyonUi.Components
-@using MoonCore.Blazor.Tailwind.Modals.Components
 @using MoonlightServers.Frontend.UI.Components.Forms
-@using MoonCore.Blazor.Tailwind.Components
-@using MoonCore.Helpers
 @using MoonlightServers.Shared.Http.Requests.Admin.StarDockerImages
 @using MoonlightServers.Shared.Http.Responses.Admin.StarDockerImages
 
@@ -13,17 +10,17 @@
 <HandleForm @ref="HandleForm" Model="Form" OnValidSubmit="OnValidSubmit">
     <div class="grid grid-cols-2 gap-2">
         <div class="col-span-2">
-            <label class="block text-sm font-medium leading-6 text-white">Display Name</label>
-            <input @bind="Form.DisplayName" type="text" class="form-input w-full"/>
+            <label class="block text-sm font-medium leading-6 text-base-content">Display Name</label>
+            <input @bind="Form.DisplayName" type="text" class="input w-full"/>
         </div>
 
         <div class="col-span-2">
-            <label class="block text-sm font-medium leading-6 text-white">Identifier</label>
-            <input @bind="Form.Identifier" type="text" class="form-input w-full"/>
+            <label class="block text-sm font-medium leading-6 text-base-content">Identifier</label>
+            <input @bind="Form.Identifier" type="text" class="input w-full"/>
         </div>
 
         <div class="col-span-2">
-            <label class="block text-sm font-medium leading-6 text-white">Automatic pulling</label>
+            <label class="block text-sm font-medium leading-6 text-base-content">Automatic pulling</label>
             <Switch @bind-Value="Form.AutoPulling"/>
         </div>
     </div>
@@ -44,7 +41,12 @@
 
     protected override void OnInitialized()
     {
-        Form = Mapper.Map<UpdateStarDockerImageRequest>(DockerImage);
+        Form = new UpdateStarDockerImageRequest()
+        {
+            AutoPulling = DockerImage.AutoPulling,
+            DisplayName = DockerImage.DisplayName,
+            Identifier = DockerImage.Identifier
+        };
     }
 
     private async Task OnValidSubmit()

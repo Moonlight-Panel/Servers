@@ -1,6 +1,4 @@
 @using MoonCore.Blazor.FlyonUi.Components
-@using MoonCore.Blazor.Tailwind.Modals.Components
-@using MoonCore.Blazor.Tailwind.Components
 @using MoonlightServers.Shared.Http.Requests.Admin.NodeAllocations
 
 @inherits MoonCore.Blazor.FlyonUi.Modals.Components.BaseModal
@@ -10,18 +8,18 @@
 <HandleForm @ref="HandleForm" Model="Form" OnValidSubmit="OnValidSubmit">
     <div class="grid grid-cols-1 gap-2">
         <div class="col-span-1">
-            <label class="block text-sm font-medium leading-6 text-white">IP Address</label>
-            <input @bind="Form.IpAddress" type="text" class="form-input w-full"/>
+            <label class="block text-sm font-medium leading-6 text-base-content">IP Address</label>
+            <input @bind="Form.IpAddress" type="text" class="input w-full"/>
         </div>
 
         <div class="col-span-1">
-            <label class="block text-sm font-medium leading-6 text-white">Start Port</label>
-            <input @bind="Form.Start" type="text" class="form-input w-full"/>
+            <label class="block text-sm font-medium leading-6 text-base-content">Start Port</label>
+            <input @bind="Form.Start" type="text" class="input w-full"/>
         </div>
 
         <div class="col-span-1">
-            <label class="block text-sm font-medium leading-6 text-white">End Port</label>
-            <input @bind="Form.End" type="text" class="form-input w-full"/>
+            <label class="block text-sm font-medium leading-6 text-base-content">End Port</label>
+            <input @bind="Form.End" type="text" class="input w-full"/>
         </div>
     </div>
 </HandleForm>

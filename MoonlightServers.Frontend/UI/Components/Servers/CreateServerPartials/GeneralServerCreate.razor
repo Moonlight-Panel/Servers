@@ -3,83 +3,83 @@
 @using MoonCore.Models
 @using MoonlightServers.Shared.Http.Responses.Admin.Nodes
 @using MoonlightServers.Shared.Http.Responses.Admin.Stars
-@using MoonCore.Blazor.Tailwind.Inputs
 @using Moonlight.Shared.Http.Responses.Admin.Users
+@using MoonCore.Blazor.FlyonUi.Forms
 
 @inject HttpApiClient ApiClient
 
 <div class="grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-6">
     <div class="sm:col-span-2">
-        <label class="block text-sm font-medium leading-6 text-white">Name</label>
+        <label class="block text-sm font-medium leading-6 text-base-content">Name</label>
         <div class="mt-2">
-            <input @bind="Request.Name" type="text" autocomplete="off" class="form-input w-full">
+            <input @bind="Request.Name" type="text" autocomplete="off" class="input w-full">
         </div>
     </div>
 
     <div class="sm:col-span-2">
-        <label class="block text-sm font-medium leading-6 text-white">Owner</label>
+        <label class="block text-sm font-medium leading-6 text-base-content">Owner</label>
         <div class="mt-2">
-            <InputItemSearchSelect TItem="UserResponse"
-                                   TProperty="int"
-                                   @bind-Value="Request.OwnerId"
-                                   AllowNone="false"
-                                   Loader="Loader"
-                                   DisplayProperty="@(x => x.Email)"
-                                   ValueProperty="@(x => x.Id)"/>
-            
+            <InputItem TItem="UserResponse"
+                       DisplayField="@(x => x.Username)"
+                       SearchField="@(x => x.Username)"
+                       ItemSource="LoadUsers"
+                       @bind-Value="User">
+            </InputItem>
         </div>
     </div>
 
     <div class="sm:col-span-2">
-        <label class="block text-sm font-medium leading-6 text-white">Star</label>
+        <label class="block text-sm font-medium leading-6 text-base-content">Star</label>
         <div class="mt-2">
-            <InputItemSelect TItem="StarDetailResponse"
-                             TProperty="int"
-                             @bind-Value="Request.StarId"
-                             DisplayProperty="@(x => x.Name)"
-                             ValueProperty="@(x => x?.Id ?? -1)"
-                             Loader="LoadStars"/>
+            <InputItem TItem="StarDetailResponse"
+                       DisplayField="@(x => x.Name)"
+                       SearchField="@(x => x.Name)"
+                       ItemSource="LoadStars"
+                       @bind-Value="Star">
+            </InputItem>
         </div>
     </div>
 
     <div class="sm:col-span-2">
-        <label class="block text-sm font-medium leading-6 text-white">Node</label>
+        <label class="block text-sm font-medium leading-6 text-base-content">Node</label>
         <div class="mt-2">
-            <InputItemSelect TItem="NodeDetailResponse"
-                             TProperty="int"
-                             @bind-Value="Request.NodeId"
-                             DisplayProperty="@(x => x.Name)"
-                             ValueProperty="@(x => x?.Id ?? -1)"
-                             Loader="LoadNodes"/>
+            <InputItem TItem="NodeResponse"
+                       DisplayField="@(x => x.Name)"
+                       SearchField="@(x => x.Name)"
+                       ItemSource="LoadNodes"
+                       @bind-Value="Node">
+            </InputItem>
         </div>
     </div>
 </div>
 
-<div class="border-t border-gray-100/10 pt-6 my-8">
-    <div class="mb-8"><h2 class="text-base font-semibold leading-7 text-gray-100">
+<div class="border-t border-base-content/20 pt-6 my-8">
+    <div class="mb-8">
+        <h2 class="text-base font-semibold leading-7 text-base-content">
             Resources
         </h2>
-        <p class="mt-1 text-sm leading-6 text-gray-400">Define the servers resource limit</p></div>
+        <p class="mt-1 text-sm leading-6 text-base-content/60">Define the servers resource limit</p>
+    </div>
 
     <div class="grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-6">
         <div class="sm:col-span-2">
-            <label class="block text-sm font-medium leading-6 text-white">Cpu</label>
+            <label class="block text-sm font-medium leading-6 text-base-content">Cpu</label>
             <div class="mt-2">
-                <input @bind="Request.Cpu" type="number" autocomplete="off" class="form-input w-full">
+                <input @bind="Request.Cpu" type="number" autocomplete="off" class="input w-full">
             </div>
         </div>
 
         <div class="sm:col-span-2">
-            <label class="block text-sm font-medium leading-6 text-white">Memory</label>
+            <label class="block text-sm font-medium leading-6 text-base-content">Memory</label>
             <div class="mt-2">
-                <input @bind="Request.Memory" type="number" autocomplete="off" class="form-input w-full">
+                <input @bind="Request.Memory" type="number" autocomplete="off" class="input w-full">
             </div>
         </div>
 
         <div class="sm:col-span-2">
-            <label class="block text-sm font-medium leading-6 text-white">Disk</label>
+            <label class="block text-sm font-medium leading-6 text-base-content">Disk</label>
             <div class="mt-2">
-                <input @bind="Request.Disk" type="number" autocomplete="off" class="form-input w-full">
+                <input @bind="Request.Disk" type="number" autocomplete="off" class="input w-full">
             </div>
         </div>
     </div>
@@ -89,46 +89,34 @@
 {
     [Parameter] public CreateServerRequest Request { get; set; }
 
-    private UserResponse[]? Users;
+    [Parameter] public UserResponse? User { get; set; }
+    [Parameter] public NodeResponse? Node { get; set; }
+    [Parameter] public StarDetailResponse? Star { get; set; }
 
     private async Task<StarDetailResponse[]> LoadStars()
     {
-        var items = await PagedData<StarDetailResponse>.All(async (page, pageSize) =>
+        return await PagedData<StarDetailResponse>.All(async (page, pageSize) =>
             await ApiClient.GetJson<PagedData<StarDetailResponse>>(
                 $"api/admin/servers/stars?page={page}&pageSize={pageSize}"
             )
         );
-
-        return items;
     }
 
     private async Task<NodeResponse[]> LoadNodes()
     {
-        var items = await PagedData<NodeResponse>.All(async (page, pageSize) =>
+        return await PagedData<NodeResponse>.All(async (page, pageSize) =>
             await ApiClient.GetJson<PagedData<NodeResponse>>(
                 $"api/admin/servers/nodes?page={page}&pageSize={pageSize}"
             )
         );
-
-        return items;
     }
 
-    private async Task<UserResponse[]> Loader(string searchTerm)
+    private async Task<UserResponse[]> LoadUsers()
     {
-        if (Users == null)
-        {
-            Users = await PagedData<UserResponse>.All(async (page, pageSize) =>
-                await ApiClient.GetJson<PagedData<UserResponse>>(
-                    $"api/admin/users?page={page}&pageSize={pageSize}"
-                )
-            );
-        }
-
-        if (string.IsNullOrEmpty(searchTerm))
-            return Users;
-
-        return Users
-            .Where(x => x.Email.Contains(searchTerm))
-            .ToArray();
+        return await PagedData<UserResponse>.All(async (page, pageSize) =>
+            await ApiClient.GetJson<PagedData<UserResponse>>(
+                $"api/admin/users?page={page}&pageSize={pageSize}"
+            )
+        );
     }
 }

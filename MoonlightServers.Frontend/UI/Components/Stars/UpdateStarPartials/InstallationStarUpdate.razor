@@ -1,23 +1,22 @@
 @using MoonCore.Blazor.FlyonUi.Ace
 @using MoonlightServers.Shared.Http.Requests.Admin.Stars
-@using MoonCore.Blazor.Tailwind.Ace
 
 <div>
     <div class="grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-6">
         <div class="sm:col-span-3">
-            <label class="block text-sm font-medium leading-6 text-white">Docker Image</label>
+            <label class="block text-sm font-medium leading-6 text-base-content">Docker Image</label>
             <div class="mt-2">
-                <input @bind="Request.InstallDockerImage" type="text" autocomplete="off" class="form-input w-full">
+                <input @bind="Request.InstallDockerImage" type="text" autocomplete="off" class="input w-full">
             </div>
         </div>
         <div class="sm:col-span-3">
-            <label class="block text-sm font-medium leading-6 text-white">Shell</label>
+            <label class="block text-sm font-medium leading-6 text-base-content">Shell</label>
             <div class="mt-2">
-                <input @bind="Request.InstallShell" type="text" autocomplete="off" class="form-input w-full">
+                <input @bind="Request.InstallShell" type="text" autocomplete="off" class="input w-full">
             </div>
         </div>
         <div class="sm:col-span-6">
-            <label class="block text-sm font-medium leading-6 text-white">Script</label>
+            <label class="block text-sm font-medium leading-6 text-base-content">Script</label>
             <div class="mt-2" @onfocusout="OnFocusOut">
                 <CodeEditor @ref="CodeEditor" InitialContent="@Request.InstallScript" OnConfigure="OnConfigure" />
             </div>

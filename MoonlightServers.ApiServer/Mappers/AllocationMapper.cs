@@ -10,5 +10,5 @@ public static partial class AllocationMapper
 {
     public static partial NodeAllocationResponse ToNodeAllocation(Allocation allocation);
     public static partial Allocation ToAllocation(CreateNodeAllocationRequest request);
-    public static partial Allocation Merge(UpdateNodeAllocationRequest request, Allocation allocation);
+    public static partial void Merge(UpdateNodeAllocationRequest request, Allocation allocation);
 }

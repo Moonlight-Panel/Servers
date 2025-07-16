@@ -2,8 +2,6 @@
 
 @using MoonCore.Blazor.FlyonUi.Components
 @using MoonCore.Blazor.FlyonUi.Toasts
-@using MoonCore.Blazor.Tailwind.Components
-@using MoonCore.Blazor.Tailwind.Toasts
 @using MoonCore.Helpers
 @using MoonlightServers.Shared.Http.Requests.Admin.Nodes
 @using MoonlightServers.Shared.Http.Responses.Admin.Nodes
@@ -63,7 +61,16 @@
     private async Task Load(LazyLoader _)
     {
         Node = await ApiClient.GetJson<NodeResponse>($"api/admin/servers/nodes/{Id}");
-        Request = Mapper.Map<UpdateNodeRequest>(Node);
+
+        Request = new UpdateNodeRequest()
+        {
+            Name = Node.Name,
+            EnableDynamicFirewall = Node.EnableDynamicFirewall,
+            EnableTransparentMode = Node.EnableTransparentMode,
+            Fqdn = Node.Fqdn,
+            FtpPort = Node.FtpPort,
+            HttpPort = Node.HttpPort
+        };
     }
 
     private async Task OnSubmit()

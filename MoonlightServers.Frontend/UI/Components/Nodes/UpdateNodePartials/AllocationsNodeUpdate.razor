@@ -2,11 +2,7 @@
 @using MoonCore.Blazor.FlyonUi.DataTables
 @using MoonCore.Blazor.FlyonUi.Modals
 @using MoonCore.Blazor.FlyonUi.Toasts
-@using MoonCore.Blazor.Tailwind.Alerts
 @using MoonlightServers.Shared.Http.Responses.Admin.Nodes
-@using MoonCore.Blazor.Tailwind.Dt
-@using MoonCore.Blazor.Tailwind.Modals
-@using MoonCore.Blazor.Tailwind.Toasts
 @using MoonCore.Helpers
 @using MoonCore.Models
 @using MoonlightServers.Frontend.UI.Components.Nodes.Modals
@@ -21,15 +17,14 @@
 <div class="grid grid-cols-1 md:grid-cols-3 md:gap-x-5">
     <div class="col-span-1">
         <div class="card">
-            <div
-                class="card-header card-header bg-gray-700 rounded-t-lg text-gray-500 bg-opacity-50 border-0 py-2 text-base font-semibold">
-                <span class="card-title">Actions</span>
+            <div class="card-header">
+                Actions
             </div>
             <div class="card-body">
                 <div class="flex flex-col gap-y-3">
-                    <button @onclick="AddAllocation" class="btn btn-primary">Create</button>
-                    <button @onclick="AddAllocationRange" class="btn btn-tertiary">Create multiple</button>
-                    <button @onclick="DeleteAllAllocations" class="btn btn-danger">Delete all</button>
+                    <button type="button" @onclick="AddAllocation" class="btn btn-primary">Create</button>
+                    <button type="button" @onclick="AddAllocationRange" class="btn btn-accent">Create multiple</button>
+                    <button type="button" @onclick="DeleteAllAllocations" class="btn btn-error">Delete all</button>
                 </div>
             </div>
         </div>
@@ -37,19 +32,21 @@
     <div class="col-span-1 md:col-span-2 -mb-3">
         <DataTable @ref="Table" TItem="NodeAllocationResponse">
             <Configuration>
-                <Pagination TItem="NodeAllocationResponse" ItemSource="LoadData" />
-                
+                <Pagination TItem="NodeAllocationResponse" ItemSource="LoadData"/>
+
                 <DataTableColumn TItem="NodeAllocationResponse" Field="@(x => x.IpAddress)" Name="IP Address"/>
                 <DataTableColumn TItem="NodeAllocationResponse" Field="@(x => x.Port)" Name="Port"/>
                 <DataTableColumn TItem="NodeAllocationResponse">
                     <ColumnTemplate>
                         <div class="flex justify-end items-center">
-                            <a @onclick="() => UpdateAllocation(context)" @onclick:preventDefault href="#"
+                            <a @onclick="() => UpdateAllocation(context)"
+                               @onclick:preventDefault href="#"
                                class="text-primary mr-2 sm:mr-3">
                                 <i class="icon-pencil text-base"></i>
                             </a>
-                            <a @onclick="() => DeleteAllocation(context)" @onclick:preventDefault href="#"
-                               class="text-danger">
+                            <a @onclick="() => DeleteAllocation(context)"
+                               @onclick:preventDefault href="#"
+                               class="text-error">
                                 <i class="icon-trash text-base"></i>
                             </a>
                         </div>
@@ -83,10 +80,7 @@
             await Table.Refresh();
         };
 
-        await ModalService.Launch<CreateMultipleAllocationModal>(parameters =>
-        {
-            parameters.Add("OnSubmit", onSubmit);
-        });
+        await ModalService.Launch<CreateMultipleAllocationModal>(parameters => { parameters.Add("OnSubmit", onSubmit); });
     }
 
     private async Task AddAllocation()
@@ -133,7 +127,7 @@
             }
         );
     }
-    
+
     private async Task DeleteAllAllocations()
     {
         await AlertService.ConfirmDanger(

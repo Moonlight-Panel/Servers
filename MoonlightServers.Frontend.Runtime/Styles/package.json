@@ -1,0 +1,23 @@
+{
+  "name": "styles",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "tailwind": "npx postcss styles.css -o ../wwwroot/css/style.min.css --watch",
+    "tailwind-build": "npx postcss styles.css -o ../wwwroot/css/style.min.css",
+    "mappings": "EXTRACT_CLASSES=true npx postcss styles.css -o ../wwwroot/css/style.min.css "
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@tailwindcss/postcss": "^4.1.11",
+    "flyonui": "^2.2.0",
+    "tailwindcss": "^4.1.11",
+    "postcss": "^8.5.6",
+    "postcss-cli": "^11.0.1",
+    "postcss-selector-parser": "^7.1.0"
+  },
+  "devDependencies": {
+  }
+}

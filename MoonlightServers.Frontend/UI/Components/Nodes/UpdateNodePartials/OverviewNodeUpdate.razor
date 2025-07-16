@@ -1,7 +1,6 @@
+@using Microsoft.Extensions.Logging
 @using MoonCore.Blazor.FlyonUi.Components
 @using MoonCore.Blazor.FlyonUi.Toasts
-@using MoonCore.Blazor.Tailwind.Components
-@using MoonCore.Blazor.Tailwind.Toasts
 @using MoonCore.Helpers
 @using MoonlightServers.Frontend.Services
 @using MoonlightServers.Shared.Http.Responses.Admin.Nodes
@@ -22,8 +21,8 @@
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
         <div class="col-span-1 card card-body">
             <div class="flex justify-between">
-                <p class="text-xl font-semibold text-slate-200">
-                    @Math.Round(Statistics.Cpu.Usage, 2)%
+                <p class="text-xl font-semibold text-base-content">
+                    @(Math.Round(Statistics.Cpu.Usage, 2))%
                 </p>
                 <i class="icon-cpu text-4xl text-primary"></i>
             </div>
@@ -36,10 +35,10 @@
 
         <div class="col-span-1 card card-body">
             <div class="flex justify-between">
-                <p class="text-xl font-semibold text-slate-200">
-                    @Formatter.FormatSize(Statistics.Memory.Total - Statistics.Memory.Available)
+                <p class="text-xl font-semibold text-base-content">
+                    @(Formatter.FormatSize(Statistics.Memory.Total - Statistics.Memory.Available))
                     /
-                    @Formatter.FormatSize(Statistics.Memory.Total)
+                    @(Formatter.FormatSize(Statistics.Memory.Total))
                 </p>
                 <i class="icon-memory-stick text-4xl text-primary"></i>
             </div>
@@ -50,10 +49,10 @@
 
         <div class="col-span-1 card card-body">
             <div class="flex justify-between">
-                <div class="text-xl font-semibold text-slate-200">
-                    @Formatter.FormatSize(Statistics.Memory.SwapTotal - Statistics.Memory.SwapFree)
+                <div class="text-xl font-semibold text-base-content">
+                    @(Formatter.FormatSize(Statistics.Memory.SwapTotal - Statistics.Memory.SwapFree))
                     /
-                    @Formatter.FormatSize(Statistics.Memory.SwapTotal)
+                    @(Formatter.FormatSize(Statistics.Memory.SwapTotal))
                 </div>
                 <i class="icon-shapes text-4xl text-primary"></i>
             </div>
@@ -81,9 +80,8 @@
                     <span>#@(i)</span>
                 </div>
                 <div class="grow">
-                    <div class="progress bg-gray-750">
-                        <div style="width: @(usage)%"
-                             class="progress-bar h-3 @(GetBackgroundColorByPercent(percentRounded))"></div>
+                    <div class="progress h-2" role="progressbar">
+                        <div class="progress-bar transition-all duration-300 ease-in-out @(GetBackgroundColorByPercent(percentRounded))" style="width: @(usage)%"></div>
                     </div>
                 </div>
             </div>
@@ -105,9 +103,8 @@
             <div class="col-span-1 card card-body">
                 <div class="flex items-center">
                     <div class="grow">
-                        <div class="progress bg-gray-750">
-                            <div style="width: @(usedPercent)%"
-                                 class="progress-bar h-3 @(GetBackgroundColorByPercent(usedPercent))"></div>
+                        <div class="progress h-2" role="progressbar">
+                            <div class="progress-bar transition-all duration-300 ease-in-out @(GetBackgroundColorByPercent(usedPercent))" style="width: @(usedPercent)%"></div>
                         </div>
                     </div>
                 </div>
@@ -134,7 +131,7 @@
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
         <div class="col-span-1 card card-body">
             <div class="flex justify-between">
-                <p class="text-xl font-semibold text-slate-200">
+                <p class="text-xl font-semibold text-base-content">
                     @Formatter.FormatSize(DockerStatistics.ImagesUsed) (@Formatter.FormatSize(DockerStatistics.ImagesReclaimable) unused)
                 </p>
                 <i class="icon-gallery-horizontal-end text-4xl text-primary"></i>
@@ -146,7 +143,7 @@
         
         <div class="col-span-1 card card-body">
             <div class="flex justify-between">
-                <p class="text-xl font-semibold text-slate-200">
+                <p class="text-xl font-semibold text-base-content">
                     @Formatter.FormatSize(DockerStatistics.ContainersUsed) ( @Formatter.FormatSize(DockerStatistics.ContainersReclaimable) unused)
                 </p>
                 <i class="icon-container text-4xl text-primary"></i>
@@ -158,7 +155,7 @@
 
         <div class="col-span-1 card card-body">
             <div class="flex justify-between">
-                <p class="text-xl font-semibold text-slate-200">
+                <p class="text-xl font-semibold text-base-content">
                     @Formatter.FormatSize(DockerStatistics.BuildCacheUsed) (@Formatter.FormatSize(DockerStatistics.BuildCacheReclaimable) unused)
                 </p>
                 <i class="icon-hard-hat text-4xl text-primary"></i>
@@ -199,7 +196,7 @@
         catch (Exception e)
         {
             Logger.LogWarning("An error occured while fetching status update: {e}", e);
-            await ToastService.Danger("Unable to fetch status update", e.Message);
+            await ToastService.Error("Unable to fetch status update", e.Message);
         }
     }
     
@@ -210,7 +207,7 @@
         else if (percent < 80)
             return "bg-warning";
         else
-            return "bg-danger";
+            return "bg-error";
     }
 
     public void Dispose()

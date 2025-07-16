@@ -2,10 +2,6 @@
 @using MoonCore.Blazor.FlyonUi.Components
 @using MoonCore.Blazor.FlyonUi.Modals
 @using MoonCore.Blazor.FlyonUi.Toasts
-@using MoonCore.Blazor.Tailwind.Alerts
-@using MoonCore.Blazor.Tailwind.Components
-@using MoonCore.Blazor.Tailwind.Modals
-@using MoonCore.Blazor.Tailwind.Toasts
 @using MoonCore.Helpers
 @using MoonCore.Models
 @using MoonlightServers.Frontend.UI.Components.Stars.Modals
@@ -34,11 +30,11 @@
                     </div>
 
                     <div class="gap-x-2">
-                        <button @onclick="() => UpdateDockerImage(dockerImage)" class="btn btn-primary">
+                        <button type="button" @onclick="() => UpdateDockerImage(dockerImage)" class="btn btn-primary">
                             <i class="icon-settings text-base"></i>
                         </button>
 
-                        <button @onclick="() => DeleteDockerImage(dockerImage)" class="btn btn-danger">
+                        <button type="button" @onclick="() => DeleteDockerImage(dockerImage)" class="btn btn-error">
                             <i class="icon-trash text-base"></i>
                         </button>
                     </div>

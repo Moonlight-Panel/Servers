@@ -229,7 +229,7 @@ public class ServersController : Controller
         if (server == null)
             throw new HttpApiException("No server with that id found", 404);
 
-        server = ServerMapper.Merge(request, server);
+        ServerMapper.Merge(request, server);
 
         var allocations = new List<Allocation>();
 
