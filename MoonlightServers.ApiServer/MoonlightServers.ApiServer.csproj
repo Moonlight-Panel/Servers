@@ -16,7 +16,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="Moonlight.ApiServer" Version="2.1.3" />
+        <PackageReference Include="Moonlight.ApiServer" Version="2.1.*" />
         <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.7"/>
         <PackageReference Include="Riok.Mapperly" Version="4.3.0-next.2" />
     </ItemGroup>
