@@ -20,7 +20,7 @@
 
 <LazyLoader @ref="LazyLoader" Load="Load">
     <div class="grid sm:grid-cols-2 xl:grid-cols-3 gap-4">
-        @foreach (var variable in Variables)
+        @foreach (var variable in CurrentVariables)
         {
             <div class="col-span-1 card card-body p-2.5">
                 <div class="flex items-center justify-between">
@@ -48,7 +48,7 @@
 {
     [Parameter] public StarDetailResponse Star { get; set; }
     
-    private StarVariableDetailResponse[] Variables;
+    private StarVariableDetailResponse[] CurrentVariables;
     private LazyLoader LazyLoader;
 
     private async Task Load(LazyLoader arg)
@@ -57,7 +57,7 @@
             $"api/admin/servers/stars/{Star.Id}/variables?page=0&pageSize=50"
         );
 
-        Variables = pagedVariables.Items;
+        CurrentVariables = pagedVariables.Items;
     }
 
     private async Task AddVariable()

@@ -4,6 +4,7 @@
 @using MoonlightServers.Shared.Http.Responses.Admin.NodeAllocations
 @using MoonlightServers.Shared.Http.Responses.Admin.Servers
 @using MoonCore.Blazor.FlyonUi.Forms
+@using MoonlightServers.Frontend.UI.Views.Admin.All
 
 @inject HttpApiClient ApiClient
 
@@ -12,7 +13,7 @@
         <label class="block text-sm font-medium leading-6 text-base-content">Allocations</label>
         <div class="mt-2">
             <InputMultipleItem TItem="NodeAllocationResponse"
-                               Value="Allocations"
+                               Value="Parent.Allocations"
                                DisplayField="@(x => $"{x.IpAddress}:{x.Port}")"
                                SearchField="@(x => $"{x.IpAddress}:{x.Port}")"
                                ItemSource="Loader">
@@ -25,7 +26,7 @@
 {
     [Parameter] public UpdateServerRequest Request { get; set; }
     [Parameter] public ServerResponse Server { get; set; }
-    [Parameter] public List<NodeAllocationResponse> Allocations { get; set; }
+    [Parameter] public Update Parent { get; set; }
 
     private async Task<NodeAllocationResponse[]> Loader()
     {

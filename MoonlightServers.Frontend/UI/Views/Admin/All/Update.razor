@@ -6,7 +6,7 @@
 @using Moonlight.Shared.Http.Responses.Admin.Users
 @using MoonlightServers.Shared.Http.Requests.Admin.Servers
 @using MoonlightServers.Shared.Http.Responses.Admin.Servers
-@using MoonlightServers.Frontend.UI.Components.Servers.UpdateServerPartials
+@using MoonlightServers.Frontend.UI.Components.Servers.UpdatePartials
 @using MoonlightServers.Shared.Http.Responses.Admin.NodeAllocations
 
 @inject HttpApiClient ApiClient
@@ -18,11 +18,11 @@
 <LazyLoader Load="Load">
     <PageHeader Title="Update Server">
         <a href="/admin/servers/all" class="btn btn-secondary">
-            <i class="icon-chevron-left mr-1"></i>
+            <i class="icon-chevron-left"></i>
             Back
         </a>
         <WButton OnClick="_ => Form.Submit()" CssClasses="btn btn-primary">
-            <i class="icon-check mr-1"></i>
+            <i class="icon-check"></i>
             Update
         </WButton>
     </PageHeader>
@@ -31,16 +31,16 @@
         <HandleForm @ref="Form" Model="Request" OnValidSubmit="OnSubmit">
             <Tabs>
                 <Tab Name="General">
-                    <GeneralServerUpdate Request="Request" Owner="Owner"/>
+                    <General Request="Request" Parent="this"/>
                 </Tab>
                 <Tab Name="Allocations">
-                    <AllocationsServerUpdate Request="Request" Server="Server" Allocations="Allocations"/>
+                    <Allocations Request="Request" Server="Server" Parent="this"/>
                 </Tab>
                 <Tab Name="Variables">
-                    <VariablesServerUpdate Request="Request" Server="Server"/>
+                    <Variables Request="Request" Server="Server"/>
                 </Tab>
                 <Tab Name="Advanced">
-                    <AdvancedServerUpdate Request="Request"/>
+                    <Advanced Request="Request"/>
                 </Tab>
             </Tabs>
         </HandleForm>
@@ -55,8 +55,8 @@
     private UpdateServerRequest Request;
     private ServerResponse Server;
 
-    private List<NodeAllocationResponse> Allocations = new();
-    private UserResponse Owner;
+    public List<NodeAllocationResponse> Allocations = new();
+    public UserResponse Owner;
 
     private async Task Load(LazyLoader _)
     {

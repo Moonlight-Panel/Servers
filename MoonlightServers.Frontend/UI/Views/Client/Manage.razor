@@ -64,14 +64,14 @@
                         @if (State == ServerState.Offline)
                         {
                             <WButton CssClasses="btn btn-success" OnClick="_ => Start()">
-                                <i class="icon-play me-1 align-middle"></i>
+                                <i class="icon-play align-middle"></i>
                                 <span class="align-middle">Start</span>
                             </WButton>
                         }
                         else
                         {
                             <button type="button" class="btn btn-success" disabled="disabled">
-                                <i class="icon-play me-1 align-middle"></i>
+                                <i class="icon-play align-middle"></i>
                                 <span class="align-middle">Start</span>
                             </button>
                         }
@@ -79,14 +79,14 @@
                         @if (State == ServerState.Online)
                         {
                             <button type="button" class="btn btn-primary">
-                                <i class="icon-rotate-ccw me-1 align-middle"></i>
+                                <i class="icon-rotate-ccw align-middle"></i>
                                 <span class="align-middle">Restart</span>
                             </button>
                         }
                         else
                         {
                             <button type="button" class="btn btn-primary" disabled="disabled">
-                                <i class="icon-rotate-ccw me-1 align-middle"></i>
+                                <i class="icon-rotate-ccw align-middle"></i>
                                 <span class="align-middle">Restart</span>
                             </button>
                         }
@@ -96,14 +96,14 @@
                             if (State == ServerState.Stopping)
                             {
                                 <WButton CssClasses="btn btn-error" OnClick="_ => Kill()">
-                                    <i class="icon-bomb me-1 align-middle"></i>
+                                    <i class="icon-bomb align-middle"></i>
                                     <span class="align-middle">Kill</span>
                                 </WButton>
                             }
                             else
                             {
                                 <WButton CssClasses="btn btn-error" OnClick="_ => Stop()">
-                                    <i class="icon-squircle me-1 align-middle"></i>
+                                    <i class="icon-squircle align-middle"></i>
                                     <span class="align-middle">Stop</span>
                                 </WButton>
                             }
@@ -111,7 +111,7 @@
                         else
                         {
                             <button type="button" class="btn btn-error" disabled="disabled">
-                                <i class="icon-squircle me-1 align-middle"></i>
+                                <i class="icon-squircle align-middle"></i>
                                 <span class="align-middle">Stop</span>
                             </button>
                         }
@@ -119,17 +119,17 @@
                     else
                     {
                         <button type="button" class="btn btn-success" disabled="disabled">
-                            <i class="icon-play me-1 align-middle"></i>
+                            <i class="icon-play align-middle"></i>
                             <span class="align-middle">Start</span>
                         </button>
                         
                         <button type="button" class="btn btn-primary" disabled="disabled">
-                            <i class="icon-rotate-ccw me-1 align-middle"></i>
+                            <i class="icon-rotate-ccw align-middle"></i>
                             <span class="align-middle">Restart</span>
                         </button>
                         
                         <button type="button" class="btn btn-error" disabled="disabled">
-                            <i class="icon-squircle me-1 align-middle"></i>
+                            <i class="icon-squircle align-middle"></i>
                             <span class="align-middle">Stop</span>
                         </button>
                     }
@@ -138,28 +138,20 @@
         </div>
 
         <div class="mt-3">
-            <ul class="flex flex-wrap -m-1">
+            
+            <nav class="tabs space-x-2 overflow-x-auto" aria-label="Tabs" role="tablist" aria-orientation="horizontal">
                 @foreach (var tab in Tabs)
                 {
-                    <li class="m-1">
-                        @if (tab == CurrentTab)
-                        {
-                            <a href="/servers/@(ServerId)/@(tab.Path)"
-                               class="inline-flex items-center justify-center text-sm font-medium leading-5 rounded-full px-3 py-1 border border-transparent shadow-sm bg-gray-100 text-gray-800 transition">
-                                @tab.Name
-                            </a>
-                        }
-                        else
-                        {
-                            <a href="/servers/@(ServerId)/@(tab.Path)" @onclick:preventDefault
-                               @onclick="() => SwitchTab(tab)"
-                               class="inline-flex items-center justify-center text-sm font-medium leading-5 rounded-full px-3 py-1 border border-gray-700/60 hover:border-gray-600 shadow-sm bg-gray-800 text-base-content/60 transition">
-                                @tab.Name
-                            </a>
-                        }
-                    </li>
+                    <a href="/servers/@(ServerId)/@(tab.Path)"
+                       class="btn btn-text active-tab:bg-primary active-tab:text-primary-content hover:text-primary hover:bg-primary/20 bg-base-150 text-sm py-0.5 px-3 rounded-xl @(tab == CurrentTab ? "active" : "")"
+                       data-tab="na"
+                       role="tab"
+                       @onclick:preventDefault
+                       @onclick="() => SwitchTab(tab)">
+                        @tab.Name 
+                    </a> 
                 }
-            </ul>
+            </nav>
 
             <div class="mt-5">
                 @if (CurrentTab == null)
@@ -200,6 +192,8 @@
     private string InitialConsoleMessage = "";
 
     private HubConnection? HubConnection;
+
+    public ConcurrentList<string> CommandHistory = new();
 
     private async Task Load(LazyLoader _)
     {

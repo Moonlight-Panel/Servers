@@ -6,6 +6,7 @@ using MoonCore.Extended.Abstractions;
 using MoonCore.Helpers;
 using Moonlight.ApiServer.Database.Entities;
 using MoonlightServers.ApiServer.Database.Entities;
+using MoonlightServers.DaemonShared.DaemonSide.Http.Requests;
 using MoonlightServers.DaemonShared.DaemonSide.Http.Responses.Servers;
 
 namespace MoonlightServers.ApiServer.Services;
@@ -36,7 +37,7 @@ public class ServerService
             throw new HttpApiException("Unable to access the node the server is running on", 502);
         }
     }
-    
+
     public async Task Stop(Server server)
     {
         try
@@ -49,7 +50,7 @@ public class ServerService
             throw new HttpApiException("Unable to access the node the server is running on", 502);
         }
     }
-    
+
     public async Task Kill(Server server)
     {
         try
@@ -64,7 +65,7 @@ public class ServerService
     }
 
     #endregion
-    
+
     public async Task Install(Server server)
     {
         try
@@ -90,7 +91,7 @@ public class ServerService
             throw new HttpApiException("Unable to access the node the server is running on", 502);
         }
     }
-    
+
     public async Task SyncDelete(Server server)
     {
         try
@@ -103,7 +104,7 @@ public class ServerService
             throw new HttpApiException("Unable to access the node the server is running on", 502);
         }
     }
-    
+
     public async Task<ServerStatusResponse> GetStatus(Server server)
     {
         try
@@ -137,7 +138,27 @@ public class ServerService
             using var apiClient = await GetApiClient(server);
             return await apiClient.GetJson<ServerStatsResponse>($"api/servers/{server.Id}/stats");
         }
-        catch (HttpRequestException e)
+        catch (HttpRequestException)
+        {
+            throw new HttpApiException("Unable to access the node the server is running on", 502);
+        }
+    }
+
+    public async Task RunCommand(Server server, string command)
+    {
+        try
+        {
+            using var apiClient = await GetApiClient(server);
+
+            await apiClient.Post(
+                $"api/servers/{server.Id}/command",
+                new ServerCommandRequest()
+                {
+                    Command = command
+                }
+            );
+        }
+        catch (HttpRequestException)
         {
             throw new HttpApiException("Unable to access the node the server is running on", 502);
         }
@@ -149,10 +170,10 @@ public class ServerService
     {
         if (server.OwnerId == user.Id)
             return true;
-        
+
         return PermissionHelper.HasPermission(user.Permissions, "admin.servers.get");
     }
-    
+
     private async Task<HttpApiClient> GetApiClient(Server server)
     {
         var serverWithNode = server;

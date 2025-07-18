@@ -5,7 +5,7 @@
 @using MoonCore.Helpers
 @using Moonlight.Shared.Http.Responses.Admin.Users
 @using MoonlightServers.Shared.Http.Requests.Admin.Servers
-@using MoonlightServers.Frontend.UI.Components.Servers.CreateServerPartials
+@using MoonlightServers.Frontend.UI.Components.Servers.CreatePartials
 @using MoonlightServers.Shared.Http.Responses.Admin.NodeAllocations
 @using MoonlightServers.Shared.Http.Responses.Admin.Nodes
 @using MoonlightServers.Shared.Http.Responses.Admin.Stars
@@ -18,11 +18,11 @@
 
 <PageHeader Title="Create Server">
     <a href="/admin/servers/all" class="btn btn-secondary">
-        <i class="icon-chevron-left mr-1"></i>
+        <i class="icon-chevron-left"></i>
         Back
     </a>
     <WButton OnClick="_ => Form.Submit()" CssClasses="btn btn-primary">
-        <i class="icon-check mr-1"></i>
+        <i class="icon-check"></i>
         Create
     </WButton>
 </PageHeader>
@@ -31,16 +31,16 @@
     <HandleForm @ref="Form" Model="Request" OnValidSubmit="OnSubmit">
         <Tabs>
             <Tab Name="General">
-                <GeneralServerCreate Request="Request" Parent="this" />
+                <General Request="Request" Parent="this" />
             </Tab>
             <Tab Name="Allocations">
-                <AllocationsServerCreate Request="Request" Parent="this" />
+                <Allocations Request="Request" Parent="this" />
             </Tab>
             <Tab Name="Variables">
-                <VariablesServerCreate Request="Request" Parent="this" />
+                <Variables Request="Request" Parent="this" />
             </Tab>
             <Tab Name="Advanced">
-                <AdvancedServerCreate Request="Request" />
+                <Advanced Request="Request" />
             </Tab>
         </Tabs>
     </HandleForm>

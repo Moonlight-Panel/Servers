@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using MoonCore.Exceptions;
 using MoonlightServers.Daemon.ServerSystem.SubSystems;
 using MoonlightServers.Daemon.Services;
+using MoonlightServers.DaemonShared.DaemonSide.Http.Requests;
 using MoonlightServers.DaemonShared.DaemonSide.Http.Responses.Servers;
 using MoonlightServers.DaemonShared.Enums;
 
@@ -10,7 +11,7 @@ namespace MoonlightServers.Daemon.Http.Controllers.Servers;
 
 [Authorize]
 [ApiController]
-[Route("api/servers")]
+[Route("api/servers/{serverId:int}")]
 public class ServersController : Controller
 {
     private readonly ServerService ServerService;
@@ -20,19 +21,19 @@ public class ServersController : Controller
         ServerService = serverService;
     }
 
-    [HttpPost("{serverId:int}/sync")]
+    [HttpPost("sync")]
     public async Task Sync([FromRoute] int serverId)
     {
         await ServerService.Sync(serverId);
     }
 
-    [HttpDelete("{serverId:int}")]
+    [HttpDelete]
     public async Task Delete([FromRoute] int serverId)
     {
         await ServerService.Delete(serverId);
     }
 
-    [HttpGet("{serverId:int}/status")]
+    [HttpGet("status")]
     public Task<ServerStatusResponse> GetStatus([FromRoute] int serverId)
     {
         var server = ServerService.Find(serverId);
@@ -48,7 +49,7 @@ public class ServersController : Controller
         return Task.FromResult(result);
     }
 
-    [HttpGet("{serverId:int}/logs")]
+    [HttpGet("logs")]
     public async Task<ServerLogsResponse> GetLogs([FromRoute] int serverId)
     {
         var server = ServerService.Find(serverId);
@@ -65,7 +66,7 @@ public class ServersController : Controller
         };
     }
 
-    [HttpGet("{serverId:int}/stats")]
+    [HttpGet("stats")]
     public Task<ServerStatsResponse> GetStats([FromRoute] int serverId)
     {
         var server = ServerService.Find(serverId);
@@ -84,5 +85,18 @@ public class ServersController : Controller
             IoRead = statsSubSystem.CurrentStats.IoRead,
             IoWrite = statsSubSystem.CurrentStats.IoWrite
         });
+    }
+
+    [HttpPost("command")]
+    public async Task Command([FromRoute] int serverId, [FromBody] ServerCommandRequest request)
+    {
+        var server = ServerService.Find(serverId);
+
+        if (server == null)
+            throw new HttpApiException("No server with this id found", 404);
+        
+        var consoleSubSystem = server.GetRequiredSubSystem<ConsoleSubSystem>();
+        
+        await consoleSubSystem.WriteInput(request.Command);
     }
 }

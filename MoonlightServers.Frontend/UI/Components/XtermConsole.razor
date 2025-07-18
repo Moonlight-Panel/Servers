@@ -1,31 +1,72 @@
+@using System.Collections.Concurrent
 @using Microsoft.Extensions.Logging
+@using MoonCore.Blazor.FlyonUi.Modals
+@using MoonCore.Helpers
 @using XtermBlazor
+@using MoonCore.Blazor.FlyonUi.Components
 
 @inject IJSRuntime JsRuntime
+@inject ModalService ModalService
 @inject ILogger<XtermConsole> Logger
 
-<div class="bg-background rounded-lg p-2">
+@implements IAsyncDisposable
+
+<div class="bg-black rounded-lg p-2 relative">
     @if (IsInitialized)
     {
         <Xterm @ref="Terminal"
                Addons="Addons"
                Options="Options"
+               Class="h-full w-full"
                OnFirstRender="HandleFirstRender"/>
     }
+
+    <div class="flex flex-row w-full mt-1.5">
+        <input @bind="CommandInput" @onkeyup="HandleKey" type="text" placeholder="Type here..." class="input grow"/>
+        <WButton OnClick="_ => SubmitCommand()" CssClasses="btn btn-square btn-primary grow-0 ms-1.5">
+            <i class="icon-send-horizontal text-lg"></i>
+        </WButton>
+    </div>
+
+    <div class="absolute top-4 right-4">
+        <div class="flex flex-col gap-y-1.5">
+            @if (IsPaused)
+            {
+                <button @onclick="TogglePause" class="btn btn-primary btn-square">
+                    <i class="icon-play text-lg"></i>
+                </button>
+            }
+            else
+            {
+                <button @onclick="TogglePause" class="btn btn-secondary btn-square">
+                    <i class="icon-pause text-lg"></i>
+                </button>
+            }
+
+            <button @onclick="OpenFullscreen" class="btn btn-secondary btn-square">
+                <i class="icon-maximize text-lg"></i>
+            </button>
+        </div>
+    </div>
 </div>
 
 @code
 {
     [Parameter] public Func<Task>? OnAfterInitialized { get; set; }
     [Parameter] public Func<Task>? OnFirstRender { get; set; }
-    
-    private Xterm Terminal;
-    private bool IsInitialized = false;
-    private bool HadFirstRender = false;
+    [Parameter] public bool ShowActions { get; set; } = true;
+    [Parameter] public bool ShowInput { get; set; } = false;
+    [Parameter] public int MaxOutputCacheSize { get; set; } = 250;
+    [Parameter] public Func<string, Task>? OnCommand { get; set; }
 
-    private readonly Queue<string> MessageCache = new();
-    private readonly HashSet<string> Addons = ["addon-fit"];
-    private readonly TerminalOptions Options = new()
+    [Parameter] public IList<string> CommandHistory { get; set; } = new ConcurrentList<string>();
+
+    public event Func<string, Task>? OnWrite;
+
+    private Xterm Terminal;
+    public HashSet<string> Addons { get; } = ["addon-fit"];
+
+    public TerminalOptions Options { get; } = new()
     {
         CursorBlink = false,
         CursorStyle = CursorStyle.Bar,
@@ -36,17 +77,23 @@
         Theme =
         {
             Background = "#000000"
-        }
+        },
     };
-    
+
+    public ConcurrentList<string> OutputCache { get; private set; } = new();
+    public ConcurrentList<string> WriteQueue { get; private set; } = new();
+    private int CommandIndex = -1;
+    private bool IsReadyToWrite = false;
+    private bool IsPaused = false;
+    private bool IsInitialized = false;
+
+    private string CommandInput = "";
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if(!firstRender)
+        if (!firstRender)
             return;
 
-        // Initialize addons
-        
         try
         {
             await JsRuntime.InvokeVoidAsync("moonlightServers.loadAddons");
@@ -59,7 +106,7 @@
         IsInitialized = true;
         await InvokeAsync(StateHasChanged);
 
-        if(OnAfterInitialized != null)
+        if (OnAfterInitialized != null)
             await OnAfterInitialized.Invoke();
     }
 
@@ -74,13 +121,13 @@
             Logger.LogError("An error occured while calling addons: {e}", e);
         }
 
-        HadFirstRender = true;
+        IsReadyToWrite = true;
 
-        // Write out cache
-        while (MessageCache.Count > 0)
-        {
-            await Terminal.Write(MessageCache.Dequeue());
-        }
+        // Write queued content since initialisation started
+        var queueContent = string.Concat(WriteQueue);
+        WriteQueue.Clear();
+        
+        await Terminal.Write(queueContent);
 
         if (OnFirstRender != null)
             await OnFirstRender.Invoke();
@@ -89,10 +136,103 @@
     public async Task Write(string content)
     {
         // We cache messages here as there is the chance that the console isn't ready for input while receiving write tasks 
-        
-        if (HadFirstRender)
-            await Terminal.Write(content);
+
+        if (IsReadyToWrite && !IsPaused)
+            await HandleWrite(content);
         else
-            MessageCache.Enqueue(content);
+            WriteQueue.Add(content);
+    }
+
+    private async Task HandleWrite(string content)
+    {
+        // Update output cache and prune it if required
+        if (OutputCache.Count > MaxOutputCacheSize)
+        {
+            for (var i = 0; i < 50; i++)
+                OutputCache.RemoveAt(i);
+        }
+
+        OutputCache.Add(content);
+        
+        // Trigger events
+        if (OnWrite != null)
+            await OnWrite.Invoke(content);
+
+        // Write in own terminal
+        await Terminal.Write(content);
+    }
+
+    private async Task OpenFullscreen()
+    {
+        await ModalService.Launch<FullScreenModal>(parameters => { parameters["Parent"] = this; }, size: "max-w-none");
+    }
+
+    private async Task TogglePause()
+    {
+        IsPaused = !IsPaused;
+        await InvokeAsync(StateHasChanged);
+
+        if (IsPaused)
+            return;
+
+        var queueContent = string.Concat(WriteQueue);
+        WriteQueue.Clear();
+
+        await HandleWrite(queueContent);
+    }
+
+    private async Task SubmitCommand()
+    {
+        CommandHistory.Add(CommandInput);
+
+        if (OnCommand != null)
+            await OnCommand.Invoke(CommandInput);
+        
+        CommandIndex = -1;
+        CommandInput = "";
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task HandleKey(KeyboardEventArgs keyboard)
+    {
+        switch (keyboard.Code)
+        {
+            case "Enter":
+                await SubmitCommand();
+                break;
+                
+            case "ArrowUp" or "ArrowDown":
+            {
+                var highestIndex = CommandHistory.Count - 1;
+            
+                if (CommandIndex == -1)
+                    CommandIndex = highestIndex;
+                else
+                {
+                    if (keyboard.Code is "ArrowUp")
+                        CommandIndex++;
+                    else if (keyboard.Code is "ArrowDown")
+                        CommandIndex--;
+                }
+
+                if (CommandIndex > highestIndex)
+                    CommandIndex = highestIndex;
+
+                if (CommandIndex < 0)
+                    CommandIndex = 0;
+
+                if (CommandIndex <= highestIndex || CommandHistory.Count > 0)
+                    CommandInput = CommandHistory[CommandIndex];
+            
+                await InvokeAsync(StateHasChanged);
+                break;
+            }
+        }
+    }
+    
+    public async ValueTask DisposeAsync()
+    {
+        await Terminal.DisposeAsync();
     }
 }

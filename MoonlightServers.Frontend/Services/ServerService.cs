@@ -1,6 +1,7 @@
 using MoonCore.Attributes;
 using MoonCore.Helpers;
 using MoonCore.Models;
+using MoonlightServers.Shared.Http.Requests.Client.Servers;
 using MoonlightServers.Shared.Http.Requests.Client.Servers.Variables;
 using MoonlightServers.Shared.Http.Responses.Client.Servers;
 using MoonlightServers.Shared.Http.Responses.Client.Servers.Variables;
@@ -56,6 +57,17 @@ public class ServerService
     {
         return await HttpApiClient.GetJson<ServerStatsResponse>(
             $"api/client/servers/{serverId}/stats"
+        );
+    }
+
+    public async Task RunCommand(int serverId, string command)
+    {
+        await HttpApiClient.Post(
+            $"api/client/servers/{serverId}/command",
+            new ServerCommandRequest()
+            {
+                Command = command
+            }
         );
     }
 

@@ -11,7 +11,7 @@
 
 <LazyLoader Load="Load">
     <div class="grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-6">
-        @foreach (var variable in Variables)
+        @foreach (var variable in ServerVariables)
         {
             var reqVariable = Request.Variables.FirstOrDefault(x => x.Key == variable.Key);
             var starVariable = StarVariables.FirstOrDefault(x => x.Key == variable.Key);
@@ -46,7 +46,7 @@
     [Parameter] public ServerResponse Server { get; set; }
 
     private StarVariableDetailResponse[] StarVariables;
-    private ServerVariableResponse[] Variables;
+    private ServerVariableResponse[] ServerVariables;
 
     private async Task Load(LazyLoader _)
     {
@@ -56,7 +56,7 @@
             )
         );
 
-        Variables = await PagedData<ServerVariableResponse>.All(async (page, pageSize) =>
+        ServerVariables = await PagedData<ServerVariableResponse>.All(async (page, pageSize) =>
             await ApiClient.GetJson<PagedData<ServerVariableResponse>>(
                 $"api/admin/servers/{Server.Id}/variables?page={page}&pageSize={pageSize}"
             )

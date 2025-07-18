@@ -3,6 +3,7 @@
 @using MoonCore.Models
 @using Moonlight.Shared.Http.Responses.Admin.Users
 @using MoonCore.Blazor.FlyonUi.Forms
+@using MoonlightServers.Frontend.UI.Views.Admin.All
 
 @inject HttpApiClient ApiClient
 
@@ -20,7 +21,7 @@
             <InputItem TItem="UserResponse"
                        DisplayField="@(x => x.Username)"
                        SearchField="@(x => x.Username)"
-                       @bind-Value="Owner"
+                       @bind-Value="Parent.Owner"
                        ItemSource="Loader">
             </InputItem>
 
@@ -61,7 +62,7 @@
 @code
 {
     [Parameter] public UpdateServerRequest Request { get; set; }
-    [Parameter] public UserResponse Owner { get; set; }
+    [Parameter] public Update Parent { get; set; }
 
     private async Task<UserResponse[]> Loader()
     {

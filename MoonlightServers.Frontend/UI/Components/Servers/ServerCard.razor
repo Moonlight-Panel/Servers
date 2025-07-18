@@ -8,8 +8,8 @@
 @inject ILogger<ServerCard> Logger
 
 @{
-    var gradient = "from-base-content/20";
-    var border = "border-base-content";
+    var gradient = "from-base-100/20";
+    var border = "border-base-content/80";
 
     if (IsLoaded && !IsFailed)
     {
@@ -20,7 +20,7 @@
             ServerState.Starting => "from-warning/20",
             ServerState.Stopping => "from-warning/20",
             ServerState.Online => "from-success/20",
-            _ => "from-base-content/20"
+            _ => "from-base-100"
         };
         
         border = Status.State switch
@@ -30,13 +30,13 @@
             ServerState.Starting => "border-warning",
             ServerState.Stopping => "border-warning",
             ServerState.Online => "border-success",
-            _ => "border-base-content"
+            _ => "border-base-content/80"
         };
     }
 }
 
 <a href="/servers/@Server.Id"
-   class="w-full bg-gradient-to-r @gradient to-base-content/75 to-25% px-5 py-3.5 rounded-xl border-l-8 @border">
+   class="w-full bg-gradient-to-r @gradient to-base-100/75 to-25% px-5 py-3.5 rounded-xl border-l-8 @border">
     <div class="grid grid-cols-6">
         <div class="flex items-center col-span-6 sm:col-span-2 2xl:col-span-1">
             <div class="bg-base-content/10 bg-opacity-45 py-1 px-2 rounded-lg flex items-center">
@@ -54,7 +54,7 @@
                 Status.State is ServerState.Starting or ServerState.Stopping or ServerState.Online
             )
             {
-                <div class="bg-base-content/35 py-1 px-2 rounded-lg flex flex-row">
+                <div class="bg-base-200/75 py-1 px-2 rounded-lg flex flex-row">
                     <div>
                         <i class="icon-cpu"></i>
                     </div>
@@ -62,7 +62,7 @@
                     <div class="ms-3">@(Stats.CpuUsage)%</div>
                 </div>
 
-                <div class="bg-base-content/35 py-1 px-2 rounded-lg flex flex-row">
+                <div class="bg-base-200/75 py-1 px-2 rounded-lg flex flex-row">
                     <div>
                         <i class="icon-memory-stick"></i>
                     </div>
@@ -70,7 +70,7 @@
                     <div class="ms-3">@(Formatter.FormatSize(Stats.MemoryUsage)) / @(Formatter.FormatSize(ByteConverter.FromMegaBytes(Server.Memory).Bytes))</div>
                 </div>
 
-                <div class="bg-base-content/35 py-1 px-2 rounded-lg flex flex-row">
+                <div class="bg-base-200/75 py-1 px-2 rounded-lg flex flex-row">
                     <div>
                         <i class="icon-hard-drive"></i>
                     </div>
@@ -82,7 +82,7 @@
             {
                 if (!IsLoaded)
                 {
-                    <div class="bg-base-content/35 py-1 px-2 rounded-lg flex flex-row text-gray-700">
+                    <div class="bg-base-200/75 py-1 px-2 rounded-lg flex flex-row text-gray-700">
                         <div>
                             <i class="icon-loader"></i>
                         </div>
@@ -92,7 +92,7 @@
                 }
                 else if (IsFailed)
                 {
-                    <div class="bg-base-content/35 py-1 px-2 rounded-lg flex flex-row text-error">
+                    <div class="bg-base-200/75 py-1 px-2 rounded-lg flex flex-row text-error">
                         <div>
                             <i class="icon-cable"></i>
                         </div>
@@ -102,7 +102,7 @@
                 }
                 else if (IsLoaded && !IsFailed && Status.State is ServerState.Offline)
                 {
-                    <div class="bg-base-content/35 py-1 px-2 rounded-lg flex flex-row text-error">
+                    <div class="bg-base-200/75 py-1 px-2 rounded-lg flex flex-row text-error">
                         <div>
                             <i class="icon-power-off"></i>
                         </div>
@@ -112,7 +112,7 @@
                 }
                 else if (IsLoaded && !IsFailed && Status.State is ServerState.Installing)
                 {
-                    <div class="bg-base-content/35 py-1 px-2 rounded-lg flex flex-row text-primary">
+                    <div class="bg-base-200/75 py-1 px-2 rounded-lg flex flex-row text-primary">
                         <div>
                             <i class="icon-hammer"></i>
                         </div>
@@ -127,7 +127,7 @@
 
             @if (Server.Share != null)
             {
-                <div class="bg-base-content/35 py-1 px-2 rounded-lg flex flex-row col-span-2">
+                <div class="bg-base-200/75 py-1 px-2 rounded-lg flex flex-row col-span-2">
                     <div>
                         <i class="icon-share-2"></i>
                     </div>
@@ -137,7 +137,7 @@
             }
             else
             {
-                <div class="bg-base-content/35 py-1 px-2 rounded-lg flex flex-row">
+                <div class="bg-base-200/75 py-1 px-2 rounded-lg flex flex-row">
                     <div>
                         <i class="icon-sparkles"></i>
                     </div>
@@ -145,7 +145,7 @@
                     <div class="ms-3">@Server.StarName</div>
                 </div>
 
-                <div class="bg-base-content/35 py-1 px-2 rounded-lg flex flex-row">
+                <div class="bg-base-200/75 py-1 px-2 rounded-lg flex flex-row">
                     <div>
                         <i class="icon-database"></i>
                     </div>

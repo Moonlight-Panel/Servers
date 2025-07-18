@@ -8,7 +8,7 @@
 
 @inject NodeService NodeService
 @inject ToastService ToastService
-@inject ILogger<OverviewNodeUpdate> Logger
+@inject ILogger<Overview> Logger
 
 @implements IDisposable
 
@@ -26,7 +26,7 @@
                 </p>
                 <i class="icon-cpu text-4xl text-primary"></i>
             </div>
-            <div class="text-base text-slate-300">
+            <div class="text-base text-base-content/90">
                 <span class="truncate">
                     CPU: @Statistics.Cpu.Model
                 </span>
@@ -42,7 +42,7 @@
                 </p>
                 <i class="icon-memory-stick text-4xl text-primary"></i>
             </div>
-            <div class="text-base text-slate-300">
+            <div class="text-base text-base-content/90">
                 Memory
             </div>
         </div>
@@ -56,7 +56,7 @@
                 </div>
                 <i class="icon-shapes text-4xl text-primary"></i>
             </div>
-            <div class="text-base text-slate-300">
+            <div class="text-base text-base-content/90">
                 Swap
             </div>
         </div>
@@ -76,7 +76,7 @@
             var percentRounded = Math.Round(usage, 2);
 
             <div class="flex flex-row items-center col-span-1">
-                <div class="text-sm text-slate-300 me-1.5 grow-0 flex flex-col">
+                <div class="text-sm text-base-content/90 me-1.5 grow-0 flex flex-col">
                     <span>#@(i)</span>
                 </div>
                 <div class="grow">
@@ -108,7 +108,7 @@
                         </div>
                     </div>
                 </div>
-                <div class="text-sm text-slate-300 mt-2.5 flex flex-col">
+                <div class="text-sm text-base-content/90 mt-2.5 flex flex-col">
                     <div>
                         Device: <span class="font-semibold">@disk.Device</span> - Mounted at: <span class="font-semibold truncate">@disk.MountPath</span>
                     </div>
@@ -136,7 +136,7 @@
                 </p>
                 <i class="icon-gallery-horizontal-end text-4xl text-primary"></i>
             </div>
-            <div class="text-base text-slate-300">
+            <div class="text-base text-base-content/90">
                 Images
             </div>
         </div>
@@ -148,7 +148,7 @@
                 </p>
                 <i class="icon-container text-4xl text-primary"></i>
             </div>
-            <div class="text-base text-slate-300">
+            <div class="text-base text-base-content/90">
                 Containers
             </div>
         </div>
@@ -160,7 +160,7 @@
                 </p>
                 <i class="icon-hard-hat text-4xl text-primary"></i>
             </div>
-            <div class="text-base text-slate-300">
+            <div class="text-base text-base-content/90">
                 Build Cache
             </div>
         </div>

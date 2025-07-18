@@ -68,6 +68,7 @@ public class ServersController : Controller
             .Include(x => x.Star)
             .Skip(page * pageSize)
             .Take(pageSize)
+            .OrderBy(x => x.Id)
             .ToArrayAsync();
 
         var mappedItems = items
@@ -213,7 +214,7 @@ public class ServersController : Controller
     }
 
     [HttpPatch("{id:int}")]
-    [Authorize(Policy = "permissions.admin.servers.write")]
+    [Authorize(Policy = "permissions:admin.servers.write")]
     public async Task<ServerResponse> Update([FromRoute] int id, [FromBody] UpdateServerRequest request)
     {
         //TODO: Handle shrinking virtual disk
@@ -294,11 +295,16 @@ public class ServersController : Controller
             .Include(x => x.Star)
             .Include(x => x.Variables)
             .Include(x => x.Backups)
+            .Include(x => x.Allocations)
             .FirstOrDefaultAsync(x => x.Id == id);
 
         if (server == null)
             throw new HttpApiException("No server with that id found", 404);
 
+        server.Variables.Clear();
+        server.Backups.Clear();
+        server.Allocations.Clear();
+        
         try
         {
             // If the sync fails on the node and we aren't forcing the deletion,

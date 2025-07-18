@@ -5,7 +5,7 @@
 @using MoonCore.Helpers
 @using MoonlightServers.Shared.Http.Requests.Admin.Stars
 @using MoonlightServers.Shared.Http.Responses.Admin.Stars
-@using MoonlightServers.Frontend.UI.Components.Stars.UpdateStarPartials
+@using MoonlightServers.Frontend.UI.Components.Stars.UpdatePartials
 
 @inject HttpApiClient ApiClient
 @inject NavigationManager Navigation
@@ -16,11 +16,11 @@
 <LazyLoader Load="Load">
     <PageHeader Title="Update Star">
         <a href="/admin/servers/stars" class="btn btn-secondary">
-            <i class="icon-chevron-left mr-1"></i>
+            <i class="icon-chevron-left"></i>
             Back
         </a>
         <WButton OnClick="_ => Form.Submit()" CssClasses="btn btn-primary">
-            <i class="icon-check mr-1"></i>
+            <i class="icon-check"></i>
             Update
         </WButton>
     </PageHeader>
@@ -30,31 +30,31 @@
             
             <Tabs>
                 <Tab Name="General">
-                    <GeneralStarUpdate Request="Request" />
+                    <General Request="Request" />
                 </Tab>
 
                 <Tab Name="Start, Stop & Status">
-                    <StartStopStatusStarUpdate Request="Request" />
+                    <StartStopStatus Request="Request" />
                 </Tab>
 
                 <Tab Name="Parse Configuration">
-                    <ParseConfigStarUpdate Request="Request" />
+                    <ParseConfig Request="Request" />
                 </Tab>
 
                 <Tab Name="Installation">
-                    <InstallationStarUpdate Request="Request" />
+                    <Installation Request="Request" />
                 </Tab>
                 
                 <Tab Name="Variables">
-                    <VariablesStarUpdate Star="Detail" />
+                    <Variables Star="Detail" />
                 </Tab>
 
                 <Tab Name="Docker Images">
-                    <DockerImageStarUpdate Star="Detail" />
+                    <DockerImage Star="Detail" />
                 </Tab>
 
                 <Tab Name="Miscellaneous">
-                    <MiscStarUpdate Star="Detail" Request="Request" />
+                    <Misc Star="Detail" Request="Request" />
                 </Tab>
             </Tabs>
             

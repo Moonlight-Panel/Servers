@@ -1,9 +1,15 @@
 @using Microsoft.AspNetCore.SignalR.Client
+@using MoonlightServers.Frontend.Services
 
 @inherits BaseServerTab
 
+@inject ServerService ServerService
+
 <div class="h-44">
-    <XtermConsole @ref="XtermConsole" OnAfterInitialized="OnAfterConsoleInitialized"/>
+    <XtermConsole @ref="XtermConsole"
+                  OnAfterInitialized="OnAfterConsoleInitialized"
+                  CommandHistory="Parent.CommandHistory"
+                  OnCommand="OnCommand"/>
 </div>
 
 @code
@@ -16,10 +22,10 @@
 
         HubConnection.On<string>("ConsoleOutput", async content =>
         {
-            if(XtermConsole != null)
+            if (XtermConsole != null)
                 await XtermConsole.Write(content);
         });
-        
+
         return Task.CompletedTask;
     }
 
@@ -27,4 +33,7 @@
     {
         await XtermConsole!.Write(InitialConsoleMessage);
     }
+
+    private async Task OnCommand(string command)
+        => await ServerService.RunCommand(Server.Id, command + "\n");
 }

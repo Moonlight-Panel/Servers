@@ -11,6 +11,7 @@ using MoonlightServers.ApiServer.Extensions;
 using MoonlightServers.ApiServer.Models;
 using MoonlightServers.ApiServer.Services;
 using MoonlightServers.Shared.Enums;
+using MoonlightServers.Shared.Http.Requests.Client.Servers;
 using MoonlightServers.Shared.Http.Responses.Client.Servers;
 using MoonlightServers.Shared.Http.Responses.Client.Servers.Allocations;
 using MoonlightServers.Shared.Models;
@@ -291,6 +292,17 @@ public class ServersController : Controller
             IoRead = stats.IoRead,
             IoWrite = stats.IoWrite
         };
+    }
+
+    [HttpPost("{serverId:int}/command")]
+    public async Task RunCommand([FromRoute] int serverId, [FromBody] ServerCommandRequest request)
+    {
+        var server = await GetServerById(
+            serverId,
+            permission => permission is { Name: "console", Type: >= ServerPermissionType.ReadWrite }
+        );
+        
+        await ServerService.RunCommand(server, request.Command);
     }
 
     private async Task<Server> GetServerById(int serverId, Func<ServerSharePermission, bool>? filter = null)

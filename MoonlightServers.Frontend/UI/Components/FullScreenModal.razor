@@ -1,0 +1,89 @@
+@using System.Text.Json.Serialization
+@using Microsoft.Extensions.Logging
+@using XtermBlazor
+@inherits MoonCore.Blazor.FlyonUi.Modals.Components.BaseModal
+
+@inject IJSRuntime JsRuntime
+@inject ILogger<FullScreenModal> Logger
+
+@implements IAsyncDisposable
+
+<div class="bg-black p-2 relative w-full h-[90vh] rounded-lg">
+    @if (IsInitialized)
+    {
+        <Xterm @ref="Terminal"
+               Addons="Parent.Addons"
+               Options="Parent.Options"
+               Class="h-full w-full"
+               OnFirstRender="HandleFirstRender"/>
+    }
+
+    <div class="absolute top-4 right-4">
+        <button @onclick="Hide" class="btn btn-error btn-square">
+            <i class="icon-x text-lg"></i>
+        </button>
+    </div>
+</div>
+
+@code
+{
+    [Parameter] public XtermConsole Parent { get; set; }
+
+    private bool IsInitialized = false;
+    private bool IsReadyToWrite = false;
+    private Xterm Terminal;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender)
+            return;
+
+        // Initialize addons
+
+        try
+        {
+            await JsRuntime.InvokeVoidAsync("moonlightServers.loadAddons");
+        }
+        catch (Exception e)
+        {
+            Logger.LogError("An error occured while initializing addons: {e}", e);
+        }
+
+        // Subscribe to parent events
+        Parent.OnWrite += HandleWrite;
+
+        IsInitialized = true;
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task HandleFirstRender()
+    {
+        IsReadyToWrite = true;
+
+        try
+        {
+            await Terminal.Addon("addon-fit").InvokeVoidAsync("fit");
+        }
+        catch (Exception e)
+        {
+            Logger.LogError("An error occured while calling addons: {e}", e);
+        }
+
+        var outputToWrite = string.Concat(Parent.OutputCache.ToArray());
+        await Terminal.Write(outputToWrite);
+    }
+
+    private async Task HandleWrite(string content)
+    {
+        if (!IsReadyToWrite)
+            return;
+
+        await Terminal.Write(content);
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        Parent.OnWrite -= HandleWrite;
+        await Terminal.DisposeAsync();
+    }
+}

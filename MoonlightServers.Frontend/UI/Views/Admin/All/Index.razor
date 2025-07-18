@@ -33,7 +33,13 @@
         <Pagination TItem="ServerResponse" ItemSource="LoadData" />
         
         <DataTableColumn TItem="ServerResponse" Field="@(x => x.Id)" Name="Id"/>
-        <DataTableColumn TItem="ServerResponse" Field="@(x => x.Name)" Name="Name"/>
+        <DataTableColumn TItem="ServerResponse" Field="@(x => x.Name)" Name="Name">
+            <ColumnTemplate>
+                <a class="text-primary" href="/admin/servers/all/update/@context.Id">
+                    @context.Name
+                </a>
+            </ColumnTemplate>
+        </DataTableColumn>
         <DataTableColumn TItem="ServerResponse" Field="@(x => x.NodeId)" Name="Node">
             <ColumnTemplate>
                 @{

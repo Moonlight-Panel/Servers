@@ -5,7 +5,7 @@
 @using MoonCore.Helpers
 @using MoonlightServers.Shared.Http.Requests.Admin.Nodes
 @using MoonlightServers.Shared.Http.Responses.Admin.Nodes
-@using MoonlightServers.Frontend.UI.Components.Nodes.UpdateNodePartials
+@using MoonlightServers.Frontend.UI.Components.Nodes.UpdatePartials
 
 @inject HttpApiClient ApiClient
 @inject NavigationManager Navigation
@@ -16,11 +16,11 @@
 <LazyLoader Load="Load">
     <PageHeader Title="@Node.Name">
         <a href="/admin/servers/nodes" class="btn btn-secondary">
-            <i class="icon-chevron-left mr-1"></i>
+            <i class="icon-chevron-left"></i>
             Back
         </a>
         <WButton OnClick="_ => Form.Submit()" CssClasses="btn btn-primary">
-            <i class="icon-check mr-1"></i>
+            <i class="icon-check"></i>
             Update
         </WButton>
     </PageHeader>
@@ -30,19 +30,19 @@
             
             <Tabs>
                 <Tab Name="Overview">
-                    <OverviewNodeUpdate Node="Node" />
+                    <Overview Node="Node" />
                 </Tab>
                 
                 <Tab Name="Settings">
-                    <GeneralNodeUpdate Request="Request"/>
+                    <General Request="Request"/>
                 </Tab>
 
                 <Tab Name="Allocations">
-                    <AllocationsNodeUpdate Node="Node"/>
+                    <Allocations Node="Node"/>
                 </Tab>
 
                 <Tab Name="Advanced Settings">
-                    <AdvancedNodeUpdate Request="Request"/>
+                    <Advanced Request="Request"/>
                 </Tab>
             </Tabs>
             
