@@ -12,18 +12,22 @@
     <div class="grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-6">
         @foreach (var variable in Variables)
         {
-            <div class="sm:col-span-2 card card-body">
-                <label class="block text-sm font-medium leading-6 text-base-content">
-                    @variable.Name
-                </label>
-                <p class="mt-1 mb-2.5 text-sm leading-6 text-base-content/60">
-                    @variable.Description
-                </p>
-                <div class="mt-auto">
-                    <input @onchange="e => UpdateVariable(variable, e)"
-                           value="@variable.Value"
-                           type="text"
-                           class="input w-full">
+            <div class="sm:col-span-2 card card-sm">
+                <div class="card-header pb-1">
+                    <h5 class="text-base font-semibold">
+                        @variable.Name
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <p class="mb-2.5 text-sm leading-6 text-base-content/60">
+                        @variable.Description
+                    </p>
+                    <div class="mt-auto">
+                        <input @onchange="e => UpdateVariable(variable, e)"
+                               value="@variable.Value"
+                               type="text"
+                               class="input w-full">
+                    </div>
                 </div>
             </div>
         }

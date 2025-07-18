@@ -29,18 +29,24 @@
         <div class="card card-body justify-between py-2.5 px-5 flex-row">
             <div class="flex flex-row items-center">
                 @{
-                    var bgColor = State switch
+                    var statusClass = State switch
                     {
-                        ServerState.Installing => "bg-primary",
-                        ServerState.Offline => "bg-error",
-                        ServerState.Starting => "bg-warning",
-                        ServerState.Stopping => "bg-warning",
-                        ServerState.Online => "bg-success",
-                        _ => "bg-gray-500"
+                        ServerState.Installing => "status-primary",
+                        ServerState.Offline => "status-error",
+                        ServerState.Starting => "status-warning",
+                        ServerState.Stopping => "status-warning",
+                        ServerState.Online => "status-success",
+                        _ => "status-secondary"
                     };
                 }
-
-                <div class="p-2.5 rounded-full @bgColor me-3"></div>
+                
+                <div class="inline-grid *:[grid-area:1/1] me-3">
+                    @if (State != ServerState.Offline)
+                    {
+                        <div class="status status-xl @statusClass animate-ping"></div>
+                    }
+                    <div class="status status-xl @statusClass"></div>
+                </div>
 
                 <div class="flex flex-col">
                     <div class="hidden sm:flex text-lg font-semibold">@Server.Name</div>
