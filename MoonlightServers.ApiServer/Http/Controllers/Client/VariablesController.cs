@@ -1,42 +1,76 @@
+using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using MoonCore.Exceptions;
 using MoonCore.Extended.Abstractions;
+using MoonCore.Models;
 using Moonlight.ApiServer.Database.Entities;
 using MoonlightServers.ApiServer.Database.Entities;
 using MoonlightServers.ApiServer.Services;
+using MoonlightServers.Shared.Constants;
 using MoonlightServers.Shared.Enums;
 using MoonlightServers.Shared.Http.Requests.Client.Servers.Variables;
+using MoonlightServers.Shared.Http.Responses.Client.Servers.Shares;
 using MoonlightServers.Shared.Http.Responses.Client.Servers.Variables;
 
 namespace MoonlightServers.ApiServer.Http.Controllers.Client;
 
 [Authorize]
 [ApiController]
-[Route("api/client/servers")]
+[Route("api/client/servers/{serverId:int}/variables")]
 public class VariablesController : Controller
 {
     private readonly DatabaseRepository<Server> ServerRepository;
+    private readonly DatabaseRepository<ServerVariable> ServerVariableRepository;
+    private readonly DatabaseRepository<StarVariable> StarVariableRepository;
     private readonly ServerAuthorizeService AuthorizeService;
 
     public VariablesController(
         DatabaseRepository<Server> serverRepository,
-        ServerAuthorizeService authorizeService
+        ServerAuthorizeService authorizeService,
+        DatabaseRepository<ServerVariable> serverVariableRepository,
+        DatabaseRepository<StarVariable> starVariableRepository
     )
     {
         ServerRepository = serverRepository;
         AuthorizeService = authorizeService;
+        ServerVariableRepository = serverVariableRepository;
+        StarVariableRepository = starVariableRepository;
     }
 
-    [HttpGet("{serverId:int}/variables")]
-    public async Task<ServerVariableDetailResponse[]> Get([FromRoute] int serverId)
+    [HttpGet]
+    public async Task<PagedData<ServerVariableDetailResponse>> Get(
+        [FromRoute] int serverId,
+        [FromQuery] [Range(0, int.MaxValue)] int page,
+        [FromQuery] [Range(1, 100)] int pageSize
+    )
     {
-        var server = await GetServerById(serverId, ServerPermissionType.Read);
+        var server = await GetServerById(serverId, ServerPermissionLevel.Read);
 
-        return server.Star.Variables.Select(starVariable =>
+        var query = StarVariableRepository
+            .Get()
+            .Where(x => x.Star.Id == server.Star.Id);
+
+        var count = await query.CountAsync();
+
+        var starVariables = await query
+            .Skip(page * pageSize)
+            .Take(pageSize)
+            .ToArrayAsync();
+
+        var starVariableKeys = starVariables
+            .Select(x => x.Key)
+            .ToArray();
+
+        var serverVariables = await ServerVariableRepository
+            .Get()
+            .Where(x => x.Server.Id == server.Id && starVariableKeys.Contains(x.Key))
+            .ToArrayAsync();
+
+        var responses = starVariables.Select(starVariable =>
         {
-            var serverVariable = server.Variables.First(x => x.Key == starVariable.Key);
+            var serverVariable = serverVariables.First(x => x.Key == starVariable.Key);
 
             return new ServerVariableDetailResponse()
             {
@@ -48,9 +82,18 @@ public class VariablesController : Controller
                 Filter = starVariable.Filter
             };
         }).ToArray();
+
+        return new PagedData<ServerVariableDetailResponse>()
+        {
+            Items = responses,
+            CurrentPage = page,
+            PageSize = pageSize,
+            TotalItems = count,
+            TotalPages = count == 0 ? 0 : count / pageSize
+        };
     }
 
-    [HttpPut("{serverId:int}/variables")]
+    [HttpPut("")]
     public async Task<ServerVariableDetailResponse> UpdateSingle(
         [FromRoute] int serverId,
         [FromBody] UpdateServerVariableRequest request
@@ -58,7 +101,7 @@ public class VariablesController : Controller
     {
         // TODO: Handle filter
 
-        var server = await GetServerById(serverId, ServerPermissionType.ReadWrite);
+        var server = await GetServerById(serverId, ServerPermissionLevel.ReadWrite);
 
         var serverVariable = server.Variables.FirstOrDefault(x => x.Key == request.Key);
         var starVariable = server.Star.Variables.FirstOrDefault(x => x.Key == request.Key);
@@ -80,13 +123,13 @@ public class VariablesController : Controller
         };
     }
 
-    [HttpPatch("{serverId:int}/variables")]
+    [HttpPatch("")]
     public async Task<ServerVariableDetailResponse[]> Update(
         [FromRoute] int serverId,
         [FromBody] UpdateServerVariableRangeRequest request
     )
     {
-        var server = await GetServerById(serverId, ServerPermissionType.ReadWrite);
+        var server = await GetServerById(serverId, ServerPermissionLevel.ReadWrite);
 
         foreach (var variable in request.Variables)
         {
@@ -120,13 +163,11 @@ public class VariablesController : Controller
         }).ToArray();
     }
 
-    private async Task<Server> GetServerById(int serverId, ServerPermissionType type)
+    private async Task<Server> GetServerById(int serverId, ServerPermissionLevel level)
     {
         var server = await ServerRepository
             .Get()
-            .Include(x => x.Variables)
             .Include(x => x.Star)
-            .ThenInclude(x => x.Variables)
             .FirstOrDefaultAsync(x => x.Id == serverId);
 
         if (server == null)
@@ -134,7 +175,8 @@ public class VariablesController : Controller
 
         var authorizeResult = await AuthorizeService.Authorize(
             User, server,
-            permission => permission.Name == "variables" && permission.Type >= type
+            ServerPermissionConstants.Variables,
+            level
         );
 
         if (!authorizeResult.Succeeded)

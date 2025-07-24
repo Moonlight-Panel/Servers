@@ -39,7 +39,7 @@
                         _ => "status-secondary"
                     };
                 }
-                
+
                 <div class="inline-grid *:[grid-area:1/1] me-3">
                     @if (State != ServerState.Offline)
                     {
@@ -65,7 +65,7 @@
             </div>
             <div class="flex flex-row items-center">
                 <div class="flex gap-x-1.5">
-                    @if (HasPermissionTo("power", ServerPermissionType.ReadWrite))
+                    @if (HasPermissionTo("power", ServerPermissionLevel.ReadWrite))
                     {
                         @if (State == ServerState.Offline)
                         {
@@ -128,12 +128,12 @@
                             <i class="icon-play align-middle"></i>
                             <span class="align-middle">Start</span>
                         </button>
-                        
+
                         <button type="button" class="btn btn-primary" disabled="disabled">
                             <i class="icon-rotate-ccw align-middle"></i>
                             <span class="align-middle">Restart</span>
                         </button>
-                        
+
                         <button type="button" class="btn btn-error" disabled="disabled">
                             <i class="icon-squircle align-middle"></i>
                             <span class="align-middle">Stop</span>
@@ -144,7 +144,7 @@
         </div>
 
         <div class="mt-3">
-            
+
             <nav class="tabs space-x-2 overflow-x-auto" aria-label="Tabs" role="tablist" aria-orientation="horizontal">
                 @foreach (var tab in Tabs)
                 {
@@ -154,8 +154,8 @@
                        role="tab"
                        @onclick:preventDefault
                        @onclick="() => SwitchTab(tab)">
-                        @tab.Name 
-                    </a> 
+                        @tab.Name
+                    </a>
                 }
             </nav>
 
@@ -217,13 +217,18 @@
             // If we are accessing a shared server, we need to handle permissions
             if (Server.Share != null)
             {
-                // This removes all tabs where the permission filter is not set
+                // This removes all tabs where the user doesn't have the required permissions
                 tmpTabs.RemoveAll(tab =>
                 {
-                    if (tab.PermissionFilter == null)
+                    if (string.IsNullOrEmpty(tab.PermissionId) || tab.PermissionLevel == ServerPermissionLevel.None)
                         return false;
 
-                    return !Server.Share.Permissions.Any(tab.PermissionFilter);
+                    // If permission is required but not set, we dont have access to it
+                    if (!Server.Share.Permissions.TryGetValue(tab.PermissionId, out var level))
+                        return true;
+
+                    // True if the acquired level is higher or equal than the required permission level for the tba
+                    return level >= tab.PermissionLevel;
                 });
             }
 
@@ -244,7 +249,7 @@
 
             State = status.State;
 
-            if (!HasPermissionTo("console", ServerPermissionType.Read))
+            if (!HasPermissionTo("console", ServerPermissionLevel.Read))
                 return; // Exit early if we don't have permissions to load the console
 
             // Load initial messages
@@ -300,13 +305,16 @@
         }
     }
 
-    private bool HasPermissionTo(string name, ServerPermissionType type)
+    private bool HasPermissionTo(string id, ServerPermissionLevel level)
     {
         // All non shares have permissions
         if (Server.Share == null)
             return true;
 
-        return Server.Share.Permissions.Any(x => x.Name == name && x.Type >= type);
+        if (!Server.Share.Permissions.TryGetValue(id, out var acquiredLevel))
+            return false;
+
+        return acquiredLevel >= level;
     }
 
     private async Task SwitchTab(ServerTab tab)

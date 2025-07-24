@@ -16,24 +16,39 @@
         {
             var i = Permissions.TryGetValue(name, out var permission) ? (int)permission : -1;
             
-            <div class="col-span-1 flex flex-row items-center justify-center lg:justify-start">
-                @name
+            <div class="col-span-1 flex flex-col justify-center lg:justify-start text-center lg:text-start">
+                <span>@name</span>
+                <span class="text-base-content/80 text-sm">This is a long description</span>
             </div>
-
-            <div class="col-span-1 flex flex-row items-center justify-center lg:justify-end">
-                <div class="tabs">
-                    <button @onclick="() => Reset(name)"
-                            class="tabs-segment @(i == -1 ? "tabs-segment-active" : "")">
-                        None
-                    </button>
-                    <button @onclick="() => Set(name, ServerPermissionType.Read)"
-                            class="tabs-segment @(i == 0 ? "tabs-segment-active" : "")">
-                        Read
-                    </button>
-                    <button @onclick="() => Set(name, ServerPermissionType.ReadWrite)"
-                            class="tabs-segment @(i == 1 ? "tabs-segment-active" : "")">
-                        Read & Write
-                    </button>
+            
+            <div class="col-span-1 flex justify-end">
+                <div class="join drop-shadow">
+                    @if (i == -1)
+                    {
+                        <input class="join-item btn btn-soft" type="radio" name="share-@name" aria-label="None" checked="checked"/>
+                    }
+                    else
+                    {
+                        <input @onclick="() => Reset(name)" class="join-item btn btn-soft" type="radio" name="share-@name" aria-label="None"/>
+                    }
+                
+                    @if (i == 0)
+                    {
+                        <input class="join-item btn btn-soft" type="radio" name="share-@name" aria-label="Read" checked="checked"/>
+                    }
+                    else
+                    {
+                        <input @onclick="() => Set(name, ServerPermissionLevel.Read)" class="join-item btn btn-soft" type="radio" name="share-@name" aria-label="Read"/>
+                    }
+                
+                    @if (i == 1)
+                    {
+                        <input class="join-item btn btn-soft" type="radio" name="share-@name" aria-label="Read & Write" checked="checked"/>
+                    }
+                    else
+                    {
+                        <input @onclick="() => Set(name, ServerPermissionLevel.ReadWrite)" class="join-item btn btn-soft" type="radio" name="share-@name" aria-label="Read & Write"/>
+                    }
                 </div>
             </div>
         }
@@ -53,7 +68,7 @@
     private HandleForm HandleForm;
     private UpdateShareRequest Request;
 
-    private Dictionary<string, ServerPermissionType> Permissions = new();
+    private Dictionary<string, ServerPermissionLevel> Permissions = new();
 
     private string[] Names =
     [
@@ -69,12 +84,12 @@
     {
         Request = new();
 
-        Permissions = Share.Permissions.ToDictionary(x => x.Name, x => x.Type);
+        Permissions = Share.Permissions.ToDictionary(x => x.Identifier, x => x.Level);
     }
 
-    private async Task Set(string name, ServerPermissionType type)
+    private async Task Set(string name, ServerPermissionLevel level)
     {
-        Permissions[name] = type;
+        Permissions[name] = level;
         await InvokeAsync(StateHasChanged);
     }
 
@@ -89,10 +104,10 @@
 
     private async Task OnValidSubmit()
     {
-        Request.Permissions = Permissions.Select(x => new ServerSharePermission()
+        Request.Permissions = Permissions.Select(x => new GrantedServerPermission()
         {
-            Name = x.Key,
-            Type = x.Value
+            Identifier = x.Key,
+            Level = x.Value
         }).ToList();
 
         await OnSubmit.Invoke(Request);

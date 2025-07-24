@@ -40,15 +40,12 @@ public class ServersDataContext : DatabaseContext
         #region Shares
 
         modelBuilder.Ignore<ServerShareContent>();
-        modelBuilder.Ignore<ServerSharePermission>();
         
         modelBuilder.Entity<ServerShare>(builder =>
         {
             builder.OwnsOne(x => x.Content, navigationBuilder =>
             {
                 navigationBuilder.ToJson();
-
-                navigationBuilder.OwnsMany(x => x.Permissions);
             });
         });
 

@@ -4,6 +4,7 @@ using MoonCore.Attributes;
 using MoonlightServers.ApiServer.Database.Entities;
 using MoonlightServers.ApiServer.Interfaces;
 using MoonlightServers.ApiServer.Models;
+using MoonlightServers.Shared.Enums;
 using MoonlightServers.Shared.Models;
 
 namespace MoonlightServers.ApiServer.Implementations.ServerAuthFilters;
@@ -11,6 +12,8 @@ namespace MoonlightServers.ApiServer.Implementations.ServerAuthFilters;
 public class AdminAuthFilter : IServerAuthorizationFilter
 {
     private readonly IAuthorizationService AuthorizationService;
+
+    public int Priority => 0;
 
     public AdminAuthFilter(IAuthorizationService authorizationService)
     {
@@ -20,7 +23,8 @@ public class AdminAuthFilter : IServerAuthorizationFilter
     public async Task<ServerAuthorizationResult?> Process(
         ClaimsPrincipal user,
         Server server,
-        Func<ServerSharePermission, bool>? filter = null
+        string permissionId,
+        ServerPermissionLevel requiredLevel
     )
     {
         var authResult = await AuthorizationService.AuthorizeAsync(

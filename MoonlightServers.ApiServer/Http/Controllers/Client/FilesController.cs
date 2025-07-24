@@ -7,6 +7,7 @@ using Moonlight.ApiServer.Database.Entities;
 using MoonlightServers.ApiServer.Database.Entities;
 using MoonlightServers.ApiServer.Services;
 using MoonlightServers.DaemonShared.Enums;
+using MoonlightServers.Shared.Constants;
 using MoonlightServers.Shared.Enums;
 using MoonlightServers.Shared.Http.Requests.Client.Servers.Files;
 using MoonlightServers.Shared.Http.Responses.Client.Servers.Files;
@@ -39,7 +40,7 @@ public class FilesController : Controller
     [HttpGet("list")]
     public async Task<ServerFilesEntryResponse[]> List([FromRoute] int serverId, [FromQuery] string path)
     {
-        var server = await GetServerById(serverId, ServerPermissionType.Read);
+        var server = await GetServerById(serverId, ServerPermissionLevel.Read);
 
         var entries = await ServerFileSystemService.List(server, path);
 
@@ -56,7 +57,7 @@ public class FilesController : Controller
     [HttpPost("move")]
     public async Task Move([FromRoute] int serverId, [FromQuery] string oldPath, [FromQuery] string newPath)
     {
-        var server = await GetServerById(serverId, ServerPermissionType.ReadWrite);
+        var server = await GetServerById(serverId, ServerPermissionLevel.ReadWrite);
 
         await ServerFileSystemService.Move(server, oldPath, newPath);
     }
@@ -64,7 +65,7 @@ public class FilesController : Controller
     [HttpDelete("delete")]
     public async Task Delete([FromRoute] int serverId, [FromQuery] string path)
     {
-        var server = await GetServerById(serverId, ServerPermissionType.ReadWrite);
+        var server = await GetServerById(serverId, ServerPermissionLevel.ReadWrite);
 
         await ServerFileSystemService.Delete(server, path);
     }
@@ -72,15 +73,15 @@ public class FilesController : Controller
     [HttpPost("mkdir")]
     public async Task Mkdir([FromRoute] int serverId, [FromQuery] string path)
     {
-        var server = await GetServerById(serverId, ServerPermissionType.ReadWrite);
+        var server = await GetServerById(serverId, ServerPermissionLevel.ReadWrite);
 
         await ServerFileSystemService.Mkdir(server, path);
     }
-    
+
     [HttpPost("touch")]
     public async Task Touch([FromRoute] int serverId, [FromQuery] string path)
     {
-        var server = await GetServerById(serverId, ServerPermissionType.ReadWrite);
+        var server = await GetServerById(serverId, ServerPermissionLevel.ReadWrite);
 
         await ServerFileSystemService.Mkdir(server, path);
     }
@@ -88,7 +89,7 @@ public class FilesController : Controller
     [HttpGet("upload")]
     public async Task<ServerFilesUploadResponse> Upload([FromRoute] int serverId)
     {
-        var server = await GetServerById(serverId, ServerPermissionType.ReadWrite);
+        var server = await GetServerById(serverId, ServerPermissionLevel.ReadWrite);
 
         var accessToken = NodeService.CreateAccessToken(
             server.Node,
@@ -115,7 +116,7 @@ public class FilesController : Controller
     [HttpGet("download")]
     public async Task<ServerFilesDownloadResponse> Download([FromRoute] int serverId, [FromQuery] string path)
     {
-        var server = await GetServerById(serverId, ServerPermissionType.Read);
+        var server = await GetServerById(serverId, ServerPermissionLevel.Read);
 
         var accessToken = NodeService.CreateAccessToken(
             server.Node,
@@ -143,7 +144,7 @@ public class FilesController : Controller
     [HttpPost("compress")]
     public async Task Compress([FromRoute] int serverId, [FromBody] ServerFilesCompressRequest request)
     {
-        var server = await GetServerById(serverId, ServerPermissionType.ReadWrite);
+        var server = await GetServerById(serverId, ServerPermissionLevel.ReadWrite);
 
         if (!Enum.TryParse(request.Type, true, out CompressType type))
             throw new HttpApiException("Invalid compress type provided", 400);
@@ -154,7 +155,7 @@ public class FilesController : Controller
     [HttpPost("decompress")]
     public async Task Decompress([FromRoute] int serverId, [FromBody] ServerFilesDecompressRequest request)
     {
-        var server = await GetServerById(serverId, ServerPermissionType.ReadWrite);
+        var server = await GetServerById(serverId, ServerPermissionLevel.ReadWrite);
 
         if (!Enum.TryParse(request.Type, true, out CompressType type))
             throw new HttpApiException("Invalid compress type provided", 400);
@@ -162,7 +163,7 @@ public class FilesController : Controller
         await ServerFileSystemService.Decompress(server, type, request.Path, request.Destination);
     }
 
-    private async Task<Server> GetServerById(int serverId, ServerPermissionType type)
+    private async Task<Server> GetServerById(int serverId, ServerPermissionLevel level)
     {
         var server = await ServerRepository
             .Get()
@@ -174,7 +175,8 @@ public class FilesController : Controller
 
         var authorizeResult = await AuthorizeService.Authorize(
             User, server,
-            permission => permission.Name == "files" && permission.Type >= type
+            ServerPermissionConstants.Files,
+            level
         );
 
         if (!authorizeResult.Succeeded)

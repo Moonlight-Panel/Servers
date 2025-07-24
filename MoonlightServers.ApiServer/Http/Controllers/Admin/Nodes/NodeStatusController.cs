@@ -22,7 +22,7 @@ public class NodeStatusController : Controller
         NodeService = nodeService;
     }
 
-    [HttpGet("{nodeId}/system/status")]
+    [HttpGet("{nodeId:int}/system/status")]
     [Authorize(Policy = "permissions:admin.servers.nodes.status")]
     public async Task<NodeSystemStatusResponse> GetStatus([FromRoute] int nodeId)
     {

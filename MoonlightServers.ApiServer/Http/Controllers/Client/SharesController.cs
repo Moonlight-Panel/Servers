@@ -8,6 +8,7 @@ using MoonCore.Models;
 using Moonlight.ApiServer.Database.Entities;
 using MoonlightServers.ApiServer.Database.Entities;
 using MoonlightServers.ApiServer.Services;
+using MoonlightServers.Shared.Constants;
 using MoonlightServers.Shared.Enums;
 using MoonlightServers.Shared.Http.Requests.Client.Servers.Shares;
 using MoonlightServers.Shared.Http.Responses.Client.Servers.Shares;
@@ -16,7 +17,7 @@ namespace MoonlightServers.ApiServer.Http.Controllers.Client;
 
 [Authorize]
 [ApiController]
-[Route("api/client/servers")]
+[Route("api/client/servers/{serverId:int}/shares")]
 public class SharesController : Controller
 {
     private readonly DatabaseRepository<Server> ServerRepository;
@@ -37,7 +38,7 @@ public class SharesController : Controller
         AuthorizeService = authorizeService;
     }
 
-    [HttpGet("{serverId:int}/shares")]
+    [HttpGet]
     public async Task<PagedData<ServerShareResponse>> GetAll(
         [FromRoute] int serverId,
         [FromQuery] [Range(0, int.MaxValue)] int page,
@@ -67,7 +68,7 @@ public class SharesController : Controller
         {
             Id = x.Id,
             Username = users.First(y => y.Id == x.UserId).Username,
-            Permissions = x.Content.Permissions.ToArray()
+            Permissions = x.Content.Permissions
         }).ToArray();
 
         return new PagedData<ServerShareResponse>()
@@ -80,7 +81,7 @@ public class SharesController : Controller
         };
     }
 
-    [HttpGet("{serverId:int}/shares/{id:int}")]
+    [HttpGet("{id:int}")]
     public async Task<ServerShareResponse> Get(
         [FromRoute] int serverId,
         [FromRoute] int id
@@ -103,13 +104,13 @@ public class SharesController : Controller
         {
             Id = share.Id,
             Username = user.Username,
-            Permissions = share.Content.Permissions.ToArray()
+            Permissions = share.Content.Permissions
         };
 
         return mappedItem;
     }
 
-    [HttpPost("{serverId:int}/shares")]
+    [HttpPost("")]
     public async Task<ServerShareResponse> Create(
         [FromRoute] int serverId,
         [FromBody] CreateShareRequest request
@@ -142,13 +143,13 @@ public class SharesController : Controller
         {
             Id = finalShare.Id,
             Username = user.Username,
-            Permissions = finalShare.Content.Permissions.ToArray()
+            Permissions = finalShare.Content.Permissions
         };
 
         return mappedItem;
     }
 
-    [HttpPatch("{serverId:int}/shares/{id:int}")]
+    [HttpPatch("{id:int}")]
     public async Task<ServerShareResponse> Update(
         [FromRoute] int serverId,
         [FromRoute] int id,
@@ -180,13 +181,13 @@ public class SharesController : Controller
         {
             Id = share.Id,
             Username = user.Username,
-            Permissions = share.Content.Permissions.ToArray()
+            Permissions = share.Content.Permissions
         };
 
         return mappedItem;
     }
 
-    [HttpDelete("{serverId:int}/shares/{id:int}")]
+    [HttpDelete("{id:int}")]
     public async Task Delete(
         [FromRoute] int serverId,
         [FromRoute] int id
@@ -208,7 +209,6 @@ public class SharesController : Controller
     {
         var server = await ServerRepository
             .Get()
-            .Include(x => x.Node)
             .FirstOrDefaultAsync(x => x.Id == serverId);
 
         if (server == null)
@@ -216,7 +216,8 @@ public class SharesController : Controller
 
         var authorizeResult = await AuthorizeService.Authorize(
             User, server,
-            permission => permission is { Name: "shares", Type: >= ServerPermissionType.ReadWrite }
+            ServerPermissionConstants.Shares,
+            ServerPermissionLevel.ReadWrite
         );
 
         if (!authorizeResult.Succeeded)

@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -10,7 +11,7 @@ using MoonlightServers.Shared.Http.Responses.Admin.Nodes.Statistics;
 namespace MoonlightServers.ApiServer.Http.Controllers.Admin.Nodes;
 
 [ApiController]
-[Route("api/admin/servers/nodes")]
+[Route("api/admin/servers/nodes/{nodeId:int}/statistics")]
 [Authorize(Policy = "permissions:admin.servers.nodes.statistics")]
 public class StatisticsController : Controller
 {
@@ -23,7 +24,9 @@ public class StatisticsController : Controller
         NodeRepository = nodeRepository;
     }
 
-    [HttpGet("{nodeId:int}/statistics")]
+    [HttpGet]
+    [SuppressMessage("ReSharper.DPA", "DPA0011: High execution time of MVC action", MessageId = "time: 1142ms",
+        Justification = "The daemon has an artificial delay of one second to calculate accurate cpu usage values")]
     public async Task<StatisticsResponse> Get([FromRoute] int nodeId)
     {
         var node = await GetNode(nodeId);
@@ -58,7 +61,7 @@ public class StatisticsController : Controller
         };
     }
 
-    [HttpGet("{nodeId:int}/statistics/docker")]
+    [HttpGet("docker")]
     public async Task<DockerStatisticsResponse> GetDocker([FromRoute] int nodeId)
     {
         var node = await GetNode(nodeId);
@@ -75,7 +78,7 @@ public class StatisticsController : Controller
             Version = statistics.Version
         };
     }
-    
+
     private async Task<Node> GetNode(int nodeId)
     {
         var result = await NodeRepository

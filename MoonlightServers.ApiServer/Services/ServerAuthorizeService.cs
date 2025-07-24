@@ -3,36 +3,42 @@ using MoonCore.Attributes;
 using MoonlightServers.ApiServer.Database.Entities;
 using MoonlightServers.ApiServer.Interfaces;
 using MoonlightServers.ApiServer.Models;
-using MoonlightServers.Shared.Models;
+using MoonlightServers.Shared.Enums;
 
 namespace MoonlightServers.ApiServer.Services;
 
 [Scoped]
 public class ServerAuthorizeService
 {
-    private readonly IEnumerable<IServerAuthorizationFilter> AuthorizationFilters;
+    private readonly IServerAuthorizationFilter[] AuthorizationFilters;
 
     public ServerAuthorizeService(
         IEnumerable<IServerAuthorizationFilter> authorizationFilters
     )
     {
-        AuthorizationFilters = authorizationFilters;
+        AuthorizationFilters = authorizationFilters.ToArray();
     }
 
     public async Task<ServerAuthorizationResult> Authorize(
         ClaimsPrincipal user,
         Server server,
-        Func<ServerSharePermission, bool>? filter = null
+        string permissionIdentifier,
+        ServerPermissionLevel permissionLevel
     )
     {
         foreach (var authorizationFilter in AuthorizationFilters)
         {
-            var result = await authorizationFilter.Process(user, server, filter);
+            var result = await authorizationFilter.Process(
+                user,
+                server,
+                permissionIdentifier,
+                permissionLevel
+            );
 
             if (result != null)
                 return result;
         }
-        
+
         return ServerAuthorizationResult.Failed();
     }
 }

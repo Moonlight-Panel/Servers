@@ -1,3 +1,4 @@
+using MoonlightServers.Shared.Enums;
 using MoonlightServers.Shared.Http.Responses.Client.Servers.Allocations;
 using MoonlightServers.Shared.Models;
 
@@ -23,6 +24,6 @@ public record ServerDetailResponse
     public record ShareData
     {
         public string SharedBy { get; set; }
-        public ServerSharePermission[] Permissions { get; set; }
+        public Dictionary<string, ServerPermissionLevel> Permissions { get; set; }
     }
 }

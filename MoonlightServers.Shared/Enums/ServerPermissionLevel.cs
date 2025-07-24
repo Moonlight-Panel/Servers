@@ -1,7 +1,8 @@
 namespace MoonlightServers.Shared.Enums;
 
-public enum ServerPermissionType
+public enum ServerPermissionLevel
 {
+    None = -1,
     Read = 0,
     ReadWrite = 1
 }

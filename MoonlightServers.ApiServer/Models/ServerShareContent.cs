@@ -1,8 +1,8 @@
-using MoonlightServers.Shared.Models;
+using MoonlightServers.Shared.Enums;
 
 namespace MoonlightServers.ApiServer.Models;
 
 public class ServerShareContent
 {
-    public List<ServerSharePermission> Permissions { get; set; } = [];
+    public Dictionary<string, ServerPermissionLevel> Permissions { get; set; } = new();
 }

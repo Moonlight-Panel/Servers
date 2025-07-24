@@ -7,6 +7,7 @@ using MoonCore.Helpers;
 using Moonlight.ApiServer.Database.Entities;
 using MoonlightServers.ApiServer.Database.Entities;
 using MoonlightServers.ApiServer.Services;
+using MoonlightServers.Shared.Constants;
 using MoonlightServers.Shared.Enums;
 
 namespace MoonlightServers.ApiServer.Http.Controllers.Client;
@@ -17,19 +18,16 @@ namespace MoonlightServers.ApiServer.Http.Controllers.Client;
 public class PowerController : Controller
 {
     private readonly DatabaseRepository<Server> ServerRepository;
-    private readonly DatabaseRepository<User> UserRepository;
     private readonly ServerService ServerService;
     private readonly ServerAuthorizeService AuthorizeService;
 
     public PowerController(
         DatabaseRepository<Server> serverRepository,
-        DatabaseRepository<User> userRepository,
         ServerService serverService,
         ServerAuthorizeService authorizeService
     )
     {
         ServerRepository = serverRepository;
-        UserRepository = userRepository;
         ServerService = serverService;
         AuthorizeService = authorizeService;
     }
@@ -70,7 +68,8 @@ public class PowerController : Controller
 
         var authorizeResult = await AuthorizeService.Authorize(
             User, server,
-            permission => permission.Name == "power" && permission.Type >= ServerPermissionType.ReadWrite
+            ServerPermissionConstants.Power,
+            ServerPermissionLevel.ReadWrite
         );
 
         if (!authorizeResult.Succeeded)
@@ -80,7 +79,7 @@ public class PowerController : Controller
                 403
             );
         }
-        
+
         return server;
     }
 }

@@ -10,11 +10,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MoonlightServers.Daemon", "
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MoonlightServers.DaemonShared", "MoonlightServers.DaemonShared\MoonlightServers.DaemonShared.csproj", "{15EBCC5D-2440-4B5B-A046-F8327E0C1CB8}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{B20EF01B-C5D6-47E7-B0DF-143E85332513}"
-	ProjectSection(SolutionItems) = preProject
-		plugin.json = plugin.json
-	EndProjectSection
-EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Runtime", "Runtime", "{7836BC34-096D-440C-9DF9-81116EACAABA}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MoonlightServers.ApiServer.Runtime", "MoonlightServers.ApiServer.Runtime\MoonlightServers.ApiServer.Runtime.csproj", "{9F4370FA-C38D-4E84-892F-12ED5DD40FC6}"

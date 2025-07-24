@@ -5,6 +5,7 @@ using MoonCore.Exceptions;
 using MoonCore.Extended.Abstractions;
 using MoonlightServers.ApiServer.Database.Entities;
 using MoonlightServers.ApiServer.Services;
+using MoonlightServers.Shared.Constants;
 using MoonlightServers.Shared.Enums;
 
 namespace MoonlightServers.ApiServer.Http.Controllers.Client;
@@ -49,7 +50,8 @@ public class SettingsController : Controller
 
         var authorizeResult = await AuthorizeService.Authorize(
             User, server,
-            permission => permission is { Name: "settings", Type: >= ServerPermissionType.ReadWrite }
+            ServerPermissionConstants.Settings,
+            ServerPermissionLevel.ReadWrite
         );
 
         if (!authorizeResult.Succeeded)

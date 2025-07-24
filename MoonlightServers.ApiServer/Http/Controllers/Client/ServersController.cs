@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -10,6 +11,7 @@ using MoonlightServers.ApiServer.Database.Entities;
 using MoonlightServers.ApiServer.Extensions;
 using MoonlightServers.ApiServer.Models;
 using MoonlightServers.ApiServer.Services;
+using MoonlightServers.Shared.Constants;
 using MoonlightServers.Shared.Enums;
 using MoonlightServers.Shared.Http.Requests.Client.Servers;
 using MoonlightServers.Shared.Http.Responses.Client.Servers;
@@ -48,7 +50,10 @@ public class ServersController : Controller
     }
 
     [HttpGet]
-    public async Task<PagedData<ServerDetailResponse>> GetAll([FromQuery] int page, [FromQuery] int pageSize)
+    public async Task<PagedData<ServerDetailResponse>> GetAll(
+        [FromQuery] [Range(0, int.MaxValue)] int page,
+        [FromQuery] [Range(0, 100)] int pageSize
+    )
     {
         var userIdClaim = User.FindFirstValue("userId");
 
@@ -95,7 +100,10 @@ public class ServersController : Controller
     }
 
     [HttpGet("shared")]
-    public async Task<PagedData<ServerDetailResponse>> GetAllShared([FromQuery] int page, [FromQuery] int pageSize)
+    public async Task<PagedData<ServerDetailResponse>> GetAllShared(
+        [FromQuery] [Range(0, int.MaxValue)] int page,
+        [FromQuery] [Range(0, 100)] int pageSize
+    )
     {
         var userIdClaim = User.FindFirstValue("userId");
 
@@ -145,7 +153,7 @@ public class ServersController : Controller
             Share = new()
             {
                 SharedBy = owners.First(y => y.Id == x.Server.OwnerId).Username,
-                Permissions = x.Content.Permissions.ToArray()
+                Permissions = x.Content.Permissions
             }
         }).ToArray();
 
@@ -172,7 +180,12 @@ public class ServersController : Controller
         if (server == null)
             throw new HttpApiException("No server with this id found", 404);
 
-        var authorizationResult = await AuthorizeService.Authorize(User, server);
+        var authorizationResult = await AuthorizeService.Authorize(
+            User,
+            server,
+            String.Empty,
+            ServerPermissionLevel.None
+        );
 
         if (!authorizationResult.Succeeded)
         {
@@ -210,7 +223,7 @@ public class ServersController : Controller
             response.Share = new()
             {
                 SharedBy = owner.Username,
-                Permissions = authorizationResult.Share.Content.Permissions.ToArray()
+                Permissions = authorizationResult.Share.Content.Permissions
             };
         }
 
@@ -220,7 +233,11 @@ public class ServersController : Controller
     [HttpGet("{serverId:int}/status")]
     public async Task<ServerStatusResponse> GetStatus([FromRoute] int serverId)
     {
-        var server = await GetServerById(serverId);
+        var server = await GetServerById(
+            serverId,
+            ServerPermissionConstants.Console,
+            ServerPermissionLevel.None
+        );
 
         var status = await ServerService.GetStatus(server);
 
@@ -235,7 +252,8 @@ public class ServersController : Controller
     {
         var server = await GetServerById(
             serverId,
-            permission => permission is { Name: "console", Type: >= ServerPermissionType.Read }
+            ServerPermissionConstants.Console,
+            ServerPermissionLevel.Read
         );
 
         // TODO: Handle transparent node proxy
@@ -263,7 +281,8 @@ public class ServersController : Controller
     {
         var server = await GetServerById(
             serverId,
-            permission => permission is { Name: "console", Type: >= ServerPermissionType.Read }
+            ServerPermissionConstants.Console,
+            ServerPermissionLevel.Read
         );
 
         var logs = await ServerService.GetLogs(server);
@@ -278,7 +297,9 @@ public class ServersController : Controller
     public async Task<ServerStatsResponse> GetStats([FromRoute] int serverId)
     {
         var server = await GetServerById(
-            serverId
+            serverId,
+            ServerPermissionConstants.Console,
+            ServerPermissionLevel.Read
         );
 
         var stats = await ServerService.GetStats(server);
@@ -295,17 +316,18 @@ public class ServersController : Controller
     }
 
     [HttpPost("{serverId:int}/command")]
-    public async Task RunCommand([FromRoute] int serverId, [FromBody] ServerCommandRequest request)
+    public async Task Command([FromRoute] int serverId, [FromBody] ServerCommandRequest request)
     {
         var server = await GetServerById(
             serverId,
-            permission => permission is { Name: "console", Type: >= ServerPermissionType.ReadWrite }
+            ServerPermissionConstants.Console,
+            ServerPermissionLevel.ReadWrite
         );
-        
+
         await ServerService.RunCommand(server, request.Command);
     }
 
-    private async Task<Server> GetServerById(int serverId, Func<ServerSharePermission, bool>? filter = null)
+    private async Task<Server> GetServerById(int serverId, string permissionId, ServerPermissionLevel level)
     {
         var server = await ServerRepository
             .Get()
@@ -315,7 +337,7 @@ public class ServersController : Controller
         if (server == null)
             throw new HttpApiException("No server with this id found", 404);
 
-        var authorizeResult = await AuthorizeService.Authorize(User, server, filter);
+        var authorizeResult = await AuthorizeService.Authorize(User, server, permissionId, level);
 
         if (!authorizeResult.Succeeded)
         {
