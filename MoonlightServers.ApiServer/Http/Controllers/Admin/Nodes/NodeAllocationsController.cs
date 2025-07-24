@@ -40,6 +40,7 @@ public class NodeAllocationsController : Controller
 
         var allocations = await AllocationRepository
             .Get()
+            .OrderBy(x => x.Id)
             .Skip(page * pageSize)
             .Take(pageSize)
             .Where(x => x.Node.Id == nodeId)

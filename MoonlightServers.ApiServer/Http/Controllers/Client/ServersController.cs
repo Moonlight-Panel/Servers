@@ -71,7 +71,12 @@ public class ServersController : Controller
             .Where(x => x.OwnerId == userId);
 
         var count = await query.CountAsync();
-        var items = await query.Skip(page * pageSize).Take(pageSize).ToArrayAsync();
+        
+        var items = await query
+            .OrderBy(x => x.Id)
+            .Skip(page * pageSize)
+            .Take(pageSize)
+            .ToArrayAsync();
 
         var mappedItems = items.Select(x => new ServerDetailResponse()
         {
@@ -124,7 +129,12 @@ public class ServersController : Controller
             .Where(x => x.UserId == userId);
 
         var count = await query.CountAsync();
-        var items = await query.Skip(page * pageSize).Take(pageSize).ToArrayAsync();
+        
+        var items = await query
+            .OrderBy(x => x.Id)
+            .Skip(page * pageSize)
+            .Take(pageSize)
+            .ToArrayAsync();
 
         var ownerIds = items
             .Select(x => x.Server.OwnerId)

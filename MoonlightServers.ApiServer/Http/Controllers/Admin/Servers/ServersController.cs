@@ -66,9 +66,9 @@ public class ServersController : Controller
             .Include(x => x.Allocations)
             .Include(x => x.Variables)
             .Include(x => x.Star)
+            .OrderBy(x => x.Id)
             .Skip(page * pageSize)
             .Take(pageSize)
-            .OrderBy(x => x.Id)
             .ToArrayAsync();
 
         var mappedItems = items

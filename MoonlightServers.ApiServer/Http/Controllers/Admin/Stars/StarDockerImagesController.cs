@@ -52,6 +52,7 @@ public class StarDockerImagesController : Controller
         var count = await query.CountAsync();
 
         var items = await query
+            .OrderBy(x => x.Id)
             .Skip(page * pageSize)
             .Take(pageSize)
             .ToArrayAsync();

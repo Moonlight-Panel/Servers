@@ -54,7 +54,12 @@ public class SharesController : Controller
             .Where(x => x.Server.Id == server.Id);
 
         var count = await query.CountAsync();
-        var items = await query.Skip(page * pageSize).Take(pageSize).ToArrayAsync();
+
+        var items = await query
+            .OrderBy(x => x.Id)
+            .Skip(page * pageSize)
+            .Take(pageSize)
+            .ToArrayAsync();
 
         var userIds = items
             .Select(x => x.UserId)
@@ -165,18 +170,18 @@ public class SharesController : Controller
             throw new HttpApiException("A share with that id cannot be found", 404);
 
         share.Content = ShareMapper.MapToServerShareContent(request.Permissions);
-        
+
         share.UpdatedAt = DateTime.UtcNow;
 
         await ShareRepository.Update(share);
-        
+
         var user = await UserRepository
             .Get()
             .FirstOrDefaultAsync(x => x.Id == share.UserId);
 
         if (user == null)
             throw new HttpApiException("A user with that id could not be found", 400);
-        
+
         var mappedItem = new ServerShareResponse()
         {
             Id = share.Id,

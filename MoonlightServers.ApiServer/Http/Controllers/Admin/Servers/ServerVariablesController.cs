@@ -43,6 +43,7 @@ public class ServerVariablesController : Controller
         var variables = await VariableRepository
             .Get()
             .Where(x => x.Server.Id == serverId)
+            .OrderBy(x => x.Id)
             .Skip(page * pageSize)
             .Take(pageSize)
             .ToArrayAsync();

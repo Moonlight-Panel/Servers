@@ -34,6 +34,7 @@ public class StarsController : Controller
 
         var items = await StarRepository
             .Get()
+            .OrderBy(x => x.Id)
             .Skip(page * pageSize)
             .Take(pageSize)
             .ToArrayAsync();
