@@ -45,13 +45,13 @@ public class ShareAuthFilter : IServerAuthorizationFilter
         if (string.IsNullOrEmpty(permissionId) || requiredLevel == ServerPermissionLevel.None)
             return ServerAuthorizationResult.Success(share);
 
-        if (
-            share.Content.Permissions.TryGetValue(permissionId, out var shareLevel) &&
-            shareLevel >= requiredLevel
-        )
-        {
+        var possiblePermShare = share.Content.Permissions.FirstOrDefault(x => x.Identifier == permissionId);
+
+        if (possiblePermShare == null)
+            return null;
+        
+        if (possiblePermShare.Level >= requiredLevel)
             return ServerAuthorizationResult.Success(share);
-        }
 
         return null;
     }

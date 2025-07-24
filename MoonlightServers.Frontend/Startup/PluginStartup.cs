@@ -14,6 +14,7 @@ public class PluginStartup : IPluginStartup
     {
         builder.Services.AddSingleton<ISidebarItemProvider, SidebarImplementation>();
         builder.Services.AddSingleton<IServerTabProvider, DefaultServerTabProvider>();
+        builder.Services.AddSingleton<IServerPermissionProvider, DefaultPermissionProvider>();
         
         builder.Services.AutoAddServices<PluginStartup>();
         

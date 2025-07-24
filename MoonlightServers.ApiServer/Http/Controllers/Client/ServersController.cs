@@ -9,6 +9,7 @@ using MoonCore.Models;
 using Moonlight.ApiServer.Database.Entities;
 using MoonlightServers.ApiServer.Database.Entities;
 using MoonlightServers.ApiServer.Extensions;
+using MoonlightServers.ApiServer.Mappers;
 using MoonlightServers.ApiServer.Models;
 using MoonlightServers.ApiServer.Services;
 using MoonlightServers.Shared.Constants;
@@ -153,7 +154,7 @@ public class ServersController : Controller
             Share = new()
             {
                 SharedBy = owners.First(y => y.Id == x.Server.OwnerId).Username,
-                Permissions = x.Content.Permissions
+                Permissions = ShareMapper.MapToPermissionLevels(x.Content)
             }
         }).ToArray();
 
@@ -223,7 +224,7 @@ public class ServersController : Controller
             response.Share = new()
             {
                 SharedBy = owner.Username,
-                Permissions = authorizationResult.Share.Content.Permissions
+                Permissions = ShareMapper.MapToPermissionLevels(authorizationResult.Share.Content)
             };
         }
 

@@ -1,0 +1,95 @@
+@using MoonlightServers.Frontend.Interfaces
+@using MoonCore.Blazor.FlyonUi.Components
+@using MoonlightServers.Frontend.Models
+@using MoonlightServers.Shared.Enums
+@using MoonlightServers.Shared.Http.Responses.Client.Servers
+
+@inject IEnumerable<IServerPermissionProvider> PermissionProviders
+
+<LazyLoader Load="Load">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-y-3">
+        @foreach (var permission in AvailablePermissions)
+        {
+            var level = PermissionLevels.GetValueOrDefault(permission.Identifier, ServerPermissionLevel.None);
+
+            <div class="col-span-1 flex flex-row items-center justify-start text-base-content">
+                <i class="text-lg @permission.Icon me-4"></i>
+                <div class="flex flex-col">
+                    <span>@permission.DisplayName</span>
+                    <span class="text-base-content/60 text-sm">@permission.Description</span>
+                </div>
+            </div>
+
+            <div class="col-span-1 flex justify-start lg:justify-end mb-5 lg:mb-0">
+                <div class="join drop-shadow">
+                    @if (level == ServerPermissionLevel.None)
+                    {
+                        <input class="join-item btn btn-soft" type="radio" name="share-@permission.Identifier"
+                               aria-label="None"
+                               checked="checked"/>
+                    }
+                    else
+                    {
+                        <input @onclick="() => Set(permission.Identifier, ServerPermissionLevel.None)"
+                               class="join-item btn btn-soft"
+                               type="radio" name="share-@permission.Identifier" aria-label="None"/>
+                    }
+
+                    @if (level == ServerPermissionLevel.Read)
+                    {
+                        <input class="join-item btn btn-soft" type="radio" name="share-@permission.Identifier"
+                               aria-label="Read"
+                               checked="checked"/>
+                    }
+                    else
+                    {
+                        <input @onclick="() => Set(permission.Identifier, ServerPermissionLevel.Read)"
+                               class="join-item btn btn-soft"
+                               type="radio" name="share-@permission.Identifier" aria-label="Read"/>
+                    }
+
+                    @if (level == ServerPermissionLevel.ReadWrite)
+                    {
+                        <input class="join-item btn btn-soft" type="radio" name="share-@permission.Identifier"
+                               aria-label="Read & Write"
+                               checked="checked"/>
+                    }
+                    else
+                    {
+                        <input @onclick="() => Set(permission.Identifier, ServerPermissionLevel.ReadWrite)"
+                               class="join-item btn btn-soft"
+                               type="radio" name="share-@permission.Identifier" aria-label="Read & Write"/>
+                    }
+                </div>
+            </div>
+        }
+    </div>
+</LazyLoader>
+
+@code
+{
+    [Parameter] public ServerDetailResponse Server { get; set; }
+    [Parameter] public Dictionary<string, ServerPermissionLevel> PermissionLevels { get; set; }
+
+    private ServerPermission[] AvailablePermissions;
+
+    private async Task Load(LazyLoader _)
+    {
+        var permissions = new List<ServerPermission>();
+
+        foreach (var provider in PermissionProviders)
+        {
+            permissions.AddRange(
+                await provider.GetPermissions(Server)
+            );
+        }
+
+        AvailablePermissions = permissions.ToArray();
+    }
+
+    private async Task Set(string name, ServerPermissionLevel level)
+    {
+        PermissionLevels[name] = level;
+        await InvokeAsync(StateHasChanged);
+    }
+}

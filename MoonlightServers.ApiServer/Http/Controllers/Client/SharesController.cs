@@ -7,6 +7,8 @@ using MoonCore.Extended.Abstractions;
 using MoonCore.Models;
 using Moonlight.ApiServer.Database.Entities;
 using MoonlightServers.ApiServer.Database.Entities;
+using MoonlightServers.ApiServer.Mappers;
+using MoonlightServers.ApiServer.Models;
 using MoonlightServers.ApiServer.Services;
 using MoonlightServers.Shared.Constants;
 using MoonlightServers.Shared.Enums;
@@ -68,7 +70,7 @@ public class SharesController : Controller
         {
             Id = x.Id,
             Username = users.First(y => y.Id == x.UserId).Username,
-            Permissions = x.Content.Permissions
+            Permissions = ShareMapper.MapToPermissionLevels(x.Content)
         }).ToArray();
 
         return new PagedData<ServerShareResponse>()
@@ -104,13 +106,13 @@ public class SharesController : Controller
         {
             Id = share.Id,
             Username = user.Username,
-            Permissions = share.Content.Permissions
+            Permissions = ShareMapper.MapToPermissionLevels(share.Content)
         };
 
         return mappedItem;
     }
 
-    [HttpPost("")]
+    [HttpPost]
     public async Task<ServerShareResponse> Create(
         [FromRoute] int serverId,
         [FromBody] CreateShareRequest request
@@ -128,10 +130,7 @@ public class SharesController : Controller
         var share = new ServerShare()
         {
             Server = server,
-            Content = new()
-            {
-                Permissions = request.Permissions
-            },
+            Content = ShareMapper.MapToServerShareContent(request.Permissions),
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow,
             UserId = user.Id
@@ -143,7 +142,7 @@ public class SharesController : Controller
         {
             Id = finalShare.Id,
             Username = user.Username,
-            Permissions = finalShare.Content.Permissions
+            Permissions = ShareMapper.MapToPermissionLevels(finalShare.Content)
         };
 
         return mappedItem;
@@ -165,7 +164,8 @@ public class SharesController : Controller
         if (share == null)
             throw new HttpApiException("A share with that id cannot be found", 404);
 
-        share.Content.Permissions = request.Permissions;
+        share.Content = ShareMapper.MapToServerShareContent(request.Permissions);
+        
         share.UpdatedAt = DateTime.UtcNow;
 
         await ShareRepository.Update(share);
@@ -181,7 +181,7 @@ public class SharesController : Controller
         {
             Id = share.Id,
             Username = user.Username,
-            Permissions = share.Content.Permissions
+            Permissions = ShareMapper.MapToPermissionLevels(share.Content)
         };
 
         return mappedItem;

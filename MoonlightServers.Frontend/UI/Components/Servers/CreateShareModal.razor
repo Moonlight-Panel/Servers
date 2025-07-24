@@ -1,7 +1,7 @@
 @using MoonCore.Blazor.FlyonUi.Components
 @using MoonlightServers.Shared.Enums
 @using MoonlightServers.Shared.Http.Requests.Client.Servers.Shares
-@using MoonlightServers.Shared.Models
+@using MoonlightServers.Shared.Http.Responses.Client.Servers
 
 @inherits MoonCore.Blazor.FlyonUi.Modals.Components.BaseModal
 
@@ -14,48 +14,7 @@
         <label class="block text-sm font-medium leading-6 text-base-content">Username</label>
         <input @bind="Request.Username" type="text" class="input w-full"/>
     </div>
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-y-5 lg:gap-y-3">
-        @foreach (var name in Names)
-        {
-            var i = Permissions.TryGetValue(name, out var permission) ? (int)permission : -1;
-            
-            <div class="col-span-1 flex flex-col justify-center lg:justify-start text-center lg:text-start">
-                <span>@name</span>
-                <span class="text-base-content/80 text-sm">This is a long description</span>
-            </div>
-            
-            <div class="col-span-1 flex justify-end">
-                <div class="join drop-shadow">
-                    @if (i == -1)
-                    {
-                        <input class="join-item btn btn-soft" type="radio" name="share-@name" aria-label="None" checked="checked"/>
-                    }
-                    else
-                    {
-                        <input @onclick="() => Reset(name)" class="join-item btn btn-soft" type="radio" name="share-@name" aria-label="None"/>
-                    }
-                
-                    @if (i == 0)
-                    {
-                        <input class="join-item btn btn-soft" type="radio" name="share-@name" aria-label="Read" checked="checked"/>
-                    }
-                    else
-                    {
-                        <input @onclick="() => Set(name, ServerPermissionLevel.Read)" class="join-item btn btn-soft" type="radio" name="share-@name" aria-label="Read"/>
-                    }
-                
-                    @if (i == 1)
-                    {
-                        <input class="join-item btn btn-soft" type="radio" name="share-@name" aria-label="Read & Write" checked="checked"/>
-                    }
-                    else
-                    {
-                        <input @onclick="() => Set(name, ServerPermissionLevel.ReadWrite)" class="join-item btn btn-soft" type="radio" name="share-@name" aria-label="Read & Write"/>
-                    }
-                </div>
-            </div>
-        }
-    </div>
+    <PermissionEditor Server="Server" PermissionLevels="Permissions" />
 </HandleForm>
 
 <div class="mt-8 flex space-x-2">
@@ -65,6 +24,7 @@
 
 @code
 {
+    [Parameter] public ServerDetailResponse Server { get; set; }
     [Parameter] public string Username { get; set; }
     [Parameter] public Func<CreateShareRequest, Task> OnSubmit { get; set; }
 
@@ -96,24 +56,14 @@
         Permissions[name] = level;
         await InvokeAsync(StateHasChanged);
     }
-
-    private async Task Reset(string name)
-    {
-        Permissions.Remove(name);
-        await InvokeAsync(StateHasChanged);
-    }
-
+    
     private async Task Submit()
         => await HandleForm.Submit();
 
     private async Task OnValidSubmit()
     {
-        Request.Permissions = Permissions.Select(x => new GrantedServerPermission()
-        {
-            Identifier = x.Key,
-            Level = x.Value
-        }).ToList();
-
+        Request.Permissions = Permissions;
+        
         await OnSubmit.Invoke(Request);
         await Hide();
     }

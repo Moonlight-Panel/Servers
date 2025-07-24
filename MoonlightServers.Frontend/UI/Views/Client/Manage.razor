@@ -223,12 +223,12 @@
                     if (string.IsNullOrEmpty(tab.PermissionId) || tab.PermissionLevel == ServerPermissionLevel.None)
                         return false;
 
-                    // If permission is required but not set, we dont have access to it
+                    // If permission is required but not set, we don't have access to it
                     if (!Server.Share.Permissions.TryGetValue(tab.PermissionId, out var level))
                         return true;
 
-                    // True if the acquired level is higher or equal than the required permission level for the tba
-                    return level >= tab.PermissionLevel;
+                    // False if the acquired level is higher or equal than the required permission level for the tab so it won't get removed
+                    return level < tab.PermissionLevel;
                 });
             }
 

@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using MoonCore.Extended.SingleDb;
 using Moonlight.ApiServer.Configuration;
@@ -40,12 +41,15 @@ public class ServersDataContext : DatabaseContext
         #region Shares
 
         modelBuilder.Ignore<ServerShareContent>();
-        
+        modelBuilder.Ignore<ServerShareContent.SharePermission>();
+
         modelBuilder.Entity<ServerShare>(builder =>
         {
             builder.OwnsOne(x => x.Content, navigationBuilder =>
             {
                 navigationBuilder.ToJson();
+                
+                navigationBuilder.OwnsMany(x => x.Permissions);
             });
         });
 

@@ -75,6 +75,7 @@
         await ModalService.Launch<CreateShareModal>(parameters =>
         {
             parameters["Username"] = UsernameInput;
+            parameters["Server"] = Server;
             parameters["OnSubmit"] = SubmitCreate;
         }, size: "max-w-2xl");
     }
@@ -92,6 +93,7 @@
         await ModalService.Launch<UpdateShareModal>(parameters =>
         {
             parameters["Share"] = share;
+            parameters["Server"] = Server;
             parameters["OnSubmit"] = (UpdateShareRequest request) => SubmitUpdate(share.Id, request);
         }, size: "max-w-2xl");
     }

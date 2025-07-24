@@ -112,10 +112,10 @@ public class ServerService
 
     #region Variables
 
-    public async Task<ServerVariableDetailResponse[]> GetVariables(int serverId)
+    public async Task<PagedData<ServerVariableDetailResponse>> GetVariables(int serverId, int page, int pageSize)
     {
-        return await HttpApiClient.GetJson<ServerVariableDetailResponse[]>(
-            $"api/client/servers/{serverId}/variables"
+        return await HttpApiClient.GetJson<PagedData<ServerVariableDetailResponse>>(
+            $"api/client/servers/{serverId}/variables?page={page}&pageSize={pageSize}"
         );
     }
 

@@ -93,7 +93,7 @@ public class VariablesController : Controller
         };
     }
 
-    [HttpPut("")]
+    [HttpPut]
     public async Task<ServerVariableDetailResponse> UpdateSingle(
         [FromRoute] int serverId,
         [FromBody] UpdateServerVariableRequest request
@@ -123,7 +123,7 @@ public class VariablesController : Controller
         };
     }
 
-    [HttpPatch("")]
+    [HttpPatch]
     public async Task<ServerVariableDetailResponse[]> Update(
         [FromRoute] int serverId,
         [FromBody] UpdateServerVariableRangeRequest request

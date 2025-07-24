@@ -1,5 +1,6 @@
 @using MoonCore.Blazor.FlyonUi.Components
 @using MoonCore.Blazor.FlyonUi.Toasts
+@using MoonCore.Models
 @using MoonlightServers.Frontend.Services
 @using MoonlightServers.Shared.Http.Responses.Client.Servers.Variables
 
@@ -8,7 +9,7 @@
 @inject ServerService ServerService
 @inject ToastService ToastService
 
-<LazyLoader Load="Load">
+<LazyLoader @ref="LazyLoader" Load="Load">
     <div class="grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-6">
         @foreach (var variable in Variables)
         {
@@ -37,10 +38,13 @@
 @code
 {
     private ServerVariableDetailResponse[] Variables;
+    private LazyLoader LazyLoader;
 
     private async Task Load(LazyLoader _)
     {
-        Variables = await ServerService.GetVariables(Server.Id);
+        Variables = await PagedData<ServerVariableDetailResponse>.All(async (page, pageSize)
+            => await ServerService.GetVariables(Server.Id, page, pageSize)
+        );
     }
 
     private async Task UpdateVariable(ServerVariableDetailResponse variable, ChangeEventArgs args)
@@ -52,11 +56,10 @@
             Key = variable.Key,
             Value = value
         });
-        
+
         // Fetch the current data to make sure the user sees the latest data
-        Variables = await ServerService.GetVariables(Server.Id);
-        await InvokeAsync(StateHasChanged);
-        
+        await LazyLoader.Reload();
+
         await ToastService.Success("Successfully updated variable");
     }
 }
