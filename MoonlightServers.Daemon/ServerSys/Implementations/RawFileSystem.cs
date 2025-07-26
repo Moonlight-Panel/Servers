@@ -8,24 +8,29 @@ public class RawFileSystem : IFileSystem
     public bool IsMounted { get; private set; }
     public bool Exists { get; private set; }
 
-    private readonly ServerMeta Meta;
+    private readonly ServerContext Context;
     private readonly AppConfiguration Configuration;
-    private string HostPath => Path.Combine(Configuration.Storage.Volumes, Meta.Configuration.Id.ToString());
+    private string HostPath;
 
-    public RawFileSystem(ServerMeta meta, AppConfiguration configuration)
+    public RawFileSystem(ServerContext context, AppConfiguration configuration)
     {
-        Meta = meta;
+        Context = context;
         Configuration = configuration;
     }
 
     public Task Initialize()
-        => Task.CompletedTask;
+    {
+        HostPath = Path.Combine(Directory.GetCurrentDirectory(), Configuration.Storage.Volumes, Context.Configuration.Id.ToString());
+        
+        return Task.CompletedTask;
+    }
 
     public Task Sync()
         => Task.CompletedTask;
 
     public Task Create()
     {
+        Directory.CreateDirectory(HostPath);
         return Task.CompletedTask;
     }
 

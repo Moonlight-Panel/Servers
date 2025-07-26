@@ -13,10 +13,17 @@ public class CompositeServiceProvider : IServiceProvider
     {
         foreach (var provider in ServiceProviders)
         {
-            var service = provider.GetService(serviceType);
-            
-            if (service != null)
-                return service;
+            try
+            {
+                var service = provider.GetService(serviceType);
+
+                if (service != null)
+                    return service;
+            }
+            catch (InvalidOperationException)
+            {
+                // Ignored
+            }
         }
 
         return null;

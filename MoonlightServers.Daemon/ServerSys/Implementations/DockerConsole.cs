@@ -11,23 +11,29 @@ namespace MoonlightServers.Daemon.ServerSys.Implementations;
 
 public class DockerConsole : IConsole
 {
-    public IAsyncObservable<string> OnOutput => OnOutputSubject.ToAsyncObservable();
-    public IAsyncObservable<string> OnInput => OnInputSubject.ToAsyncObservable();
+    public IObservable<string> OnOutput => OnOutputSubject;
+    public IObservable<string> OnInput => OnInputSubject;
 
-    private readonly AsyncSubject<string> OnOutputSubject = new();
-    private readonly AsyncSubject<string> OnInputSubject = new();
+    private readonly Subject<string> OnOutputSubject = new();
+    private readonly Subject<string> OnInputSubject = new();
 
     private readonly ConcurrentList<string> OutputCache = new();
     private readonly DockerClient DockerClient;
     private readonly ILogger<DockerConsole> Logger;
-    private readonly ServerMeta Meta;
-    
+    private readonly ServerContext Context;
+
     private MultiplexedStream? CurrentStream;
     private CancellationTokenSource Cts = new();
-    
-    public DockerConsole(ServerMeta meta)
+
+    public DockerConsole(
+        ServerContext context,
+        DockerClient dockerClient,
+        ILogger<DockerConsole> logger
+    )
     {
-        Meta = meta;
+        Context = context;
+        DockerClient = dockerClient;
+        Logger = logger;
     }
 
     public Task Initialize()
@@ -38,13 +44,13 @@ public class DockerConsole : IConsole
 
     public async Task AttachToRuntime()
     {
-        var containerName = $"moonlight-runtime-{Meta.Configuration.Id}";
+        var containerName = $"moonlight-runtime-{Context.Configuration.Id}";
         await AttachStream(containerName);
     }
 
     public async Task AttachToInstallation()
     {
-        var containerName = $"moonlight-install-{Meta.Configuration.Id}";
+        var containerName = $"moonlight-install-{Context.Configuration.Id}";
         await AttachStream(containerName);
     }
 
@@ -108,7 +114,7 @@ public class DockerConsole : IConsole
                     }
                     catch (Exception e)
                     {
-                        Logger.LogWarning("An unhandled error occured while reading from container stream: {e}", e);
+                        Logger.LogWarning(e, "An unhandled error occured while reading from container stream");
                     }
                     finally
                     {
@@ -121,7 +127,7 @@ public class DockerConsole : IConsole
                 }
                 catch (Exception e)
                 {
-                    Logger.LogError("An error occured while attaching to container: {e}", e);
+                    Logger.LogError(e, "An error occured while attaching to container");
                 }
             }
 
@@ -131,7 +137,7 @@ public class DockerConsole : IConsole
 
             Logger.LogDebug("Disconnected from container stream");
         }, Cts.Token);
-        
+
         return Task.CompletedTask;
     }
 
@@ -168,7 +174,8 @@ public class DockerConsole : IConsole
     }
 
     public async Task WriteToMoonlight(string content)
-        => await WriteToOutput($"\x1b[0;38;2;255;255;255;48;2;124;28;230m Moonlight \x1b[0m\x1b[38;5;250m\x1b[3m {content}\x1b[0m\n\r");
+        => await WriteToOutput(
+            $"\x1b[0;38;2;255;255;255;48;2;124;28;230m Moonlight \x1b[0m\x1b[38;5;250m\x1b[3m {content}\x1b[0m\n\r");
 
     public Task ClearOutput()
     {

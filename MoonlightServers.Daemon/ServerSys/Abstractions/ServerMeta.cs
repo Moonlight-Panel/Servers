@@ -2,9 +2,8 @@ using MoonlightServers.Daemon.Models.Cache;
 
 namespace MoonlightServers.Daemon.ServerSys.Abstractions;
 
-public record ServerMeta
+public record ServerContext
 {
     public ServerConfiguration Configuration { get; set; }
-    public IServiceCollection ServiceCollection { get; set; }
-    public IServiceProvider ServiceProvider { get; set; }
+    public AsyncServiceScope ServiceScope { get; set; }
 }

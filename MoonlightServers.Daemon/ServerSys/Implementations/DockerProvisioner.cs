@@ -1,3 +1,5 @@
+using System.Reactive.Concurrency;
+using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using Docker.DotNet;
 using Docker.DotNet.Models;
@@ -9,28 +11,29 @@ namespace MoonlightServers.Daemon.ServerSys.Implementations;
 
 public class DockerProvisioner : IProvisioner
 {
-    public IAsyncObservable<object> OnExited { get; set; }
+    public IObservable<object> OnExited => OnExitedSubject;
+    public bool IsProvisioned { get; private set; }
 
     private readonly DockerClient DockerClient;
     private readonly ILogger<DockerProvisioner> Logger;
     private readonly DockerEventService EventService;
-    private readonly ServerMeta Meta;
+    private readonly ServerContext Context;
     private readonly IConsole Console;
     private readonly DockerImageService ImageService;
     private readonly ServerConfigurationMapper Mapper;
     private readonly IFileSystem FileSystem;
 
-    private AsyncSubject<object> OnExitedSubject = new();
+    private Subject<object> OnExitedSubject = new();
 
     private string? ContainerId;
     private string ContainerName;
-    private IAsyncDisposable? ContainerEventSubscription;
+    private IDisposable? ContainerEventSubscription;
 
     public DockerProvisioner(
         DockerClient dockerClient,
         ILogger<DockerProvisioner> logger,
         DockerEventService eventService,
-        ServerMeta meta,
+        ServerContext context,
         IConsole console,
         DockerImageService imageService,
         ServerConfigurationMapper mapper,
@@ -40,7 +43,7 @@ public class DockerProvisioner : IProvisioner
         DockerClient = dockerClient;
         Logger = logger;
         EventService = eventService;
-        Meta = meta;
+        Context = context;
         Console = console;
         ImageService = imageService;
         Mapper = mapper;
@@ -49,30 +52,39 @@ public class DockerProvisioner : IProvisioner
 
     public async Task Initialize()
     {
-        ContainerName = $"moonlight-runtime-{Meta.Configuration.Id}";
+        ContainerName = $"moonlight-runtime-{Context.Configuration.Id}";
 
-        ContainerEventSubscription = await EventService
+        ContainerEventSubscription = EventService
             .OnContainerEvent
-            .SubscribeAsync(HandleContainerEvent);
+            .Subscribe(HandleContainerEvent);
         
-        // Check for any already existing runtime container
-        // TODO: Implement a way for restoring the state
-        // Needs to be able to be consumed by the restorer
+        // Check for any already existing runtime container to reclaim
+        Logger.LogDebug("Searching for orphan container to reclaim");
+        
+        try
+        {
+            var container = await DockerClient.Containers.InspectContainerAsync(ContainerName);
+            
+            ContainerId = container.ID;
+            IsProvisioned = container.State.Running;
+        }
+        catch (DockerContainerNotFoundException)
+        {
+            // Ignored
+        }
     }
 
-    private ValueTask HandleContainerEvent(Message message)
+    private void HandleContainerEvent(Message message)
     {
         // Only handle events for our own container
         if (message.ID != ContainerId)
-            return ValueTask.CompletedTask;
+            return;
 
         // Only handle die events
         if (message.Action != "die")
-            return ValueTask.CompletedTask;
+            return;
 
         OnExitedSubject.OnNext(message);
-
-        return ValueTask.CompletedTask;
     }
 
     public Task Sync()
@@ -111,7 +123,7 @@ public class DockerProvisioner : IProvisioner
         // 2. Ensure the docker image has been downloaded
         await Console.WriteToMoonlight("Downloading docker image");
 
-        await ImageService.Download(Meta.Configuration.DockerImage, async message =>
+        await ImageService.Download(Context.Configuration.DockerImage, async message =>
         {
             try
             {
@@ -127,7 +139,7 @@ public class DockerProvisioner : IProvisioner
         var hostFsPath = FileSystem.GetExternalPath();
 
         var parameters = Mapper.ToRuntimeParameters(
-            Meta.Configuration,
+            Context.Configuration,
             hostFsPath,
             ContainerName
         );
@@ -151,15 +163,15 @@ public class DockerProvisioner : IProvisioner
 
     public async Task Stop()
     {
-        if (Meta.Configuration.StopCommand.StartsWith('^'))
+        if (Context.Configuration.StopCommand.StartsWith('^'))
         {
             await DockerClient.Containers.KillContainerAsync(ContainerId, new()
             {
-                Signal = Meta.Configuration.StopCommand.Substring(1)
+                Signal = Context.Configuration.StopCommand.Substring(1)
             });
         }
         else
-            await Console.WriteToInput(Meta.Configuration.StopCommand);
+            await Console.WriteToInput(Context.Configuration.StopCommand + "\n\r");
     }
 
     public async Task Kill()
@@ -241,6 +253,6 @@ public class DockerProvisioner : IProvisioner
         OnExitedSubject.Dispose();
 
         if (ContainerEventSubscription != null)
-            await ContainerEventSubscription.DisposeAsync();
+            ContainerEventSubscription.Dispose();
     }
 }

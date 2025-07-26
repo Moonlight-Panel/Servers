@@ -1,3 +1,4 @@
+using System.Reactive.Subjects;
 using MoonlightServers.Daemon.ServerSystem;
 using Stateless;
 
@@ -12,11 +13,14 @@ public class Server : IAsyncDisposable
     public IRestorer Restorer { get; private set; }
     public IStatistics Statistics { get; private set; }
     public StateMachine<ServerState, ServerTrigger> StateMachine { get; private set; }
+    public ServerContext Context { get; private set; }
+    public IObservable<ServerState> OnState => OnStateSubject;
 
+    private readonly Subject<ServerState> OnStateSubject = new();
     private readonly ILogger<Server> Logger;
-
-    private IAsyncDisposable? ProvisionExitSubscription;
-    private IAsyncDisposable? InstallerExitSubscription;
+    
+    private IDisposable? ProvisionExitSubscription;
+    private IDisposable? InstallerExitSubscription;
 
     public Server(
         ILogger<Server> logger,
@@ -26,7 +30,7 @@ public class Server : IAsyncDisposable
         IProvisioner provisioner,
         IRestorer restorer,
         IStatistics statistics,
-        StateMachine<ServerState, ServerTrigger> stateMachine
+        ServerContext context
     )
     {
         Logger = logger;
@@ -36,7 +40,7 @@ public class Server : IAsyncDisposable
         Provisioner = provisioner;
         Restorer = restorer;
         Statistics = statistics;
-        StateMachine = stateMachine;
+        Context = context;
     }
 
     public async Task Initialize()
@@ -74,20 +78,22 @@ public class Server : IAsyncDisposable
         CreateStateMachine(restoredState);
 
         // Setup event handling
-        ProvisionExitSubscription = await Provisioner.OnExited.SubscribeAsync(async o =>
+        ProvisionExitSubscription = Provisioner.OnExited.Subscribe(o =>
         {
-            await StateMachine.FireAsync(ServerTrigger.Exited);
+            StateMachine.Fire(ServerTrigger.Exited);
         });
 
-        InstallerExitSubscription = await Installer.OnExited.SubscribeAsync(async o =>
+        InstallerExitSubscription = Installer.OnExited.Subscribe(o =>
         {
-            await StateMachine.FireAsync(ServerTrigger.Exited);
+            StateMachine.Fire(ServerTrigger.Exited);
         });
     }
 
     private void CreateStateMachine(ServerState initialState)
     {
         StateMachine = new StateMachine<ServerState, ServerTrigger>(initialState, FiringMode.Queued);
+        
+        StateMachine.OnTransitioned(transition => OnStateSubject.OnNext(transition.Destination));
 
         // Configure basic state machine flow
 
@@ -120,7 +126,10 @@ public class Server : IAsyncDisposable
         // Handle transitions
 
         StateMachine.Configure(ServerState.Starting)
-            .OnActivateAsync(HandleStart);
+            .OnEntryAsync(HandleStart);
+
+        StateMachine.Configure(ServerState.Stopping)
+            .OnEntryFromAsync(ServerTrigger.Stop, HandleStop);
     }
 
     #region State machine handlers
@@ -136,7 +145,7 @@ public class Server : IAsyncDisposable
             // 4. Provision the container
             // 5. Attach console to container
             // 6. Start the container
-            
+
             // 1. Fetch latest configuration from panel
             // TODO: Implement
 
@@ -153,14 +162,14 @@ public class Server : IAsyncDisposable
                 await Console.WriteToMoonlight("Mounting storage");
                 await FileSystem.Mount();
             }
-            
+
             // 4. Provision the container
             await Console.WriteToMoonlight("Provisioning runtime");
             await Provisioner.Provision();
-            
+
             // 5. Attach console to container
             await Console.AttachToRuntime();
-            
+
             // 6. Start the container
             await Provisioner.Start();
         }
@@ -169,16 +178,21 @@ public class Server : IAsyncDisposable
             Logger.LogError(e, "An error occured while starting the server");
         }
     }
+    
+    private async Task HandleStop()
+    {
+        await Provisioner.Stop();
+    }
 
     #endregion
 
     public async ValueTask DisposeAsync()
     {
         if (ProvisionExitSubscription != null)
-            await ProvisionExitSubscription.DisposeAsync();
+            ProvisionExitSubscription.Dispose();
 
         if (InstallerExitSubscription != null)
-            await InstallerExitSubscription.DisposeAsync();
+            InstallerExitSubscription.Dispose();
 
         await Console.DisposeAsync();
         await FileSystem.DisposeAsync();

@@ -2,8 +2,8 @@ namespace MoonlightServers.Daemon.ServerSys.Abstractions;
 
 public interface IConsole : IServerComponent
 {
-    public IAsyncObservable<string> OnOutput { get; }
-    public IAsyncObservable<string> OnInput { get; }
+    public IObservable<string> OnOutput { get; }
+    public IObservable<string> OnInput { get; }
     
     public Task AttachToRuntime();
     public Task AttachToInstallation();

@@ -10,13 +10,13 @@ public class DockerEventService : BackgroundService
     private readonly ILogger<DockerEventService> Logger;
     private readonly DockerClient DockerClient;
 
-    public IAsyncObservable<Message> OnContainerEvent => OnContainerSubject.ToAsyncObservable();
-    public IAsyncObservable<Message> OnImageEvent => OnImageSubject.ToAsyncObservable();
-    public IAsyncObservable<Message> OnNetworkEvent =>  OnNetworkSubject.ToAsyncObservable();
+    public IObservable<Message> OnContainerEvent => OnContainerSubject;
+    public IObservable<Message> OnImageEvent => OnImageSubject;
+    public IObservable<Message> OnNetworkEvent =>  OnNetworkSubject;
     
-    private readonly AsyncSubject<Message> OnContainerSubject = new();
-    private readonly AsyncSubject<Message> OnImageSubject = new();
-    private readonly AsyncSubject<Message> OnNetworkSubject = new();
+    private readonly Subject<Message> OnContainerSubject = new();
+    private readonly Subject<Message> OnImageSubject = new();
+    private readonly Subject<Message> OnNetworkSubject = new();
 
     public DockerEventService(
         ILogger<DockerEventService> logger,
