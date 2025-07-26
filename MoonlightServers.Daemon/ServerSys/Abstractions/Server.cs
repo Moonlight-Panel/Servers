@@ -14,7 +14,7 @@ public class Server : IAsyncDisposable
     public StateMachine<ServerState, ServerTrigger> StateMachine { get; private set; }
 
     private readonly ILogger<Server> Logger;
-    
+
     private IAsyncDisposable? ProvisionExitSubscription;
     private IAsyncDisposable? InstallerExitSubscription;
 
@@ -58,7 +58,7 @@ public class Server : IAsyncDisposable
                     "Error initializing server component: {type}",
                     serverComponent.GetType().Name.GetType().FullName
                 );
-                
+
                 throw;
             }
         }
@@ -70,15 +70,15 @@ public class Server : IAsyncDisposable
             Logger.LogDebug("Restorer didnt find anything to restore. State is offline");
         else
             Logger.LogDebug("Restored server to state: {state}", restoredState);
-        
+
         CreateStateMachine(restoredState);
-        
+
         // Setup event handling
         ProvisionExitSubscription = await Provisioner.OnExited.SubscribeAsync(async o =>
         {
             await StateMachine.FireAsync(ServerTrigger.Exited);
         });
-        
+
         InstallerExitSubscription = await Installer.OnExited.SubscribeAsync(async o =>
         {
             await StateMachine.FireAsync(ServerTrigger.Exited);
@@ -88,7 +88,7 @@ public class Server : IAsyncDisposable
     private void CreateStateMachine(ServerState initialState)
     {
         StateMachine = new StateMachine<ServerState, ServerTrigger>(initialState, FiringMode.Queued);
-        
+
         // Configure basic state machine flow
 
         StateMachine.Configure(ServerState.Offline)
@@ -116,19 +116,70 @@ public class Server : IAsyncDisposable
         StateMachine.Configure(ServerState.Installing)
             .Permit(ServerTrigger.FailSafe, ServerState.Offline)
             .Permit(ServerTrigger.Exited, ServerState.Offline);
-        
+
         // Handle transitions
-        
+
+        StateMachine.Configure(ServerState.Starting)
+            .OnActivateAsync(HandleStart);
     }
+
+    #region State machine handlers
+
+    private async Task HandleStart()
+    {
+        try
+        {
+            // Plan for starting the server:
+            // 1. Fetch latest configuration from panel (maybe: and perform sync)
+            // 2. Ensure that the file system exists
+            // 3. Mount the file system
+            // 4. Provision the container
+            // 5. Attach console to container
+            // 6. Start the container
+            
+            // 1. Fetch latest configuration from panel
+            // TODO: Implement
+
+            // 2. Ensure that the file system exists
+            if (!FileSystem.Exists)
+            {
+                await Console.WriteToMoonlight("Creating storage");
+                await FileSystem.Create();
+            }
+
+            // 3. Mount the file system
+            if (!FileSystem.IsMounted)
+            {
+                await Console.WriteToMoonlight("Mounting storage");
+                await FileSystem.Mount();
+            }
+            
+            // 4. Provision the container
+            await Console.WriteToMoonlight("Provisioning runtime");
+            await Provisioner.Provision();
+            
+            // 5. Attach console to container
+            await Console.AttachToRuntime();
+            
+            // 6. Start the container
+            await Provisioner.Start();
+        }
+        catch (Exception e)
+        {
+            Logger.LogError(e, "An error occured while starting the server");
+        }
+    }
+
+    #endregion
 
     public async ValueTask DisposeAsync()
     {
         if (ProvisionExitSubscription != null)
             await ProvisionExitSubscription.DisposeAsync();
-        
-        if(InstallerExitSubscription != null)
+
+        if (InstallerExitSubscription != null)
             await InstallerExitSubscription.DisposeAsync();
-        
+
         await Console.DisposeAsync();
         await FileSystem.DisposeAsync();
         await Installer.DisposeAsync();

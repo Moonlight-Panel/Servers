@@ -44,10 +44,10 @@ public class AppConfiguration
     
     public class StorageData
     {
-        public string Volumes { get; set; } = PathBuilder.Dir("volumes");
-        public string VirtualDisks { get; set; } = PathBuilder.Dir("virtualDisks");
-        public string Backups { get; set; } = PathBuilder.Dir("backups");
-        public string Install { get; set; } = PathBuilder.Dir("install");
+        public string Volumes { get; set; } = Path.Combine("storage", "volumes");
+        public string VirtualDisks { get; set; } = Path.Combine("storage", "virtualDisks");
+        public string Backups { get; set; } = Path.Combine("storage", "backups");
+        public string Install { get; set; } =Path.Combine("storage", "install");
 
         public VirtualDiskData VirtualDiskOptions { get; set; } = new();
     }

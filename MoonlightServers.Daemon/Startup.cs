@@ -8,9 +8,12 @@ using MoonCore.EnvConfiguration;
 using MoonCore.Extended.Extensions;
 using MoonCore.Extensions;
 using MoonCore.Helpers;
+using MoonCore.Logging;
 using MoonlightServers.Daemon.Configuration;
 using MoonlightServers.Daemon.Helpers;
 using MoonlightServers.Daemon.Http.Hubs;
+using MoonlightServers.Daemon.Mappers;
+using MoonlightServers.Daemon.ServerSys;
 using MoonlightServers.Daemon.ServerSystem;
 using MoonlightServers.Daemon.Services;
 
@@ -68,8 +71,8 @@ public class Startup
     private Task SetupStorage()
     {
         Directory.CreateDirectory("storage");
-        Directory.CreateDirectory(PathBuilder.Dir("storage", "logs"));
-        Directory.CreateDirectory(PathBuilder.Dir("storage", "plugins"));
+        Directory.CreateDirectory(Path.Combine("storage", "logs"));
+        Directory.CreateDirectory(Path.Combine("storage", "plugins"));
 
         return Task.CompletedTask;
     }
@@ -100,7 +103,7 @@ public class Startup
     private Task UseBase()
     {
         WebApplication.UseRouting();
-        WebApplication.UseApiExceptionHandler();
+        WebApplication.UseExceptionHandler();
 
         return Task.CompletedTask;
     }
@@ -141,7 +144,7 @@ public class Startup
         var configurationBuilder = new ConfigurationBuilder();
 
         // Ensure configuration file exists
-        var jsonFilePath = PathBuilder.File(Directory.GetCurrentDirectory(), "storage", "app.json");
+        var jsonFilePath = Path.Combine(Directory.GetCurrentDirectory(), "storage", "app.json");
 
         if (!File.Exists(jsonFilePath))
             await File.WriteAllTextAsync(jsonFilePath, JsonSerializer.Serialize(new AppConfiguration()));
@@ -187,20 +190,8 @@ public class Startup
 
     private Task SetupLogging()
     {
-        LoggerProviders = LoggerBuildHelper.BuildFromConfiguration(configuration =>
-        {
-            configuration.Console.Enable = true;
-            configuration.Console.EnableAnsiMode = true;
-
-            configuration.FileLogging.Enable = true;
-            configuration.FileLogging.EnableLogRotation = true;
-            configuration.FileLogging.Path = PathBuilder.File("storage", "logs", "WebAppTemplate.log");
-            configuration.FileLogging.RotateLogNameTemplate =
-                PathBuilder.File("storage", "logs", "WebAppTemplate.log.{0}");
-        });
-
         LoggerFactory = new LoggerFactory();
-        LoggerFactory.AddProviders(LoggerProviders);
+        LoggerFactory.AddAnsiConsole();
 
         Logger = LoggerFactory.CreateLogger<Startup>();
 
@@ -211,31 +202,36 @@ public class Startup
     {
         // Configure application logging
         WebApplicationBuilder.Logging.ClearProviders();
-        WebApplicationBuilder.Logging.AddProviders(LoggerProviders);
+        WebApplicationBuilder.Logging.AddAnsiConsole();
+        WebApplicationBuilder.Logging.AddFile(
+            Path.Combine(Directory.GetCurrentDirectory(), "storage", "logs", "MoonlightServer.Daemon.log")
+        );
 
         // Logging levels
-        var logConfigPath = PathBuilder.File("storage", "logConfig.json");
+        var logConfigPath = Path.Combine("storage", "logConfig.json");
 
         // Ensure logging config, add a default one is missing
         if (!File.Exists(logConfigPath))
         {
-            var logLevels = new Dictionary<string, string>
+            var defaultLogLevels = new Dictionary<string, string>
             {
                 { "Default", "Information" },
                 { "Microsoft.AspNetCore", "Warning" },
                 { "System.Net.Http.HttpClient", "Warning" }
             };
 
-            var logLevelsJson = JsonSerializer.Serialize(logLevels);
-            var logConfig = "{\"LogLevel\":" + logLevelsJson + "}";
-            await File.WriteAllTextAsync(logConfigPath, logConfig);
+            var json = JsonSerializer.Serialize(defaultLogLevels);
+            await File.WriteAllTextAsync(logConfigPath, json);
         }
 
-        // Configure logging configuration
-        WebApplicationBuilder.Logging.AddConfiguration(
+        var logLevels = JsonSerializer.Deserialize<Dictionary<string, string>>(
             await File.ReadAllTextAsync(logConfigPath)
-        );
+        )!;
 
+        // Configure logging configuration
+        foreach (var logLevel in logLevels)
+            WebApplicationBuilder.Logging.AddFilter(logLevel.Key, Enum.Parse<LogLevel>(logLevel.Value));
+        
         // Mute exception handler middleware
         // https://github.com/dotnet/aspnetcore/issues/19740
         WebApplicationBuilder.Logging.AddFilter(
@@ -255,9 +251,15 @@ public class Startup
 
     private Task RegisterServers()
     {
-        WebApplicationBuilder.Services.AddHostedService(
-            sp => sp.GetRequiredService<ServerService>()
+        WebApplicationBuilder.Services.AddHostedService(sp => sp.GetRequiredService<ServerService>()
         );
+
+        WebApplicationBuilder.Services.AddSingleton<DockerEventService>();
+        WebApplicationBuilder.Services.AddHostedService(sp => sp.GetRequiredService<DockerEventService>());
+
+        WebApplicationBuilder.Services.AddSingleton<ServerConfigurationMapper>();
+
+        WebApplicationBuilder.Services.AddSingleton<ServerFactory>();
 
         return Task.CompletedTask;
     }

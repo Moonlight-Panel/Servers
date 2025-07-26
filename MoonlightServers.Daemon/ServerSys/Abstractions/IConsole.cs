@@ -10,6 +10,7 @@ public interface IConsole : IServerComponent
     
     public Task WriteToOutput(string content);
     public Task WriteToInput(string content);
+    public Task WriteToMoonlight(string content);
     
     public Task ClearOutput();
     public string[] GetOutput();
