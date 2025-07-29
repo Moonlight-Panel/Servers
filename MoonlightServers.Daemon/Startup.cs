@@ -126,6 +126,10 @@ public class Startup
                     await server.StateMachine.FireAsync(ServerTrigger.Stop);
                 
                 Console.ReadLine();
+
+                await server.StateMachine.FireAsync(ServerTrigger.Install);
+                
+                Console.ReadLine();
                 
                 await server.Context.ServiceScope.DisposeAsync();
             }

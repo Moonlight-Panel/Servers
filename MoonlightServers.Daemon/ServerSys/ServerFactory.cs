@@ -16,10 +16,10 @@ public class ServerFactory
     {
         var scope = ServiceProvider.CreateAsyncScope();
         
-        var meta = scope.ServiceProvider.GetRequiredService<ServerContext>();
+        var context = scope.ServiceProvider.GetRequiredService<ServerContext>();
         
-        meta.Configuration = configuration;
-        meta.ServiceScope = scope;
+        context.Configuration = configuration;
+        context.ServiceScope = scope;
         
         return scope.ServiceProvider.GetRequiredService<Server>();
     }

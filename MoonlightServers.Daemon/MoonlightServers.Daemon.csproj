@@ -57,6 +57,7 @@
       <_ContentIncludedByDefault Remove="volumes\3\usercache.json" />
       <_ContentIncludedByDefault Remove="volumes\3\version_history.json" />
       <_ContentIncludedByDefault Remove="volumes\3\whitelist.json" />
+      <_ContentIncludedByDefault Remove="storage\volumes\69\plugins\spark\config.json" />
     </ItemGroup>
 
 </Project>

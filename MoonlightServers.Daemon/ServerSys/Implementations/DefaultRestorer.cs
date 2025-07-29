@@ -8,19 +8,20 @@ public class DefaultRestorer : IRestorer
     private readonly ILogger<DefaultRestorer> Logger;
     private readonly IConsole Console;
     private readonly IProvisioner Provisioner;
+    private readonly IInstaller Installer;
     private readonly IStatistics Statistics;
 
     public DefaultRestorer(
         ILogger<DefaultRestorer> logger,
         IConsole console,
         IProvisioner provisioner,
-        IStatistics statistics
-    )
+        IStatistics statistics, IInstaller installer)
     {
         Logger = logger;
         Console = console;
         Provisioner = provisioner;
         Statistics = statistics;
+        Installer = installer;
     }
 
     public Task Initialize()
@@ -44,11 +45,19 @@ public class DefaultRestorer : IRestorer
             
             return ServerState.Online;
         }
-        else
+
+        if (Installer.IsRunning)
         {
-            Logger.LogDebug("Nothing found to restore");
-            return ServerState.Offline;
+            Logger.LogDebug("Detected installation to restore");
+
+            await Console.AttachToInstallation();
+            await Statistics.SubscribeToInstallation();
+            
+            return ServerState.Installing;
         }
+
+        Logger.LogDebug("Nothing found to restore");
+        return ServerState.Offline;
     }
 
     public ValueTask DisposeAsync()

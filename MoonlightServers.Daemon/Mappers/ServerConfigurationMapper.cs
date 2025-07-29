@@ -3,6 +3,7 @@ using Mono.Unix.Native;
 using MoonCore.Helpers;
 using MoonlightServers.Daemon.Configuration;
 using MoonlightServers.Daemon.Models.Cache;
+using MoonlightServers.DaemonShared.PanelSide.Http.Responses;
 
 namespace MoonlightServers.Daemon.Mappers;
 
@@ -62,7 +63,7 @@ public class ServerConfigurationMapper
 
         // TODO: Extract this to an external service with config options and return a userspace user id and a install user id
         // in order to know which permissions are required in order to run the container with the correct permissions
-        
+
         var userId = Syscall.getuid();
 
         if (userId == 0)
@@ -137,7 +138,64 @@ public class ServerConfigurationMapper
         // in the daemon instead of letting it the entrypoint do. iirc pelican wants to do that as well so we need to do that
         // sooner or later in order to stay compatible to pelican
         // Possible flag name: LegacyEntrypointMode
-        
+
+        return parameters;
+    }
+
+    public CreateContainerParameters ToInstallParameters(
+        ServerConfiguration serverConfiguration,
+        ServerInstallDataResponse installData,
+        string runtimeHostPath,
+        string installationHostPath,
+        string containerName
+    )
+    {
+        var parameters = ToSharedParameters(serverConfiguration);
+
+        // - Name
+        parameters.Name = containerName;
+        parameters.Hostname = containerName;
+
+        // - Image
+        parameters.Image = installData.DockerImage;
+
+        // -- Working directory
+        parameters.WorkingDir = "/mnt/server";
+
+        // - User
+        // Note: Some images might not work if we set a user here
+
+        var userId = Syscall.getuid();
+
+        // If we are root, we are able to change owner permissions after the installation
+        // so we run the installation as root, otherwise we need to run it as our current user,
+        // so we are able to access the files created by the installer
+        if (userId == 0)
+            parameters.User = "0:0";
+        else
+            parameters.User = $"{userId}:{userId}";
+
+        // -- Mounts
+        parameters.HostConfig.Mounts = new List<Mount>();
+
+        parameters.HostConfig.Mounts.Add(new()
+        {
+            Source = runtimeHostPath,
+            Target = "/mnt/server",
+            ReadOnly = false,
+            Type = "bind"
+        });
+
+        parameters.HostConfig.Mounts.Add(new()
+        {
+            Source = installationHostPath,
+            Target = "/mnt/install",
+            ReadOnly = false,
+            Type = "bind"
+        });
+
+        parameters.Cmd = [installData.Shell, "/mnt/install/install.sh"];
+
         return parameters;
     }
 
@@ -263,7 +321,7 @@ public class ServerConfigurationMapper
             for (var i = 0; i < serverConfiguration.Allocations.Length; i++)
             {
                 var allocation = serverConfiguration.Allocations[i];
-                
+
                 result.Add($"ML_PORT_{i}", allocation.Port.ToString());
 
                 if (i == 0) // TODO: Implement a way to set the default/main allocation
@@ -273,7 +331,7 @@ public class ServerConfigurationMapper
                 }
             }
         }
-        
+
         // Copy variables as env vars
         foreach (var variable in serverConfiguration.Variables)
             result.Add(variable.Key, variable.Value);

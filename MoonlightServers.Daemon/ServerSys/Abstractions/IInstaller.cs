@@ -5,6 +5,7 @@ public interface IInstaller : IServerComponent
     public IAsyncObservable<object> OnExited { get; }
     public bool IsRunning { get; }
     
+    public Task Setup();
     public Task Start();
     public Task Abort();
     public Task Cleanup();
