@@ -1,4 +1,6 @@
+using System.Reactive.Linq;
 using System.Reactive.Subjects;
+using MoonlightServers.Daemon.Extensions;
 using MoonlightServers.Daemon.ServerSystem;
 using Stateless;
 
@@ -14,13 +16,13 @@ public class Server : IAsyncDisposable
     public IStatistics Statistics { get; private set; }
     public StateMachine<ServerState, ServerTrigger> StateMachine { get; private set; }
     public ServerContext Context { get; private set; }
-    public IObservable<ServerState> OnState => OnStateSubject;
+    public IAsyncObservable<ServerState> OnState => OnStateSubject.ToAsyncObservable();
 
     private readonly Subject<ServerState> OnStateSubject = new();
     private readonly ILogger<Server> Logger;
     
-    private IDisposable? ProvisionExitSubscription;
-    private IDisposable? InstallerExitSubscription;
+    private IAsyncDisposable? ProvisionExitSubscription;
+    private IAsyncDisposable? InstallerExitSubscription;
 
     public Server(
         ILogger<Server> logger,
@@ -78,14 +80,14 @@ public class Server : IAsyncDisposable
         CreateStateMachine(restoredState);
 
         // Setup event handling
-        ProvisionExitSubscription = Provisioner.OnExited.Subscribe(o =>
+        ProvisionExitSubscription = await Provisioner.OnExited.SubscribeAsync(async o =>
         {
-            StateMachine.Fire(ServerTrigger.Exited);
+            await StateMachine.FireAsync(ServerTrigger.Exited);
         });
 
-        InstallerExitSubscription = Installer.OnExited.Subscribe(o =>
+        InstallerExitSubscription = await Installer.OnExited.SubscribeAsync(async o =>
         {
-            StateMachine.Fire(ServerTrigger.Exited);
+            await StateMachine.FireAsync(ServerTrigger.Exited);
         });
     }
 
@@ -126,10 +128,15 @@ public class Server : IAsyncDisposable
         // Handle transitions
 
         StateMachine.Configure(ServerState.Starting)
-            .OnEntryAsync(HandleStart);
+            .OnEntryAsync(HandleStart)
+            .OnExitFromAsync(ServerTrigger.Exited, HandleRuntimeExit);
+        
+        StateMachine.Configure(ServerState.Online)
+            .OnExitFromAsync(ServerTrigger.Exited, HandleRuntimeExit);
 
         StateMachine.Configure(ServerState.Stopping)
-            .OnEntryFromAsync(ServerTrigger.Stop, HandleStop);
+            .OnEntryFromAsync(ServerTrigger.Stop, HandleStop)
+            .OnExitFromAsync(ServerTrigger.Exited, HandleRuntimeExit);
     }
 
     #region State machine handlers
@@ -184,15 +191,23 @@ public class Server : IAsyncDisposable
         await Provisioner.Stop();
     }
 
+    private async Task HandleRuntimeExit()
+    {
+        Logger.LogDebug("Deprovisioning");
+        await Console.WriteToMoonlight("Deprovisioning");
+        
+        await Provisioner.Deprovision();
+    }
+
     #endregion
 
     public async ValueTask DisposeAsync()
     {
         if (ProvisionExitSubscription != null)
-            ProvisionExitSubscription.Dispose();
+            await ProvisionExitSubscription.DisposeAsync();
 
         if (InstallerExitSubscription != null)
-            InstallerExitSubscription.Dispose();
+            await InstallerExitSubscription.DisposeAsync();
 
         await Console.DisposeAsync();
         await FileSystem.DisposeAsync();

@@ -1,21 +1,30 @@
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using MoonlightServers.Daemon.ServerSys.Abstractions;
+using MoonlightServers.Daemon.Services;
 
 namespace MoonlightServers.Daemon.ServerSys.Implementations;
 
 public class DockerInstaller : IInstaller
 {
-    public IObservable<object> OnExited => OnExitedSubject;
+    public IAsyncObservable<object> OnExited => OnExitedSubject.ToAsyncObservable();
     public bool IsRunning { get; private set; } = false;
-    
-    private readonly Subject<string> OnExitedSubject = new();
-    
-    private readonly ILogger<DockerInstaller> Logger;
 
-    public DockerInstaller(ILogger<DockerInstaller> logger)
+    private readonly Subject<string> OnExitedSubject = new();
+
+    private readonly ILogger<DockerInstaller> Logger;
+    private readonly DockerEventService EventService;
+
+    private string? ContainerId;
+    private string? ContainerName;
+
+    public DockerInstaller(
+        ILogger<DockerInstaller> logger,
+        DockerEventService eventService
+    )
     {
         Logger = logger;
+        EventService = eventService;
     }
 
     public Task Initialize()
@@ -27,7 +36,7 @@ public class DockerInstaller : IInstaller
     {
         throw new NotImplementedException();
     }
-    
+
     public Task Start()
     {
         throw new NotImplementedException();
@@ -47,7 +56,7 @@ public class DockerInstaller : IInstaller
     {
         throw new NotImplementedException();
     }
-    
+
     public async ValueTask DisposeAsync()
     {
         OnExitedSubject.Dispose();

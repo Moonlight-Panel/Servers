@@ -107,12 +107,13 @@ public class Startup
                 var factory = WebApplication.Services.GetRequiredService<ServerFactory>();
                 var server = factory.CreateServer(config);
 
-                using var consoleSub = server.Console.OnOutput
-                    .Subscribe(Console.Write);
+                await using var consoleSub = await server.Console.OnOutput
+                    .SubscribeAsync(Console.Write);
 
-                using var stateSub = server.OnState.Subscribe(state =>
+                await using var stateSub = await server.OnState.SubscribeAsync(state =>
                 {
                     Console.WriteLine($"State: {state}");
+                    return ValueTask.CompletedTask;
                 });
                 
                 await server.Initialize();

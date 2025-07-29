@@ -1,3 +1,4 @@
+using System.Reactive.Concurrency;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using Docker.DotNet;
@@ -10,9 +11,9 @@ public class DockerEventService : BackgroundService
     private readonly ILogger<DockerEventService> Logger;
     private readonly DockerClient DockerClient;
 
-    public IObservable<Message> OnContainerEvent => OnContainerSubject;
-    public IObservable<Message> OnImageEvent => OnImageSubject;
-    public IObservable<Message> OnNetworkEvent =>  OnNetworkSubject;
+    public IAsyncObservable<Message> OnContainerEvent => OnContainerSubject.ToAsyncObservable().ObserveOn(TaskPoolAsyncScheduler.Default);
+    public IAsyncObservable<Message> OnImageEvent => OnImageSubject.ToAsyncObservable().ObserveOn(TaskPoolAsyncScheduler.Default);
+    public IAsyncObservable<Message> OnNetworkEvent =>  OnNetworkSubject.ToAsyncObservable().ObserveOn(TaskPoolAsyncScheduler.Default);
     
     private readonly Subject<Message> OnContainerSubject = new();
     private readonly Subject<Message> OnImageSubject = new();
@@ -39,19 +40,26 @@ public class DockerEventService : BackgroundService
                     new ContainerEventsParameters(),
                     new Progress<Message>(message =>
                     {
-                        switch (message.Type)
+                        try
                         {
-                            case "container":
-                                OnContainerSubject.OnNext(message);
-                                break;
+                            switch (message.Type)
+                            {
+                                case "container":
+                                    OnContainerSubject.OnNext(message);
+                                    break;
 
-                            case "image":
-                                OnImageSubject.OnNext(message);
-                                break;
+                                case "image":
+                                    OnImageSubject.OnNext(message);
+                                    break;
 
-                            case "network":
-                                OnNetworkSubject.OnNext(message);
-                                break;
+                                case "network":
+                                    OnNetworkSubject.OnNext(message);
+                                    break;
+                            }
+                        }
+                        catch (Exception e)
+                        {
+                            Logger.LogError(e, "An error occured while processing docker event");
                         }
                     }),
                     stoppingToken

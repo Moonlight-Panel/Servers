@@ -11,7 +11,7 @@ namespace MoonlightServers.Daemon.ServerSys.Implementations;
 
 public class DockerProvisioner : IProvisioner
 {
-    public IObservable<object> OnExited => OnExitedSubject;
+    public IAsyncObservable<object> OnExited => OnExitedSubject.ToAsyncObservable();
     public bool IsProvisioned { get; private set; }
 
     private readonly DockerClient DockerClient;
@@ -27,7 +27,7 @@ public class DockerProvisioner : IProvisioner
 
     private string? ContainerId;
     private string ContainerName;
-    private IDisposable? ContainerEventSubscription;
+    private IAsyncDisposable? ContainerEventSubscription;
 
     public DockerProvisioner(
         DockerClient dockerClient,
@@ -54,9 +54,9 @@ public class DockerProvisioner : IProvisioner
     {
         ContainerName = $"moonlight-runtime-{Context.Configuration.Id}";
 
-        ContainerEventSubscription = EventService
+        ContainerEventSubscription = await EventService
             .OnContainerEvent
-            .Subscribe(HandleContainerEvent);
+            .SubscribeAsync(HandleContainerEvent);
         
         // Check for any already existing runtime container to reclaim
         Logger.LogDebug("Searching for orphan container to reclaim");
@@ -74,17 +74,19 @@ public class DockerProvisioner : IProvisioner
         }
     }
 
-    private void HandleContainerEvent(Message message)
+    private ValueTask HandleContainerEvent(Message message)
     {
         // Only handle events for our own container
         if (message.ID != ContainerId)
-            return;
+            return ValueTask.CompletedTask;
 
         // Only handle die events
         if (message.Action != "die")
-            return;
+            return ValueTask.CompletedTask;
 
         OnExitedSubject.OnNext(message);
+
+        return ValueTask.CompletedTask;
     }
 
     public Task Sync()
@@ -253,6 +255,6 @@ public class DockerProvisioner : IProvisioner
         OnExitedSubject.Dispose();
 
         if (ContainerEventSubscription != null)
-            ContainerEventSubscription.Dispose();
+            await ContainerEventSubscription.DisposeAsync();
     }
 }

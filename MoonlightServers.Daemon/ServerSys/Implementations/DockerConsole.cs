@@ -3,7 +3,6 @@ using System.Reactive.Subjects;
 using System.Text;
 using Docker.DotNet;
 using Docker.DotNet.Models;
-using Microsoft.Extensions.Options;
 using MoonCore.Helpers;
 using MoonlightServers.Daemon.ServerSys.Abstractions;
 
@@ -11,8 +10,8 @@ namespace MoonlightServers.Daemon.ServerSys.Implementations;
 
 public class DockerConsole : IConsole
 {
-    public IObservable<string> OnOutput => OnOutputSubject;
-    public IObservable<string> OnInput => OnInputSubject;
+    public IAsyncObservable<string> OnOutput => OnOutputSubject.ToAsyncObservable();
+    public IAsyncObservable<string> OnInput => OnInputSubject.ToAsyncObservable();
 
     private readonly Subject<string> OnOutputSubject = new();
     private readonly Subject<string> OnInputSubject = new();
@@ -146,13 +145,7 @@ public class DockerConsole : IConsole
         OutputCache.Add(content);
 
         if (OutputCache.Count > 250) // TODO: Config
-        {
-            // TODO: Replace with remove range once it becomes available in mooncore
-            for (var i = 0; i < 100; i++)
-            {
-                OutputCache.RemoveAt(i);
-            }
-        }
+            OutputCache.RemoveRange(0, 100);
 
         OnOutputSubject.OnNext(content);
         return Task.CompletedTask;

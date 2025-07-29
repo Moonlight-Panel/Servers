@@ -2,7 +2,7 @@ namespace MoonlightServers.Daemon.ServerSys.Abstractions;
 
 public interface IInstaller : IServerComponent
 {
-    public IObservable<object> OnExited { get; }
+    public IAsyncObservable<object> OnExited { get; }
     public bool IsRunning { get; }
     
     public Task Start();

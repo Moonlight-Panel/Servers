@@ -2,7 +2,7 @@ namespace MoonlightServers.Daemon.ServerSys.Abstractions;
 
 public interface IProvisioner : IServerComponent
 {
-    public IObservable<object> OnExited { get; }
+    public IAsyncObservable<object> OnExited { get; }
     public bool IsProvisioned { get; }
 
     public Task Provision();
