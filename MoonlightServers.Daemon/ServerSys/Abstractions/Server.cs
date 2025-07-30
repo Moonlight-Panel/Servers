@@ -1,6 +1,6 @@
-using System.Reactive.Linq;
-using System.Reactive.Subjects;
+using MoonCore.Observability;
 using MoonlightServers.Daemon.Extensions;
+using MoonlightServers.Daemon.Helpers;
 using MoonlightServers.Daemon.ServerSystem;
 using Stateless;
 
@@ -8,19 +8,19 @@ namespace MoonlightServers.Daemon.ServerSys.Abstractions;
 
 public class Server : IAsyncDisposable
 {
-    public IConsole Console { get; private set; }
-    public IFileSystem FileSystem { get; private set; }
-    public IInstaller Installer { get; private set; }
-    public IProvisioner Provisioner { get; private set; }
-    public IRestorer Restorer { get; private set; }
-    public IStatistics Statistics { get; private set; }
+    public IConsole Console { get; }
+    public IFileSystem FileSystem { get; }
+    public IInstaller Installer { get; }
+    public IProvisioner Provisioner { get; }
+    public IRestorer Restorer { get; }
+    public IStatistics Statistics { get; }
     public StateMachine<ServerState, ServerTrigger> StateMachine { get; private set; }
-    public ServerContext Context { get; private set; }
-    public IAsyncObservable<ServerState> OnState => OnStateSubject.ToAsyncObservable();
+    public ServerContext Context { get; }
+    public IAsyncObservable<ServerState> OnState => OnStateSubject;
 
-    private readonly Subject<ServerState> OnStateSubject = new();
+    private readonly EventSubject<ServerState> OnStateSubject = new();
     private readonly ILogger<Server> Logger;
-    
+
     private IAsyncDisposable? ProvisionExitSubscription;
     private IAsyncDisposable? InstallerExitSubscription;
 
@@ -80,22 +80,22 @@ public class Server : IAsyncDisposable
         CreateStateMachine(restoredState);
 
         // Setup event handling
-        ProvisionExitSubscription = await Provisioner.OnExited.SubscribeAsync(async o =>
-        {
-            await StateMachine.FireAsync(ServerTrigger.Exited);
-        });
+        ProvisionExitSubscription = await Provisioner.OnExited.SubscribeEventAsync(async _ =>
+            await StateMachine.FireAsync(ServerTrigger.Exited)
+        );
 
-        InstallerExitSubscription = await Installer.OnExited.SubscribeAsync(async o =>
-        {
-            await StateMachine.FireAsync(ServerTrigger.Exited);
-        });
+        InstallerExitSubscription = await Installer.OnExited.SubscribeEventAsync(async _ =>
+            await StateMachine.FireAsync(ServerTrigger.Exited)
+        );
     }
 
     private void CreateStateMachine(ServerState initialState)
     {
         StateMachine = new StateMachine<ServerState, ServerTrigger>(initialState, FiringMode.Queued);
-        
-        StateMachine.OnTransitioned(transition => OnStateSubject.OnNext(transition.Destination));
+
+        StateMachine.OnTransitionedAsync(async transition
+            => await OnStateSubject.OnNextAsync(transition.Destination)
+        );
 
         // Configure basic state machine flow
 
@@ -134,7 +134,7 @@ public class Server : IAsyncDisposable
         StateMachine.Configure(ServerState.Installing)
             .OnEntryAsync(HandleInstall)
             .OnExitFromAsync(ServerTrigger.Exited, HandleInstallExit);
-        
+
         StateMachine.Configure(ServerState.Online)
             .OnExitFromAsync(ServerTrigger.Exited, HandleRuntimeExit);
 
@@ -187,9 +187,12 @@ public class Server : IAsyncDisposable
         catch (Exception e)
         {
             Logger.LogError(e, "An error occured while starting the server");
+            await Console.WriteToMoonlight("Failed to start the server. More details can be found in the daemon logs");
+            
+            await StateMachine.FireAsync(ServerTrigger.FailSafe);
         }
     }
-    
+
     private async Task HandleStop()
     {
         await Provisioner.Stop();
@@ -199,41 +202,51 @@ public class Server : IAsyncDisposable
     {
         Logger.LogDebug("Deprovisioning");
         await Console.WriteToMoonlight("Deprovisioning");
-        
+
         await Provisioner.Deprovision();
     }
 
     private async Task HandleInstall()
     {
-        Logger.LogDebug("Installing");
-        
-        Logger.LogDebug("Setting up");
-        await Console.WriteToMoonlight("Setting up installation");
-        
-        // TODO: Extract to service
-
-        Context.InstallConfiguration = new()
+        try
         {
-            Shell = "/bin/ash",
-            DockerImage = "ghcr.io/parkervcp/installers:alpine",
-            Script =
-                "#!/bin/ash\n# Paper Installation Script\n#\n# Server Files: /mnt/server\nPROJECT=paper\n\nif [ -n \"${DL_PATH}\" ]; then\n\techo -e \"Using supplied download url: ${DL_PATH}\"\n\tDOWNLOAD_URL=`eval echo $(echo ${DL_PATH} | sed -e 's/{{/${/g' -e 's/}}/}/g')`\nelse\n\tVER_EXISTS=`curl -s https://api.papermc.io/v2/projects/${PROJECT} | jq -r --arg VERSION $MINECRAFT_VERSION '.versions[] | contains($VERSION)' | grep -m1 true`\n\tLATEST_VERSION=`curl -s https://api.papermc.io/v2/projects/${PROJECT} | jq -r '.versions' | jq -r '.[-1]'`\n\n\tif [ \"${VER_EXISTS}\" == \"true\" ]; then\n\t\techo -e \"Version is valid. Using version ${MINECRAFT_VERSION}\"\n\telse\n\t\techo -e \"Specified version not found. Defaulting to the latest ${PROJECT} version\"\n\t\tMINECRAFT_VERSION=${LATEST_VERSION}\n\tfi\n\n\tBUILD_EXISTS=`curl -s https://api.papermc.io/v2/projects/${PROJECT}/versions/${MINECRAFT_VERSION} | jq -r --arg BUILD ${BUILD_NUMBER} '.builds[] | tostring | contains($BUILD)' | grep -m1 true`\n\tLATEST_BUILD=`curl -s https://api.papermc.io/v2/projects/${PROJECT}/versions/${MINECRAFT_VERSION} | jq -r '.builds' | jq -r '.[-1]'`\n\n\tif [ \"${BUILD_EXISTS}\" == \"true\" ]; then\n\t\techo -e \"Build is valid for version ${MINECRAFT_VERSION}. Using build ${BUILD_NUMBER}\"\n\telse\n\t\techo -e \"Using the latest ${PROJECT} build for version ${MINECRAFT_VERSION}\"\n\t\tBUILD_NUMBER=${LATEST_BUILD}\n\tfi\n\n\tJAR_NAME=${PROJECT}-${MINECRAFT_VERSION}-${BUILD_NUMBER}.jar\n\n\techo \"Version being downloaded\"\n\techo -e \"MC Version: ${MINECRAFT_VERSION}\"\n\techo -e \"Build: ${BUILD_NUMBER}\"\n\techo -e \"JAR Name of Build: ${JAR_NAME}\"\n\tDOWNLOAD_URL=https://api.papermc.io/v2/projects/${PROJECT}/versions/${MINECRAFT_VERSION}/builds/${BUILD_NUMBER}/downloads/${JAR_NAME}\nfi\n\ncd /mnt/server\n\necho -e \"Running curl -o ${SERVER_JARFILE} ${DOWNLOAD_URL}\"\n\nif [ -f ${SERVER_JARFILE} ]; then\n\tmv ${SERVER_JARFILE} ${SERVER_JARFILE}.old\nfi\n\ncurl -o ${SERVER_JARFILE} ${DOWNLOAD_URL}\n\nif [ ! -f server.properties ]; then\n    echo -e \"Downloading MC server.properties\"\n    curl -o server.properties https://raw.githubusercontent.com/parkervcp/eggs/master/minecraft/java/server.properties\nfi"
-        };
-        
-        await Installer.Setup();
+            Logger.LogDebug("Installing");
 
-        await Console.AttachToInstallation();
+            Logger.LogDebug("Setting up");
+            await Console.WriteToMoonlight("Setting up installation");
 
-        await Installer.Start();
+            // TODO: Extract to service
+
+            Context.InstallConfiguration = new()
+            {
+                Shell = "/bin/ash",
+                DockerImage = "ghcr.io/parkervcp/installers:alpine",
+                Script =
+                    "#!/bin/ash\n# Paper Installation Script\n#\n# Server Files: /mnt/server\nPROJECT=paper\n\nif [ -n \"${DL_PATH}\" ]; then\n\techo -e \"Using supplied download url: ${DL_PATH}\"\n\tDOWNLOAD_URL=`eval echo $(echo ${DL_PATH} | sed -e 's/{{/${/g' -e 's/}}/}/g')`\nelse\n\tVER_EXISTS=`curl -s https://api.papermc.io/v2/projects/${PROJECT} | jq -r --arg VERSION $MINECRAFT_VERSION '.versions[] | contains($VERSION)' | grep -m1 true`\n\tLATEST_VERSION=`curl -s https://api.papermc.io/v2/projects/${PROJECT} | jq -r '.versions' | jq -r '.[-1]'`\n\n\tif [ \"${VER_EXISTS}\" == \"true\" ]; then\n\t\techo -e \"Version is valid. Using version ${MINECRAFT_VERSION}\"\n\telse\n\t\techo -e \"Specified version not found. Defaulting to the latest ${PROJECT} version\"\n\t\tMINECRAFT_VERSION=${LATEST_VERSION}\n\tfi\n\n\tBUILD_EXISTS=`curl -s https://api.papermc.io/v2/projects/${PROJECT}/versions/${MINECRAFT_VERSION} | jq -r --arg BUILD ${BUILD_NUMBER} '.builds[] | tostring | contains($BUILD)' | grep -m1 true`\n\tLATEST_BUILD=`curl -s https://api.papermc.io/v2/projects/${PROJECT}/versions/${MINECRAFT_VERSION} | jq -r '.builds' | jq -r '.[-1]'`\n\n\tif [ \"${BUILD_EXISTS}\" == \"true\" ]; then\n\t\techo -e \"Build is valid for version ${MINECRAFT_VERSION}. Using build ${BUILD_NUMBER}\"\n\telse\n\t\techo -e \"Using the latest ${PROJECT} build for version ${MINECRAFT_VERSION}\"\n\t\tBUILD_NUMBER=${LATEST_BUILD}\n\tfi\n\n\tJAR_NAME=${PROJECT}-${MINECRAFT_VERSION}-${BUILD_NUMBER}.jar\n\n\techo \"Version being downloaded\"\n\techo -e \"MC Version: ${MINECRAFT_VERSION}\"\n\techo -e \"Build: ${BUILD_NUMBER}\"\n\techo -e \"JAR Name of Build: ${JAR_NAME}\"\n\tDOWNLOAD_URL=https://api.papermc.io/v2/projects/${PROJECT}/versions/${MINECRAFT_VERSION}/builds/${BUILD_NUMBER}/downloads/${JAR_NAME}\nfi\n\ncd /mnt/server\n\necho -e \"Running curl -o ${SERVER_JARFILE} ${DOWNLOAD_URL}\"\n\nif [ -f ${SERVER_JARFILE} ]; then\n\tmv ${SERVER_JARFILE} ${SERVER_JARFILE}.old\nfi\n\ncurl -o ${SERVER_JARFILE} ${DOWNLOAD_URL}\n\nif [ ! -f server.properties ]; then\n    echo -e \"Downloading MC server.properties\"\n    curl -o server.properties https://raw.githubusercontent.com/parkervcp/eggs/master/minecraft/java/server.properties\nfi"
+            };
+
+            await Installer.Setup();
+
+            await Console.AttachToInstallation();
+
+            await Installer.Start();
+        }
+        catch (Exception e)
+        {
+            Logger.LogError(e, "An error occured while starting installation");
+            await Console.WriteToMoonlight("An error occured while starting installation");
+
+            await StateMachine.FireAsync(ServerTrigger.FailSafe);
+        }
     }
-    
+
     private async Task HandleInstallExit()
     {
         Logger.LogDebug("Installation done");
         await Console.WriteToMoonlight("Cleaning up");
-        
+
         await Installer.Cleanup();
-        
+
         await Console.WriteToMoonlight("Installation completed");
     }
 

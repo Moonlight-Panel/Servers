@@ -4,17 +4,19 @@ using System.Text;
 using Docker.DotNet;
 using Docker.DotNet.Models;
 using MoonCore.Helpers;
+using MoonCore.Observability;
+using MoonlightServers.Daemon.Helpers;
 using MoonlightServers.Daemon.ServerSys.Abstractions;
 
 namespace MoonlightServers.Daemon.ServerSys.Implementations;
 
 public class DockerConsole : IConsole
 {
-    public IAsyncObservable<string> OnOutput => OnOutputSubject.ToAsyncObservable();
-    public IAsyncObservable<string> OnInput => OnInputSubject.ToAsyncObservable();
+    public IAsyncObservable<string> OnOutput => OnOutputSubject;
+    public IAsyncObservable<string> OnInput => OnInputSubject;
 
-    private readonly Subject<string> OnOutputSubject = new();
-    private readonly Subject<string> OnInputSubject = new();
+    private readonly EventSubject<string> OnOutputSubject = new();
+    private readonly EventSubject<string> OnInputSubject = new();
 
     private readonly ConcurrentList<string> OutputCache = new();
     private readonly DockerClient DockerClient;
@@ -140,15 +142,14 @@ public class DockerConsole : IConsole
         return Task.CompletedTask;
     }
 
-    public Task WriteToOutput(string content)
+    public async Task WriteToOutput(string content)
     {
         OutputCache.Add(content);
 
         if (OutputCache.Count > 250) // TODO: Config
             OutputCache.RemoveRange(0, 100);
 
-        OnOutputSubject.OnNext(content);
-        return Task.CompletedTask;
+        await OnOutputSubject.OnNextAsync(content);
     }
 
     public async Task WriteToInput(string content)
@@ -164,6 +165,8 @@ public class DockerConsole : IConsole
             contentBuffer.Length,
             Cts.Token
         );
+        
+        await OnInputSubject.OnNextAsync(content);
     }
 
     public async Task WriteToMoonlight(string content)

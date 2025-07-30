@@ -2,7 +2,10 @@ using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using Docker.DotNet;
 using Docker.DotNet.Models;
+using MoonCore.Observability;
 using MoonlightServers.Daemon.Configuration;
+using MoonlightServers.Daemon.Extensions;
+using MoonlightServers.Daemon.Helpers;
 using MoonlightServers.Daemon.Mappers;
 using MoonlightServers.Daemon.ServerSys.Abstractions;
 using MoonlightServers.Daemon.Services;
@@ -11,10 +14,10 @@ namespace MoonlightServers.Daemon.ServerSys.Implementations;
 
 public class DockerInstaller : IInstaller
 {
-    public IAsyncObservable<object> OnExited => OnExitedSubject.ToAsyncObservable();
+    public IAsyncObservable<object> OnExited => OnExitedSubject;
     public bool IsRunning { get; private set; } = false;
 
-    private readonly Subject<Message> OnExitedSubject = new();
+    private readonly EventSubject<Message> OnExitedSubject = new();
 
     private readonly ILogger<DockerInstaller> Logger;
     private readonly DockerEventService EventService;
@@ -64,7 +67,7 @@ public class DockerInstaller : IInstaller
         
         ContainerEventSubscription = await EventService
             .OnContainerEvent
-            .SubscribeAsync(HandleContainerEvent);
+            .SubscribeEventAsync(HandleContainerEvent);
         
         // Check for any already existing runtime container to reclaim
         Logger.LogDebug("Searching for orphan container to reclaim");
@@ -82,19 +85,17 @@ public class DockerInstaller : IInstaller
         }
     }
     
-    private ValueTask HandleContainerEvent(Message message)
+    private async ValueTask HandleContainerEvent(Message message)
     {
         // Only handle events for our own container
         if (message.ID != ContainerId)
-            return ValueTask.CompletedTask;
+            return;
 
         // Only handle die events
         if (message.Action != "die")
-            return ValueTask.CompletedTask;
+            return;
 
-        OnExitedSubject.OnNext(message);
-
-        return ValueTask.CompletedTask;
+        await OnExitedSubject.OnNextAsync(message);
     }
 
     public Task Sync()

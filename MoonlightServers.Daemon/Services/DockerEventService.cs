@@ -3,6 +3,8 @@ using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using Docker.DotNet;
 using Docker.DotNet.Models;
+using MoonCore.Observability;
+using MoonlightServers.Daemon.Helpers;
 
 namespace MoonlightServers.Daemon.Services;
 
@@ -11,13 +13,13 @@ public class DockerEventService : BackgroundService
     private readonly ILogger<DockerEventService> Logger;
     private readonly DockerClient DockerClient;
 
-    public IAsyncObservable<Message> OnContainerEvent => OnContainerSubject.ToAsyncObservable().ObserveOn(TaskPoolAsyncScheduler.Default);
-    public IAsyncObservable<Message> OnImageEvent => OnImageSubject.ToAsyncObservable().ObserveOn(TaskPoolAsyncScheduler.Default);
-    public IAsyncObservable<Message> OnNetworkEvent =>  OnNetworkSubject.ToAsyncObservable().ObserveOn(TaskPoolAsyncScheduler.Default);
+    public IAsyncObservable<Message> OnContainerEvent => OnContainerSubject;
+    public IAsyncObservable<Message> OnImageEvent => OnImageSubject;
+    public IAsyncObservable<Message> OnNetworkEvent =>  OnNetworkSubject;
     
-    private readonly Subject<Message> OnContainerSubject = new();
-    private readonly Subject<Message> OnImageSubject = new();
-    private readonly Subject<Message> OnNetworkSubject = new();
+    private readonly EventSubject<Message> OnContainerSubject = new();
+    private readonly EventSubject<Message> OnImageSubject = new();
+    private readonly EventSubject<Message> OnNetworkSubject = new();
 
     public DockerEventService(
         ILogger<DockerEventService> logger,
@@ -38,22 +40,22 @@ public class DockerEventService : BackgroundService
             {
                 await DockerClient.System.MonitorEventsAsync(
                     new ContainerEventsParameters(),
-                    new Progress<Message>(message =>
+                    new Progress<Message>(async message =>
                     {
                         try
                         {
                             switch (message.Type)
                             {
                                 case "container":
-                                    OnContainerSubject.OnNext(message);
+                                    await OnContainerSubject.OnNextAsync(message);
                                     break;
 
                                 case "image":
-                                    OnImageSubject.OnNext(message);
+                                    await OnImageSubject.OnNextAsync(message);
                                     break;
 
                                 case "network":
-                                    OnNetworkSubject.OnNext(message);
+                                    await OnNetworkSubject.OnNextAsync(message);
                                     break;
                             }
                         }

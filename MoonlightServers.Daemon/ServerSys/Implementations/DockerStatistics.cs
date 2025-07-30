@@ -1,14 +1,14 @@
-using System.Reactive.Linq;
-using System.Reactive.Subjects;
+using MoonCore.Observability;
+using MoonlightServers.Daemon.Helpers;
 using MoonlightServers.Daemon.ServerSys.Abstractions;
 
 namespace MoonlightServers.Daemon.ServerSys.Implementations;
 
 public class DockerStatistics : IStatistics
 {
-    public IAsyncObservable<ServerStats> OnStats => OnStatsSubject.ToAsyncObservable();
+    public IAsyncObservable<ServerStats> OnStats => OnStatsSubject;
 
-    private readonly Subject<ServerStats> OnStatsSubject = new();
+    private readonly EventSubject<ServerStats> OnStatsSubject = new();
     
     public Task Initialize()
         => Task.CompletedTask;

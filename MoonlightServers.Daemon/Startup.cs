@@ -11,7 +11,9 @@ using MoonCore.Extended.Extensions;
 using MoonCore.Extensions;
 using MoonCore.Helpers;
 using MoonCore.Logging;
+using MoonCore.Observability;
 using MoonlightServers.Daemon.Configuration;
+using MoonlightServers.Daemon.Extensions;
 using MoonlightServers.Daemon.Helpers;
 using MoonlightServers.Daemon.Http.Hubs;
 using MoonlightServers.Daemon.Mappers;
@@ -108,9 +110,13 @@ public class Startup
                 var server = factory.CreateServer(config);
 
                 await using var consoleSub = await server.Console.OnOutput
-                    .SubscribeAsync(Console.Write);
+                    .SubscribeEventAsync(line =>
+                    {
+                        Console.Write(line);
+                        return ValueTask.CompletedTask;
+                    });
 
-                await using var stateSub = await server.OnState.SubscribeAsync(state =>
+                await using var stateSub = await server.OnState.SubscribeEventAsync(state =>
                 {
                     Console.WriteLine($"State: {state}");
                     return ValueTask.CompletedTask;
