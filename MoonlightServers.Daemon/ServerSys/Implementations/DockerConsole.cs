@@ -1,11 +1,8 @@
-using System.Reactive.Linq;
-using System.Reactive.Subjects;
 using System.Text;
 using Docker.DotNet;
 using Docker.DotNet.Models;
 using MoonCore.Helpers;
 using MoonCore.Observability;
-using MoonlightServers.Daemon.Helpers;
 using MoonlightServers.Daemon.ServerSys.Abstractions;
 
 namespace MoonlightServers.Daemon.ServerSys.Implementations;
@@ -26,11 +23,12 @@ public class DockerConsole : IConsole
     private MultiplexedStream? CurrentStream;
     private CancellationTokenSource Cts = new();
 
+    private const string MlPrefix = "\x1b[1;38;2;200;90;200mM\x1b[1;38;2;204;110;230mo\x1b[1;38;2;170;130;245mo\x1b[1;38;2;140;150;255mn\x1b[1;38;2;110;180;255ml\x1b[1;38;2;100;200;255mi\x1b[1;38;2;100;220;255mg\x1b[1;38;2;120;235;255mh\x1b[1;38;2;140;250;255mt\x1b[0m \x1b[3;38;2;200;200;200m{0}\x1b[0m\n\r";
+
     public DockerConsole(
         ServerContext context,
         DockerClient dockerClient,
-        ILogger<DockerConsole> logger
-    )
+        ILogger<DockerConsole> logger)
     {
         Context = context;
         DockerClient = dockerClient;
@@ -55,8 +53,45 @@ public class DockerConsole : IConsole
         await AttachStream(containerName);
     }
 
-    private Task AttachStream(string containerName)
+    public async Task Detach()
     {
+        Logger.LogDebug("Detaching stream");
+
+        if (!Cts.IsCancellationRequested)
+            await Cts.CancelAsync();
+    }
+
+    public async Task CollectFromRuntime()
+        => await CollectFromContainer($"moonlight-runtime-{Context.Configuration.Id}");
+
+    public async Task CollectFromInstallation()
+        => await CollectFromContainer($"moonlight-install-{Context.Configuration.Id}");
+
+    private async Task CollectFromContainer(string containerName)
+    {
+        var logStream = await DockerClient.Containers.GetContainerLogsAsync(containerName, true, new()
+        {
+            Follow = false,
+            ShowStderr = true,
+            ShowStdout = true
+        });
+
+        var combinedOutput = await logStream.ReadOutputToEndAsync(CancellationToken.None);
+        var contentToAdd = combinedOutput.stdout + combinedOutput.stderr;
+
+        await WriteToOutput(contentToAdd);
+    }
+
+    private async Task AttachStream(string containerName)
+    {
+        // This stops any previously existing stream reading if
+        // any is currently running
+        if (!Cts.IsCancellationRequested)
+            await Cts.CancelAsync();
+
+        // Reset
+        Cts = new();
+
         Task.Run(async () =>
         {
             // This loop is here to reconnect to the container if for some reason the container
@@ -138,8 +173,6 @@ public class DockerConsole : IConsole
 
             Logger.LogDebug("Disconnected from container stream");
         }, Cts.Token);
-
-        return Task.CompletedTask;
     }
 
     public async Task WriteToOutput(string content)
@@ -165,13 +198,12 @@ public class DockerConsole : IConsole
             contentBuffer.Length,
             Cts.Token
         );
-        
+
         await OnInputSubject.OnNextAsync(content);
     }
 
     public async Task WriteToMoonlight(string content)
-        => await WriteToOutput(
-            $"\x1b[0;38;2;255;255;255;48;2;124;28;230m Moonlight \x1b[0m\x1b[38;5;250m\x1b[3m {content}\x1b[0m\n\r");
+        => await WriteToOutput(string.Format(MlPrefix, content));
 
     public Task ClearOutput()
     {

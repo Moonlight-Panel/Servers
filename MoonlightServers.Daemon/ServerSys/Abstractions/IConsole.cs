@@ -8,6 +8,15 @@ public interface IConsole : IServerComponent
     public Task AttachToRuntime();
     public Task AttachToInstallation();
     
+    /// <summary>
+    /// Detaches any attached consoles. Usually either runtime or install is attached
+    /// </summary>
+    /// <returns></returns>
+    public Task Detach();
+    
+    public Task CollectFromRuntime();
+    public Task CollectFromInstallation();
+    
     public Task WriteToOutput(string content);
     public Task WriteToInput(string content);
     public Task WriteToMoonlight(string content);

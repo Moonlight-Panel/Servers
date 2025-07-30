@@ -12,9 +12,9 @@ namespace MoonlightServers.Daemon.Http.Controllers.Servers;
 [Route("api/servers")]
 public class ServerPowerController : Controller
 {
-    private readonly ServerService ServerService;
+    private readonly NewServerService ServerService;
 
-    public ServerPowerController(ServerService serverService)
+    public ServerPowerController(NewServerService serverService)
     {
         ServerService = serverService;
     }
@@ -27,7 +27,7 @@ public class ServerPowerController : Controller
         if (server == null)
             throw new HttpApiException("No server with this id found", 404);
 
-        await server.Trigger(ServerTrigger.Start);
+        await server.StateMachine.FireAsync(ServerTrigger.Start);
     }
     
     [HttpPost("{serverId:int}/stop")]
@@ -38,7 +38,7 @@ public class ServerPowerController : Controller
         if (server == null)
             throw new HttpApiException("No server with this id found", 404);
 
-        await server.Trigger(ServerTrigger.Stop);
+        await server.StateMachine.FireAsync(ServerTrigger.Stop);
     }
     
     [HttpPost("{serverId:int}/install")]
@@ -49,7 +49,7 @@ public class ServerPowerController : Controller
         if (server == null)
             throw new HttpApiException("No server with this id found", 404);
 
-        await server.Trigger(ServerTrigger.Install);
+        await server.StateMachine.FireAsync(ServerTrigger.Install);
     }
     
     [HttpPost("{serverId:int}/kill")]
@@ -60,6 +60,6 @@ public class ServerPowerController : Controller
         if (server == null)
             throw new HttpApiException("No server with this id found", 404);
 
-        await server.Trigger(ServerTrigger.Kill);
+        await server.StateMachine.FireAsync(ServerTrigger.Kill);
     }
 }

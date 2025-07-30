@@ -38,10 +38,9 @@ public class DefaultRestorer : IRestorer
         {
             Logger.LogDebug("Detected runtime to restore");
 
+            await Console.CollectFromRuntime();
             await Console.AttachToRuntime();
             await Statistics.SubscribeToRuntime();
-
-            // TODO: Read out existing container log in order to search if the server is online
             
             return ServerState.Online;
         }
@@ -50,6 +49,7 @@ public class DefaultRestorer : IRestorer
         {
             Logger.LogDebug("Detected installation to restore");
 
+            await Console.CollectFromInstallation();
             await Console.AttachToInstallation();
             await Statistics.SubscribeToInstallation();
             

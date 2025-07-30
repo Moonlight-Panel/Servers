@@ -8,4 +8,5 @@ public record ServerContext
     public ServerConfiguration Configuration { get; set; }
     public AsyncServiceScope ServiceScope { get; set; }
     public ServerInstallDataResponse InstallConfiguration { get; set; }
+    public Server Self { get; set; }
 }

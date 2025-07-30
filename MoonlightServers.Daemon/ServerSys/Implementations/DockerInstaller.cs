@@ -170,13 +170,13 @@ public class DockerInstaller : IInstaller
 
         ContainerId = createdContainer.ID;
 
-        Logger.LogInformation("Created container");
+        Logger.LogDebug("Created container");
         await Console.WriteToMoonlight("Created container");
     }
 
     public async Task Start()
     {
-        Logger.LogInformation("Starting container");
+        Logger.LogDebug("Starting container");
         await Console.WriteToMoonlight("Starting container");
         await DockerClient.Containers.StartContainerAsync(ContainerId, new());
     }

@@ -15,6 +15,29 @@ public class ServerConfigurationMapper
     {
         AppConfiguration = appConfiguration;
     }
+    
+    public ServerConfiguration FromServerDataResponse(ServerDataResponse response)
+    {
+        return new ServerConfiguration()
+        {
+            Id = response.Id,
+            StartupCommand = response.StartupCommand,
+            Allocations = response.Allocations.Select(y => new ServerConfiguration.AllocationConfiguration()
+            {
+                IpAddress = y.IpAddress,
+                Port = y.Port
+            }).ToArray(),
+            Variables = response.Variables,
+            OnlineDetection = response.OnlineDetection,
+            DockerImage = response.DockerImage,
+            UseVirtualDisk = response.UseVirtualDisk,
+            Bandwidth = response.Bandwidth,
+            Cpu = response.Cpu,
+            Disk = response.Disk,
+            Memory = response.Memory,
+            StopCommand = response.StopCommand
+        };
+    }
 
     public CreateContainerParameters ToRuntimeParameters(
         ServerConfiguration serverConfiguration,

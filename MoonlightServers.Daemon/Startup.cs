@@ -331,8 +331,8 @@ public class Startup
 
     private Task RegisterServers()
     {
-        WebApplicationBuilder.Services.AddHostedService(sp => sp.GetRequiredService<ServerService>()
-        );
+        WebApplicationBuilder.Services.AddSingleton<NewServerService>();
+        WebApplicationBuilder.Services.AddHostedService(sp => sp.GetRequiredService<NewServerService>());
 
         WebApplicationBuilder.Services.AddSingleton<DockerEventService>();
         WebApplicationBuilder.Services.AddHostedService(sp => sp.GetRequiredService<DockerEventService>());
@@ -348,6 +348,7 @@ public class Startup
         WebApplicationBuilder.Services.AddScoped<IInstaller, DockerInstaller>();
         WebApplicationBuilder.Services.AddScoped<IProvisioner, DockerProvisioner>();
         WebApplicationBuilder.Services.AddScoped<IStatistics, DockerStatistics>();
+        WebApplicationBuilder.Services.AddScoped<IOnlineDetection, RegexOnlineDetection>();
         WebApplicationBuilder.Services.AddScoped<ServerContext>();
         
         WebApplicationBuilder.Services.AddScoped<ServerSys.Abstractions.Server>();

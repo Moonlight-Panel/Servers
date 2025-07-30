@@ -14,9 +14,9 @@ namespace MoonlightServers.Daemon.Http.Controllers.Servers;
 [Route("api/servers/{serverId:int}")]
 public class ServersController : Controller
 {
-    private readonly ServerService ServerService;
+    private readonly NewServerService ServerService;
 
-    public ServersController(ServerService serverService)
+    public ServersController(NewServerService serverService)
     {
         ServerService = serverService;
     }
@@ -57,8 +57,7 @@ public class ServersController : Controller
         if (server == null)
             throw new HttpApiException("No server with this id found", 404);
 
-        var consoleSubSystem = server.GetRequiredSubSystem<ConsoleSubSystem>();
-        var messages = await consoleSubSystem.RetrieveCache();
+        var messages = server.Console.GetOutput();
         
         return new ServerLogsResponse()
         {
@@ -73,7 +72,7 @@ public class ServersController : Controller
 
         if (server == null)
             throw new HttpApiException("No server with this id found", 404);
-
+/*
         var statsSubSystem = server.GetRequiredSubSystem<StatsSubSystem>();
 
         return Task.FromResult<ServerStatsResponse>(new()
@@ -84,6 +83,16 @@ public class ServersController : Controller
             NetworkWrite = statsSubSystem.CurrentStats.NetworkWrite,
             IoRead = statsSubSystem.CurrentStats.IoRead,
             IoWrite = statsSubSystem.CurrentStats.IoWrite
+        });*/
+
+        return Task.FromResult<ServerStatsResponse>(new()
+        {
+            CpuUsage = 0, 
+            MemoryUsage = 0,
+            NetworkRead = 0,
+            NetworkWrite = 0,
+            IoRead = 0,
+            IoWrite = 0
         });
     }
 
@@ -94,9 +103,7 @@ public class ServersController : Controller
 
         if (server == null)
             throw new HttpApiException("No server with this id found", 404);
-        
-        var consoleSubSystem = server.GetRequiredSubSystem<ConsoleSubSystem>();
-        
-        await consoleSubSystem.WriteInput(request.Command);
+
+        await server.Console.WriteToInput(request.Command);
     }
 }

@@ -115,7 +115,7 @@ public class DockerProvisioner : IProvisioner
 
             await EnsureContainerOffline(possibleContainer);
 
-            Logger.LogInformation("Removing orphan container");
+            Logger.LogDebug("Removing orphan container");
             await DockerClient.Containers.RemoveContainerAsync(ContainerName, new());
         }
         catch (DockerContainerNotFoundException)
@@ -151,7 +151,7 @@ public class DockerProvisioner : IProvisioner
         
         ContainerId = createdContainer.ID;
         
-        Logger.LogInformation("Created container");
+        Logger.LogDebug("Created container");
         await Console.WriteToMoonlight("Created container");
     }
 
@@ -214,7 +214,7 @@ public class DockerProvisioner : IProvisioner
         await EnsureContainerOffline(container);
 
         // 3. Remove the container
-        Logger.LogInformation("Removing container");
+        Logger.LogDebug("Removing container");
         await Console.WriteToMoonlight("Removing container");
 
         await DockerClient.Containers.RemoveContainerAsync(container.ID, new());
