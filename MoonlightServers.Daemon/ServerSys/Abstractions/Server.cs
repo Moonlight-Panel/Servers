@@ -190,6 +190,11 @@ public class Server : IAsyncDisposable
         });
     }
 
+    public async Task Delete()
+    {
+        await FileSystem.Delete();
+    }
+
     #region State machine handlers
 
     private async Task HandleStart()
