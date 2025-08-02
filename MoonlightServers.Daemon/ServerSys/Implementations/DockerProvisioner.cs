@@ -18,7 +18,7 @@ public class DockerProvisioner : IProvisioner
     public bool IsProvisioned { get; private set; }
 
     private readonly DockerClient DockerClient;
-    private readonly ILogger<DockerProvisioner> Logger;
+    private readonly ILogger Logger;
     private readonly DockerEventService EventService;
     private readonly ServerContext Context;
     private readonly IConsole Console;
@@ -34,7 +34,7 @@ public class DockerProvisioner : IProvisioner
 
     public DockerProvisioner(
         DockerClient dockerClient,
-        ILogger<DockerProvisioner> logger,
+        ILoggerFactory loggerFactory,
         DockerEventService eventService,
         ServerContext context,
         IConsole console,
@@ -44,7 +44,7 @@ public class DockerProvisioner : IProvisioner
     )
     {
         DockerClient = dockerClient;
-        Logger = logger;
+        Logger = loggerFactory.CreateLogger($"Servers.Instance.{context.Configuration.Id}.{nameof(DockerProvisioner)}");
         EventService = eventService;
         Context = context;
         Console = console;

@@ -19,7 +19,7 @@ public class DockerInstaller : IInstaller
 
     private readonly EventSubject<Message> OnExitedSubject = new();
 
-    private readonly ILogger<DockerInstaller> Logger;
+    private readonly ILogger Logger;
     private readonly DockerEventService EventService;
     private readonly IConsole Console;
     private readonly DockerClient DockerClient;
@@ -37,7 +37,7 @@ public class DockerInstaller : IInstaller
     private IAsyncDisposable? ContainerEventSubscription;
 
     public DockerInstaller(
-        ILogger<DockerInstaller> logger,
+        ILoggerFactory loggerFactory,
         DockerEventService eventService,
         IConsole console,
         DockerClient dockerClient,
@@ -48,7 +48,7 @@ public class DockerInstaller : IInstaller
         ServerConfigurationMapper mapper
     )
     {
-        Logger = logger;
+        Logger = loggerFactory.CreateLogger($"Servers.Instance.{context.Configuration.Id}.{nameof(DockerInstaller)}");
         EventService = eventService;
         Console = console;
         DockerClient = dockerClient;

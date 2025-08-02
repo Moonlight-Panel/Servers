@@ -23,7 +23,7 @@ public class Server : IAsyncDisposable
     public IAsyncObservable<ServerState> OnState => OnStateSubject;
 
     private readonly EventSubject<ServerState> OnStateSubject = new();
-    private readonly ILogger<Server> Logger;
+    private readonly ILogger Logger;
     private readonly RemoteService RemoteService;
     private readonly ServerConfigurationMapper Mapper;
     private readonly IHubContext<ServerWebSocketHub> HubContext;
@@ -33,7 +33,7 @@ public class Server : IAsyncDisposable
     private IAsyncDisposable? ConsoleSubscription;
 
     public Server(
-        ILogger<Server> logger,
+        ILoggerFactory loggerFactory,
         IConsole console,
         IFileSystem fileSystem,
         IInstaller installer,
@@ -46,7 +46,7 @@ public class Server : IAsyncDisposable
         ServerConfigurationMapper mapper,
         IHubContext<ServerWebSocketHub> hubContext)
     {
-        Logger = logger;
+        Logger = loggerFactory.CreateLogger($"Servers.Instance.{context.Configuration.Id}.{nameof(Server)}");
         Console = console;
         FileSystem = fileSystem;
         Installer = installer;
@@ -192,6 +192,20 @@ public class Server : IAsyncDisposable
 
     public async Task Delete()
     {
+        if (Installer.IsRunning)
+        {
+            Logger.LogDebug("Installer still running. Aborting and cleaning up");
+            
+            await Installer.Abort();
+            await Installer.Cleanup();
+        }
+
+        if (Provisioner.IsProvisioned)
+            await Provisioner.Deprovision();
+        
+        if (FileSystem.IsMounted)
+            await FileSystem.Unmount();
+        
         await FileSystem.Delete();
     }
 

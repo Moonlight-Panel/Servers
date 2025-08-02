@@ -5,19 +5,22 @@ namespace MoonlightServers.Daemon.ServerSys.Implementations;
 
 public class DefaultRestorer : IRestorer
 {
-    private readonly ILogger<DefaultRestorer> Logger;
+    private readonly ILogger Logger;
     private readonly IConsole Console;
     private readonly IProvisioner Provisioner;
     private readonly IInstaller Installer;
     private readonly IStatistics Statistics;
 
     public DefaultRestorer(
-        ILogger<DefaultRestorer> logger,
+        ILoggerFactory loggerFactory,
+        ServerContext context,
         IConsole console,
         IProvisioner provisioner,
-        IStatistics statistics, IInstaller installer)
+        IStatistics statistics,
+        IInstaller installer
+    )
     {
-        Logger = logger;
+        Logger = loggerFactory.CreateLogger($"Servers.Instance.{context.Configuration.Id}.{nameof(DefaultRestorer)}");
         Console = console;
         Provisioner = provisioner;
         Statistics = statistics;
@@ -41,7 +44,7 @@ public class DefaultRestorer : IRestorer
             await Console.CollectFromRuntime();
             await Console.AttachToRuntime();
             await Statistics.SubscribeToRuntime();
-            
+
             return ServerState.Online;
         }
 
@@ -52,7 +55,7 @@ public class DefaultRestorer : IRestorer
             await Console.CollectFromInstallation();
             await Console.AttachToInstallation();
             await Statistics.SubscribeToInstallation();
-            
+
             return ServerState.Installing;
         }
 

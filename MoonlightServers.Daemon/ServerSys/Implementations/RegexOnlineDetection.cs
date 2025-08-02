@@ -9,28 +9,31 @@ public class RegexOnlineDetection : IOnlineDetection
 {
     private readonly ServerContext Context;
     private readonly IConsole Console;
-    private readonly ILogger<RegexOnlineDetection> Logger;
+    private readonly ILogger Logger;
     
     private Regex? Regex;
     private IAsyncDisposable? ConsoleSubscription;
     private IAsyncDisposable? StateSubscription;
 
-    public RegexOnlineDetection(ServerContext context, IConsole console, ILogger<RegexOnlineDetection> logger)
+    public RegexOnlineDetection(
+        ServerContext context,
+        IConsole console,
+        ILoggerFactory loggerFactory)
     {
         Context = context;
         Console = console;
-        Logger = logger;
+        Logger = loggerFactory.CreateLogger($"Servers.Instance.{context.Configuration.Id}.{nameof(RegexOnlineDetection)}");
     }
 
     public async Task Initialize()
     {
-        Logger.LogInformation("Subscribing to state changes");
+        Logger.LogDebug("Subscribing to state changes");
         
         StateSubscription = await Context.Self.OnState.SubscribeAsync(async state =>
         {
             if (state == ServerState.Starting) // Subscribe to console when starting
             {
-                Logger.LogInformation("Detected state change to online. Subscribing to console in order to check for the regex matches");
+                Logger.LogDebug("Detected state change to online. Subscribing to console in order to check for the regex matches");
                 
                 if(ConsoleSubscription != null)
                     await ConsoleSubscription.DisposeAsync();
@@ -48,7 +51,7 @@ public class RegexOnlineDetection : IOnlineDetection
             }
             else if (ConsoleSubscription != null) // Unsubscribe from console when any other state and not already unsubscribed
             {
-                Logger.LogInformation("Detected state change to {state}. Unsubscribing from console", state);
+                Logger.LogDebug("Detected state change to {state}. Unsubscribing from console", state);
                 
                 await ConsoleSubscription.DisposeAsync();
                 ConsoleSubscription = null;
