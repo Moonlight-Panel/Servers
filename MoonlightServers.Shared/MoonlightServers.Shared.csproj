@@ -10,7 +10,6 @@
         <PackageId>MoonlightServers.Shared</PackageId>
         <Title>MoonlightServers.Shared</Title>
         <Version>2.1.0</Version>
-        <PackageTags>shared</PackageTags>
         <IsPackable>true</IsPackable>
     </PropertyGroup>
     

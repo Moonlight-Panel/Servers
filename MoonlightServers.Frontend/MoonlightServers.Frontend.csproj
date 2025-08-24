@@ -11,7 +11,6 @@
         <PackageId>MoonlightServers.Frontend</PackageId>
         <Title>MoonlightServers.Frontend</Title>
         <Version>2.1.0</Version>
-        <PackageTags>frontend</PackageTags>
         <IsPackable>true</IsPackable>
     </PropertyGroup>
 
@@ -26,25 +25,9 @@
     </ItemGroup>
 
     <ItemGroup Label="Build instruction for nuget package building">
-        <None Include="**\*.cs" Exclude="storage\**\*;bin\**\*;obj\**\*">
-            <Pack>true</Pack>
-            <PackagePath>src</PackagePath>
-            <CopyToOutputDirectory>Never</CopyToOutputDirectory>
-        </None>
-        <None Include="**\*.razor" Exclude="storage\**\*;bin\**\*;obj\**\*">
-            <Pack>true</Pack>
-            <PackagePath>src</PackagePath>
-            <CopyToOutputDirectory>Never</CopyToOutputDirectory>
-        </None>
-        <None Include="Styles\**\*" Exclude="storage\**\*;bin\**\*;obj\**\*;Styles\node_modules\**\*">
-            <Pack>true</Pack>
-            <PackagePath>styles</PackagePath>
-            <CopyToOutputDirectory>Never</CopyToOutputDirectory>
-        </None>
         <Compile Remove="storage\**\*" />
         <Content Remove="storage\**\*" />
         <None Remove="storage\**\*" />
-
     </ItemGroup>
 
     <ItemGroup>
