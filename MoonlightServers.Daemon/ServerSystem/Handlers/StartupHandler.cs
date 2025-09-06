@@ -51,6 +51,9 @@ public class StartupHandler : IServerStateHandler
         // 5. Create runtime
         var hostPath = await Server.RuntimeFileSystem.GetPathAsync();
 
+        if (await Server.Runtime.CheckExistsAsync())
+            await Server.Runtime.DestroyAsync();
+        
         await Server.Runtime.CreateAsync(hostPath);
 
         if (ExitSubscription == null)

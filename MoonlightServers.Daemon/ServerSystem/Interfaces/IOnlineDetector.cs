@@ -11,7 +11,7 @@ public interface IOnlineDetector : IServerComponent
     /// <summary>
     /// Handles the detection of the online state based on the received output
     /// </summary>
-    /// <param name="line">The excerpt of the output</param>
+    /// <param name="line">Excerpt of the output</param>
     /// <returns>True if the detection showed that the server is online. False if the detection didnt find anything</returns>
     public Task<bool> HandleOutputAsync(string line);
     

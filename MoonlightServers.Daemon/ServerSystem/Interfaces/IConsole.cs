@@ -7,7 +7,7 @@ public interface IConsole : IServerComponent
     /// would write into the containers standard input.
     /// <remarks>This method does not add a newline separator at the end of the content. The caller needs to add this themselves if required</remarks>
     /// </summary>
-    /// <param name="content">The content to write</param>
+    /// <param name="content">Content to write</param>
     /// <returns></returns>
     public Task WriteStdInAsync(string content);
     /// <summary>
@@ -15,17 +15,9 @@ public interface IConsole : IServerComponent
     /// would write into the containers standard output.
     /// <remarks>This method does not add a newline separator at the end of the content. The caller needs to add this themselves if required</remarks>
     /// </summary>
-    /// <param name="content">The content to write</param>
+    /// <param name="content">Content to write</param>
     /// <returns></returns>
     public Task WriteStdOutAsync(string content);
-    
-    /// <summary>
-    /// Writes a system message to the standard output with the moonlight console prefix
-    /// <remarks>This method *does* add the newline separator at the end</remarks>
-    /// </summary>
-    /// <param name="content">The content to write into the standard output</param>
-    /// <returns></returns>
-    public Task WriteMoonlightAsync(string content);
 
     /// <summary>
     /// Attaches the console to the runtime environment
@@ -60,7 +52,7 @@ public interface IConsole : IServerComponent
     /// <summary>
     /// Gets the content from the standard output cache
     /// </summary>
-    /// <returns>The content from the cache</returns>
+    /// <returns>Content from the cache</returns>
     public Task<IEnumerable<string>> GetCacheAsync();
 
     /// <summary>
@@ -68,5 +60,5 @@ public interface IConsole : IServerComponent
     /// </summary>
     /// <param name="callback">Callback which will be invoked whenever a new line is received</param>
     /// <returns>Subscription disposable to unsubscribe from the event</returns>
-    public Task<IAsyncDisposable> SubscribeStdOutAsync(Func<string, Task> callback);
+    public Task<IAsyncDisposable> SubscribeStdOutAsync(Func<string, ValueTask> callback);
 }

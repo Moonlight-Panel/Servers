@@ -1,4 +1,7 @@
 using MoonlightServers.Daemon.Models.Cache;
+using MoonlightServers.Daemon.ServerSystem.Docker;
+using MoonlightServers.Daemon.ServerSystem.FileSystems;
+using MoonlightServers.Daemon.ServerSystem.Implementations;
 using MoonlightServers.Daemon.ServerSystem.Interfaces;
 using MoonlightServers.Daemon.ServerSystem.Models;
 
@@ -27,7 +30,7 @@ public class ServerFactory
         context.ServiceScope = scope;
 
         // Define all required components
-        
+
         IConsole console;
         IFileSystem runtimeFs;
         IFileSystem installFs;
@@ -37,10 +40,18 @@ public class ServerFactory
         IRestorer restorer;
         IRuntime runtime;
         IStatistics statistics;
-        
+
         // Resolve the components
+
+        console = ActivatorUtilities.CreateInstance<DockerConsole>(scope.ServiceProvider, logger);
+        reporter = ActivatorUtilities.CreateInstance<ServerReporter>(scope.ServiceProvider, console, logger);
+        runtimeFs = ActivatorUtilities.CreateInstance<RawRuntimeFs>(scope.ServiceProvider, logger, reporter);
+        installFs = ActivatorUtilities.CreateInstance<RawInstallationFs>(scope.ServiceProvider, logger, reporter);
+        installation = ActivatorUtilities.CreateInstance<DockerInstallation>(scope.ServiceProvider, logger, reporter);
+        onlineDetector = ActivatorUtilities.CreateInstance<RegexOnlineDetector>(scope.ServiceProvider, logger, reporter);
+
         // TODO: Add a plugin hook for dynamically resolving components and checking if any is unset
-        
+
         // Resolve server from di
         var server = new Server(
             logger,

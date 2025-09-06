@@ -3,6 +3,7 @@ using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using Docker.DotNet;
 using Docker.DotNet.Models;
+using MoonCore.Events;
 using MoonCore.Observability;
 using MoonlightServers.Daemon.Helpers;
 
@@ -13,13 +14,9 @@ public class DockerEventService : BackgroundService
     private readonly ILogger<DockerEventService> Logger;
     private readonly DockerClient DockerClient;
 
-    public IAsyncObservable<Message> OnContainerEvent => OnContainerSubject;
-    public IAsyncObservable<Message> OnImageEvent => OnImageSubject;
-    public IAsyncObservable<Message> OnNetworkEvent =>  OnNetworkSubject;
-    
-    private readonly EventSubject<Message> OnContainerSubject = new();
-    private readonly EventSubject<Message> OnImageSubject = new();
-    private readonly EventSubject<Message> OnNetworkSubject = new();
+    private readonly EventSource<Message> ContainerSource = new();
+    private readonly EventSource<Message> ImageSource = new();
+    private readonly EventSource<Message> NetworkSource = new();
 
     public DockerEventService(
         ILogger<DockerEventService> logger,
@@ -30,10 +27,19 @@ public class DockerEventService : BackgroundService
         DockerClient = dockerClient;
     }
 
+    public async ValueTask<IAsyncDisposable> SubscribeContainerAsync(Func<Message, ValueTask> callback)
+        => await ContainerSource.SubscribeAsync(callback);
+    
+    public async ValueTask<IAsyncDisposable> SubscribeImageAsync(Func<Message, ValueTask> callback)
+        => await ImageSource.SubscribeAsync(callback);
+    
+    public async ValueTask<IAsyncDisposable> SubscribeNetworkAsync(Func<Message, ValueTask> callback)
+        => await NetworkSource.SubscribeAsync(callback);
+
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         Logger.LogInformation("Starting docker event service");
-        
+
         while (!stoppingToken.IsCancellationRequested)
         {
             try
@@ -47,15 +53,15 @@ public class DockerEventService : BackgroundService
                             switch (message.Type)
                             {
                                 case "container":
-                                    await OnContainerSubject.OnNextAsync(message);
+                                    await ContainerSource.InvokeAsync(message);
                                     break;
 
                                 case "image":
-                                    await OnImageSubject.OnNextAsync(message);
+                                    await ImageSource.InvokeAsync(message);
                                     break;
 
                                 case "network":
-                                    await OnNetworkSubject.OnNextAsync(message);
+                                    await NetworkSource.InvokeAsync(message);
                                     break;
                             }
                         }
@@ -76,16 +82,7 @@ public class DockerEventService : BackgroundService
                 Logger.LogError(e, "An error occured while listening for docker events: {message}", e.Message);
             }
         }
-        
-        Logger.LogInformation("Stopping docker event service");
-    }
 
-    public override void Dispose()
-    {
-        base.Dispose();
-        
-        OnContainerSubject.Dispose();
-        OnImageSubject.Dispose();
-        OnNetworkSubject.Dispose();
+        Logger.LogInformation("Stopping docker event service");
     }
 }

@@ -11,7 +11,7 @@ public interface IRuntime : IServerComponent
     /// <summary>
     /// Creates the runtime with the specified path as the storage path where the server files should be stored in
     /// </summary>
-    /// <param name="path"></param>
+    /// <param name="path">Path where the server files are located</param>
     /// <returns></returns>
     public Task CreateAsync(string path);
     
@@ -42,7 +42,7 @@ public interface IRuntime : IServerComponent
     /// <summary>
     /// This subscribes to the exited event of the runtime
     /// </summary>
-    /// <param name="callback">The callback gets invoked whenever the runtime exites</param>
+    /// <param name="callback">Callback gets invoked whenever the runtime exites</param>
     /// <returns>Subscription disposable to unsubscribe from the event</returns>
     public Task<IAsyncDisposable> SubscribeExited(Func<int, Task> callback);
 
