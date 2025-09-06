@@ -46,14 +46,14 @@
 
 @code
 {
-    [Parameter] public StarDetailResponse Star { get; set; }
+    [Parameter] public StarResponse Star { get; set; }
     
-    private StarDockerImageDetailResponse[] DockerImages;
+    private StarDockerImageResponse[] DockerImages;
     private LazyLoader LazyLoader;
 
     private async Task Load(LazyLoader _)
     {
-        var pagedVariables = await ApiClient.GetJson<PagedData<StarDockerImageDetailResponse>>(
+        var pagedVariables = await ApiClient.GetJson<PagedData<StarDockerImageResponse>>(
             $"api/admin/servers/stars/{Star.Id}/dockerImages?page=0&pageSize=50"
         );
 
@@ -76,7 +76,7 @@
         });
     }
     
-    private async Task UpdateDockerImage(StarDockerImageDetailResponse dockerImage)
+    private async Task UpdateDockerImage(StarDockerImageResponse dockerImage)
     {
         Func<UpdateStarDockerImageRequest, Task> onSubmit = async request =>
         {
@@ -93,7 +93,7 @@
         });
     }
     
-    private async Task DeleteDockerImage(StarDockerImageDetailResponse dockerImage)
+    private async Task DeleteDockerImage(StarDockerImageResponse dockerImage)
     {
         await AlertService.ConfirmDanger(
             "Delete docker image",

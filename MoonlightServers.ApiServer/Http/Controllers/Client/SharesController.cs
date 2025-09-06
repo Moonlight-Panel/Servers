@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using MoonCore.Exceptions;
 using MoonCore.Extended.Abstractions;
+using MoonCore.Extended.Models;
 using MoonCore.Models;
 using Moonlight.ApiServer.Database.Entities;
 using MoonlightServers.ApiServer.Database.Entities;
@@ -41,24 +42,26 @@ public class SharesController : Controller
     }
 
     [HttpGet]
-    public async Task<PagedData<ServerShareResponse>> GetAll(
+    public async Task<ActionResult<IPagedData<ServerShareResponse>>> GetAll(
         [FromRoute] int serverId,
-        [FromQuery] [Range(0, int.MaxValue)] int page,
-        [FromQuery] [Range(1, 100)] int pageSize
+        [FromQuery] PagedOptions options
     )
     {
         var server = await GetServerById(serverId);
+        
+        if (server.Value == null)
+            return server.Result ?? Problem("Unable to retrieve server");
 
         var query = ShareRepository
             .Get()
-            .Where(x => x.Server.Id == server.Id);
+            .Where(x => x.Server.Id == server.Value.Id);
 
         var count = await query.CountAsync();
 
         var items = await query
             .OrderBy(x => x.Id)
-            .Skip(page * pageSize)
-            .Take(pageSize)
+            .Skip(options.Page * options.PageSize)
+            .Take(options.PageSize)
             .ToArrayAsync();
 
         var userIds = items
@@ -81,27 +84,30 @@ public class SharesController : Controller
         return new PagedData<ServerShareResponse>()
         {
             Items = mappedItems,
-            CurrentPage = page,
-            PageSize = pageSize,
+            CurrentPage = options.Page,
+            PageSize = options.PageSize,
             TotalItems = count,
-            TotalPages = count == 0 ? 0 : count / pageSize
+            TotalPages = (int)Math.Ceiling(Math.Max(0, count) / (double)options.PageSize)
         };
     }
 
     [HttpGet("{id:int}")]
-    public async Task<ServerShareResponse> Get(
+    public async Task<ActionResult<ServerShareResponse>> Get(
         [FromRoute] int serverId,
         [FromRoute] int id
     )
     {
         var server = await GetServerById(serverId);
+        
+        if (server.Value == null)
+            return server.Result ?? Problem("Unable to retrieve server");
 
         var share = await ShareRepository
             .Get()
-            .FirstOrDefaultAsync(x => x.Server.Id == server.Id && x.Id == id);
+            .FirstOrDefaultAsync(x => x.Server.Id == server.Value.Id && x.Id == id);
 
         if (share == null)
-            throw new HttpApiException("A share with that id cannot be found", 404);
+            return Problem("A share with that id cannot be found", statusCode: 404);
 
         var user = await UserRepository
             .Get()
@@ -118,23 +124,26 @@ public class SharesController : Controller
     }
 
     [HttpPost]
-    public async Task<ServerShareResponse> Create(
+    public async Task<ActionResult<ServerShareResponse>> Create(
         [FromRoute] int serverId,
         [FromBody] CreateShareRequest request
     )
     {
         var server = await GetServerById(serverId);
+        
+        if (server.Value == null)
+            return server.Result ?? Problem("Unable to retrieve server");
 
         var user = await UserRepository
             .Get()
             .FirstOrDefaultAsync(x => x.Username == request.Username);
 
         if (user == null)
-            throw new HttpApiException("A user with that username could not be found", 400);
+            return Problem("A user with that username could not be found", statusCode: 400);
 
         var share = new ServerShare()
         {
-            Server = server,
+            Server = server.Value,
             Content = ShareMapper.MapToServerShareContent(request.Permissions),
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow,
@@ -154,20 +163,23 @@ public class SharesController : Controller
     }
 
     [HttpPatch("{id:int}")]
-    public async Task<ServerShareResponse> Update(
+    public async Task<ActionResult<ServerShareResponse>> Update(
         [FromRoute] int serverId,
         [FromRoute] int id,
         [FromBody] UpdateShareRequest request
     )
     {
         var server = await GetServerById(serverId);
+        
+        if (server.Value == null)
+            return server.Result ?? Problem("Unable to retrieve server");
 
         var share = await ShareRepository
             .Get()
-            .FirstOrDefaultAsync(x => x.Server.Id == server.Id && x.Id == id);
+            .FirstOrDefaultAsync(x => x.Server.Id == server.Value.Id && x.Id == id);
 
         if (share == null)
-            throw new HttpApiException("A share with that id cannot be found", 404);
+            return Problem("A share with that id cannot be found", statusCode: 404);
 
         share.Content = ShareMapper.MapToServerShareContent(request.Permissions);
 
@@ -180,7 +192,7 @@ public class SharesController : Controller
             .FirstOrDefaultAsync(x => x.Id == share.UserId);
 
         if (user == null)
-            throw new HttpApiException("A user with that id could not be found", 400);
+            return Problem("A user with that id could not be found", statusCode: 400);
 
         var mappedItem = new ServerShareResponse()
         {
@@ -193,31 +205,35 @@ public class SharesController : Controller
     }
 
     [HttpDelete("{id:int}")]
-    public async Task Delete(
+    public async Task<ActionResult> Delete(
         [FromRoute] int serverId,
         [FromRoute] int id
     )
     {
         var server = await GetServerById(serverId);
+        
+        if (server.Value == null)
+            return server.Result ?? Problem("Unable to retrieve server");
 
         var share = await ShareRepository
             .Get()
-            .FirstOrDefaultAsync(x => x.Server.Id == server.Id && x.Id == id);
+            .FirstOrDefaultAsync(x => x.Server.Id == server.Value.Id && x.Id == id);
 
         if (share == null)
-            throw new HttpApiException("A share with that id cannot be found", 404);
+            return Problem("A share with that id cannot be found", statusCode: 404);
 
         await ShareRepository.Remove(share);
+        return NoContent();
     }
 
-    private async Task<Server> GetServerById(int serverId)
+    private async Task<ActionResult<Server>> GetServerById(int serverId)
     {
         var server = await ServerRepository
             .Get()
             .FirstOrDefaultAsync(x => x.Id == serverId);
 
         if (server == null)
-            throw new HttpApiException("No server with this id found", 404);
+            return Problem("No server with this id found", statusCode: 404);
 
         var authorizeResult = await AuthorizeService.Authorize(
             User, server,
@@ -227,9 +243,9 @@ public class SharesController : Controller
 
         if (!authorizeResult.Succeeded)
         {
-            throw new HttpApiException(
+            return Problem(
                 authorizeResult.Message ?? "No permission for the requested resource",
-                403
+                statusCode: 403
             );
         }
 

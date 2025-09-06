@@ -46,14 +46,14 @@
 
 @code
 {
-    [Parameter] public StarDetailResponse Star { get; set; }
+    [Parameter] public StarResponse Star { get; set; }
     
-    private StarVariableDetailResponse[] CurrentVariables;
+    private StarVariableResponse[] CurrentVariables;
     private LazyLoader LazyLoader;
 
     private async Task Load(LazyLoader arg)
     {
-        var pagedVariables = await ApiClient.GetJson<PagedData<StarVariableDetailResponse>>(
+        var pagedVariables = await ApiClient.GetJson<PagedData<StarVariableResponse>>(
             $"api/admin/servers/stars/{Star.Id}/variables?page=0&pageSize=50"
         );
 
@@ -76,7 +76,7 @@
         }, "max-w-xl");
     }
     
-    private async Task UpdateVariable(StarVariableDetailResponse variable)
+    private async Task UpdateVariable(StarVariableResponse variable)
     {
         Func<UpdateStarVariableRequest, Task> onSubmit = async request =>
         {
@@ -93,7 +93,7 @@
         }, "max-w-xl");
     }
 
-    private async Task DeleteVariable(StarVariableDetailResponse variable)
+    private async Task DeleteVariable(StarVariableResponse variable)
     {
         await AlertService.ConfirmDanger(
             "Delete variable",

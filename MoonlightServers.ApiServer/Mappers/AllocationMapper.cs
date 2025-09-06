@@ -11,4 +11,8 @@ public static partial class AllocationMapper
     public static partial NodeAllocationResponse ToNodeAllocation(Allocation allocation);
     public static partial Allocation ToAllocation(CreateNodeAllocationRequest request);
     public static partial void Merge(UpdateNodeAllocationRequest request, Allocation allocation);
+    
+    // EF Projections
+
+    public static partial IQueryable<NodeAllocationResponse> ProjectToAdminResponse(this IQueryable<Allocation> allocations);
 }

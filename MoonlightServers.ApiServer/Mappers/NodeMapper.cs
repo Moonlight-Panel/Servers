@@ -11,4 +11,8 @@ public static partial class NodeMapper
     public static partial NodeResponse ToAdminNodeResponse(Node node);
     public static partial Node ToNode(CreateNodeRequest request);
     public static partial void Merge(UpdateNodeRequest request, Node node);
+    
+    // EF Projections
+
+    public static partial IQueryable<NodeResponse> ProjectToAdminResponse(this IQueryable<Node> nodes);
 }

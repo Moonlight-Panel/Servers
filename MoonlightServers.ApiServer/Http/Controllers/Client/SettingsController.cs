@@ -32,13 +32,18 @@ public class SettingsController : Controller
 
     [HttpPost("{serverId:int}/install")]
     [Authorize]
-    public async Task Install([FromRoute] int serverId)
+    public async Task<ActionResult> Install([FromRoute] int serverId)
     {
         var server = await GetServerById(serverId);
-        await ServerService.Install(server);
+        
+        if (server.Value == null)
+            return server.Result ?? Problem("Unable to retrieve server");
+        
+        await ServerService.Install(server.Value);
+        return NoContent();
     }
     
-    private async Task<Server> GetServerById(int serverId)
+    private async Task<ActionResult<Server>> GetServerById(int serverId)
     {
         var server = await ServerRepository
             .Get()
@@ -46,7 +51,7 @@ public class SettingsController : Controller
             .FirstOrDefaultAsync(x => x.Id == serverId);
 
         if (server == null)
-            throw new HttpApiException("No server with this id found", 404);
+            return Problem("No server with this id found", statusCode: 404);
 
         var authorizeResult = await AuthorizeService.Authorize(
             User, server,
@@ -56,9 +61,9 @@ public class SettingsController : Controller
 
         if (!authorizeResult.Succeeded)
         {
-            throw new HttpApiException(
+            return Problem(
                 authorizeResult.Message ?? "No permission for the requested resource",
-                403
+                statusCode: 403
             );
         }
         

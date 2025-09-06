@@ -9,7 +9,11 @@ namespace MoonlightServers.ApiServer.Mappers;
 [Mapper(AllowNullPropertyAssignment = false)]
 public static partial class StarMapper
 {
-    public static partial StarDetailResponse ToAdminResponse(Star star);
+    public static partial StarResponse ToAdminResponse(Star star);
     public static partial Star ToStar(CreateStarRequest request);
     public static partial void Merge(UpdateStarRequest request, Star star);
+    
+    // EF Projections
+
+    public static partial IQueryable<StarResponse> ProjectToAdminResponse(this IQueryable<Star> stars);
 }

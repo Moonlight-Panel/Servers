@@ -65,7 +65,7 @@
 @code
 {
     [Parameter] public Func<UpdateStarVariableRequest, Task> OnSubmit { get; set; }
-    [Parameter] public StarVariableDetailResponse Variable { get; set; }
+    [Parameter] public StarVariableResponse Variable { get; set; }
 
     private UpdateStarVariableRequest Form;
     private HandleForm HandleForm;

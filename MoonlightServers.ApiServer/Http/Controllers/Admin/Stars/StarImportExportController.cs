@@ -23,18 +23,15 @@ public class StarImportExportController : Controller
 
     [HttpGet("{starId:int}/export")]
     [Authorize(Policy = "permissions:admin.servers.stars.get")]
-    public async Task Export([FromRoute] int starId)
+    public async Task<ActionResult> Export([FromRoute] int starId)
     {
         var exportedStar = await ImportExportService.Export(starId);
-
-        Response.StatusCode = 200;
-        Response.ContentType = "application/json";
-        await Response.WriteAsync(exportedStar);
+        return Content(exportedStar, "application/json");
     }
 
     [HttpPost("import")]
     [Authorize(Policy = "permissions:admin.servers.stars.create")]
-    public async Task<StarDetailResponse> Import()
+    public async Task<StarResponse> Import()
     {
         if (Request.Form.Files.Count == 0)
             throw new HttpApiException("No file to import provided", 400);

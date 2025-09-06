@@ -6,6 +6,7 @@ using Microsoft.Extensions.Logging;
 using MoonCore.Exceptions;
 using MoonCore.Extended.Abstractions;
 using MoonCore.Extended.Helpers;
+using MoonCore.Extended.Models;
 using MoonCore.Helpers;
 using MoonCore.Models;
 using Moonlight.ApiServer.Database.Entities;
@@ -53,41 +54,36 @@ public class ServersController : Controller
 
     [HttpGet]
     [Authorize(Policy = "permissions:admin.servers.read")]
-    public async Task<IPagedData<ServerResponse>> Get(
-        [FromQuery] [Range(0, int.MaxValue)] int page,
-        [FromQuery] [Range(1, 100)] int pageSize
-    )
+    public async Task<ActionResult<IPagedData<ServerResponse>>> Get([FromQuery] PagedOptions options)
     {
         var count = await ServerRepository.Get().CountAsync();
 
-        var items = await ServerRepository
+        var servers = await ServerRepository
             .Get()
             .Include(x => x.Node)
             .Include(x => x.Allocations)
             .Include(x => x.Variables)
             .Include(x => x.Star)
             .OrderBy(x => x.Id)
-            .Skip(page * pageSize)
-            .Take(pageSize)
+            .Skip(options.Page * options.PageSize)
+            .Take(options.PageSize)
+            .AsNoTracking()
+            .ProjectToAdminResponse()
             .ToArrayAsync();
-
-        var mappedItems = items
-            .Select(ServerMapper.ToAdminServerResponse)
-            .ToArray();
 
         return new PagedData<ServerResponse>()
         {
-            Items = mappedItems,
-            CurrentPage = page,
-            PageSize = pageSize,
+            Items = servers,
+            CurrentPage = options.Page,
+            PageSize = options.PageSize,
             TotalItems = count,
-            TotalPages = count == 0 ? 0 : count / pageSize
+            TotalPages = (int)Math.Ceiling(Math.Max(0, count) / (double)options.PageSize)
         };
     }
 
     [HttpGet("{id:int}")]
     [Authorize(Policy = "permissions:admin.servers.read")]
-    public async Task<ServerResponse> GetSingle([FromRoute] int id)
+    public async Task<ActionResult<ServerResponse>> GetSingle([FromRoute] int id)
     {
         var server = await ServerRepository
             .Get()
@@ -95,21 +91,23 @@ public class ServersController : Controller
             .Include(x => x.Allocations)
             .Include(x => x.Variables)
             .Include(x => x.Star)
+            .AsNoTracking()
+            .ProjectToAdminResponse()
             .FirstOrDefaultAsync(x => x.Id == id);
 
         if (server == null)
-            throw new HttpApiException("No server with that id found", 404);
-        
-        return ServerMapper.ToAdminServerResponse(server);
+            return Problem("No server with that id found", statusCode: 404);
+
+        return server;
     }
 
     [HttpPost]
     [Authorize(Policy = "permissions:admin.servers.write")]
-    public async Task<ServerResponse> Create([FromBody] CreateServerRequest request)
+    public async Task<ActionResult<ServerResponse>> Create([FromBody] CreateServerRequest request)
     {
         // Check if owner user exist
         if (UserRepository.Get().All(x => x.Id != request.OwnerId))
-            throw new HttpApiException("No user with this id found", 400);
+            return Problem("No user with this id found", statusCode: 400);
 
         // Check if the star exists
         var star = await StarRepository
@@ -119,14 +117,14 @@ public class ServersController : Controller
             .FirstOrDefaultAsync(x => x.Id == request.StarId);
 
         if (star == null)
-            throw new HttpApiException("No star with this id found", 400);
+            return Problem("No star with this id found", statusCode: 400);
 
         var node = await NodeRepository
             .Get()
             .FirstOrDefaultAsync(x => x.Id == request.NodeId);
 
         if (node == null)
-            throw new HttpApiException("No node with this id found", 400);
+            return Problem("No node with this id found", statusCode: 400);
 
         var allocations = new List<Allocation>();
 
@@ -161,13 +159,13 @@ public class ServersController : Controller
 
             if (allocations.Count < star.RequiredAllocations)
             {
-                throw new HttpApiException(
+                return Problem(
                     $"Unable to find enough free allocations. Found: {allocations.Count}, Required: {star.RequiredAllocations}",
-                    400
+                    statusCode: 400
                 );
             }
         }
-        
+
         var server = ServerMapper.ToServer(request);
 
         // Set allocations
@@ -204,7 +202,7 @@ public class ServersController : Controller
             Logger.LogError("Unable to sync server to node the server is assigned to: {e}", e);
 
             // We are deleting the server from the database after the creation has failed
-            // to ensure we won't have a bugged server in the database which doesnt exist on the node
+            // to ensure we won't have a bugged server in the database which doesn't exist on the node
             await ServerRepository.Remove(finalServer);
 
             throw;
@@ -215,7 +213,7 @@ public class ServersController : Controller
 
     [HttpPatch("{id:int}")]
     [Authorize(Policy = "permissions:admin.servers.write")]
-    public async Task<ServerResponse> Update([FromRoute] int id, [FromBody] UpdateServerRequest request)
+    public async Task<ActionResult<ServerResponse>> Update([FromRoute] int id, [FromBody] UpdateServerRequest request)
     {
         //TODO: Handle shrinking virtual disk
 
@@ -228,7 +226,7 @@ public class ServersController : Controller
             .FirstOrDefaultAsync(x => x.Id == id);
 
         if (server == null)
-            throw new HttpApiException("No server with that id found", 404);
+            return Problem("No server with that id found", statusCode: 404);
 
         ServerMapper.Merge(request, server);
 
@@ -255,9 +253,9 @@ public class ServersController : Controller
         // Check if the specified allocations are enough for the star
         if (allocations.Count < server.Star.RequiredAllocations)
         {
-            throw new HttpApiException(
+            return Problem(
                 $"You need to specify at least {server.Star.RequiredAllocations} allocation(s)",
-                400
+                statusCode: 400
             );
         }
 
@@ -287,7 +285,7 @@ public class ServersController : Controller
     }
 
     [HttpDelete("{id:int}")]
-    public async Task Delete([FromRoute] int id, [FromQuery] bool force = false)
+    public async Task<ActionResult> Delete([FromRoute] int id, [FromQuery] bool force = false)
     {
         var server = await ServerRepository
             .Get()
@@ -299,12 +297,12 @@ public class ServersController : Controller
             .FirstOrDefaultAsync(x => x.Id == id);
 
         if (server == null)
-            throw new HttpApiException("No server with that id found", 404);
+            return Problem("No server with that id found", statusCode: 404);
 
         server.Variables.Clear();
         server.Backups.Clear();
         server.Allocations.Clear();
-        
+
         try
         {
             // If the sync fails on the node and we aren't forcing the deletion,
@@ -325,5 +323,6 @@ public class ServersController : Controller
         }
 
         await ServerRepository.Remove(server);
+        return NoContent();
     }
 }

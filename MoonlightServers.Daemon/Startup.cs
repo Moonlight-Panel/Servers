@@ -1,29 +1,16 @@
-using System.Reactive.Concurrency;
-using System.Reactive.Linq;
 using System.Text;
 using System.Text.Json;
 using Docker.DotNet;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Http.Connections;
 using Microsoft.IdentityModel.Tokens;
 using MoonCore.EnvConfiguration;
 using MoonCore.Extended.Extensions;
 using MoonCore.Extensions;
 using MoonCore.Helpers;
 using MoonCore.Logging;
-using MoonCore.Observability;
 using MoonlightServers.Daemon.Configuration;
-using MoonlightServers.Daemon.Extensions;
 using MoonlightServers.Daemon.Helpers;
 using MoonlightServers.Daemon.Http.Hubs;
-using MoonlightServers.Daemon.Mappers;
-using MoonlightServers.Daemon.Models.Cache;
-using MoonlightServers.Daemon.ServerSys;
-using MoonlightServers.Daemon.ServerSys.Abstractions;
-using MoonlightServers.Daemon.ServerSys.Implementations;
-using MoonlightServers.Daemon.ServerSystem;
-using MoonlightServers.Daemon.Services;
-using Server = MoonlightServers.Daemon.ServerSystem.Server;
 
 namespace MoonlightServers.Daemon;
 
@@ -72,79 +59,6 @@ public class Startup
 
         await MapBase();
         await MapHubs();
-
-        Task.Run(async () =>
-        {
-            try
-            {
-                Console.WriteLine("Press enter to create server instance");
-                Console.ReadLine();
-
-                var config = new ServerConfiguration()
-                {
-                    Allocations = [
-                        new ServerConfiguration.AllocationConfiguration()
-                        {
-                            IpAddress = "0.0.0.0",
-                            Port = 25565
-                        }
-                    ],
-                    Cpu = 400,
-                    Disk = 10240,
-                    DockerImage = "ghcr.io/parkervcp/yolks:java_21",
-                    Id = 69,
-                    Memory = 4096,
-                    OnlineDetection = "\\)! For help, type ",
-                    StartupCommand = "java -Xms128M -Xmx{{SERVER_MEMORY}}M -Dterminal.jline=false -Dterminal.ansi=true -jar {{SERVER_JARFILE}}",
-                    StopCommand = "stop",
-                    Variables = new()
-                    {
-                        {
-                            "SERVER_JARFILE",
-                            "server.jar"
-                        }
-                    }
-                };
-                
-                var factory = WebApplication.Services.GetRequiredService<ServerFactory>();
-                var server = factory.CreateServer(config);
-
-                await using var consoleSub = await server.Console.OnOutput
-                    .SubscribeEventAsync(line =>
-                    {
-                        Console.Write(line);
-                        return ValueTask.CompletedTask;
-                    });
-
-                await using var stateSub = await server.OnState.SubscribeEventAsync(state =>
-                {
-                    Console.WriteLine($"State: {state}");
-                    return ValueTask.CompletedTask;
-                });
-                
-                await server.Initialize();
-
-                Console.ReadLine();
-
-                if(server.StateMachine.State == ServerState.Offline)
-                    await server.StateMachine.FireAsync(ServerTrigger.Start);
-                else
-                    await server.StateMachine.FireAsync(ServerTrigger.Stop);
-                
-                Console.ReadLine();
-
-                await server.StateMachine.FireAsync(ServerTrigger.Install);
-                
-                Console.ReadLine();
-                
-                await server.Context.ServiceScope.DisposeAsync();
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine(e);
-                throw;
-            }
-        });
 
         await WebApplication.RunAsync();
     }
@@ -331,28 +245,6 @@ public class Startup
 
     private Task RegisterServers()
     {
-        WebApplicationBuilder.Services.AddSingleton<NewServerService>();
-        WebApplicationBuilder.Services.AddHostedService(sp => sp.GetRequiredService<NewServerService>());
-
-        WebApplicationBuilder.Services.AddSingleton<DockerEventService>();
-        WebApplicationBuilder.Services.AddHostedService(sp => sp.GetRequiredService<DockerEventService>());
-
-        WebApplicationBuilder.Services.AddSingleton<ServerConfigurationMapper>();
-
-        WebApplicationBuilder.Services.AddSingleton<ServerFactory>();
-
-        // Server scoped stuff
-        WebApplicationBuilder.Services.AddScoped<IConsole, DockerConsole>();
-        WebApplicationBuilder.Services.AddScoped<IFileSystem, RawFileSystem>();
-        WebApplicationBuilder.Services.AddScoped<IRestorer, DefaultRestorer>();
-        WebApplicationBuilder.Services.AddScoped<IInstaller, DockerInstaller>();
-        WebApplicationBuilder.Services.AddScoped<IProvisioner, DockerProvisioner>();
-        WebApplicationBuilder.Services.AddScoped<IStatistics, DockerStatistics>();
-        WebApplicationBuilder.Services.AddScoped<IOnlineDetection, RegexOnlineDetection>();
-        WebApplicationBuilder.Services.AddScoped<ServerContext>();
-        
-        WebApplicationBuilder.Services.AddScoped<ServerSys.Abstractions.Server>();
-
         return Task.CompletedTask;
     }
 

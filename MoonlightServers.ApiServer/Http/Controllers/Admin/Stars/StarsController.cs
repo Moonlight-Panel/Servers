@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authorization;
 using MoonCore.Exceptions;
 using MoonCore.Extended.Abstractions;
+using MoonCore.Extended.Models;
 using MoonCore.Models;
 using MoonlightServers.ApiServer.Database.Entities;
 using MoonlightServers.ApiServer.Mappers;
@@ -25,51 +26,48 @@ public class StarsController : Controller
 
     [HttpGet]
     [Authorize(Policy = "permissions:admin.servers.stars.read")]
-    public async Task<IPagedData<StarDetailResponse>> Get(
-        [FromQuery] [Range(0, int.MaxValue)] int page,
-        [FromQuery] [Range(1, 100)] int pageSize
-    )
+    public async Task<ActionResult<IPagedData<StarResponse>>> Get([FromQuery] PagedOptions options)
     {
         var count = await StarRepository.Get().CountAsync();
 
-        var items = await StarRepository
+        var stars = await StarRepository
             .Get()
             .OrderBy(x => x.Id)
-            .Skip(page * pageSize)
-            .Take(pageSize)
+            .Skip(options.Page * options.PageSize)
+            .Take(options.PageSize)
+            .AsNoTracking()
+            .ProjectToAdminResponse()
             .ToArrayAsync();
 
-        var mappedItems = items
-            .Select(StarMapper.ToAdminResponse)
-            .ToArray();
-
-        return new PagedData<StarDetailResponse>()
+        return new PagedData<StarResponse>()
         {
-            CurrentPage = page,
-            Items = mappedItems,
-            PageSize = pageSize,
+            CurrentPage = options.Page,
+            Items = stars,
+            PageSize = options.PageSize,
             TotalItems = count,
-            TotalPages = count == 0 ? 0 : count / pageSize
+            TotalPages = (int)Math.Ceiling(Math.Max(0, count) / (double)options.PageSize)
         };
     }
 
     [HttpGet("{id:int}")]
     [Authorize(Policy = "permissions:admin.servers.stars.read")]
-    public async Task<StarDetailResponse> GetSingle([FromRoute] int id)
+    public async Task<ActionResult<StarResponse>> GetSingle([FromRoute] int id)
     {
         var star = await StarRepository
             .Get()
+            .AsNoTracking()
+            .ProjectToAdminResponse()
             .FirstOrDefaultAsync(x => x.Id == id);
 
         if (star == null)
-            throw new HttpApiException("No star with that id found", 404);
+            return Problem("No star with that id found", statusCode: 404);
 
-        return StarMapper.ToAdminResponse(star);
+        return star;
     }
 
     [HttpPost]
     [Authorize(Policy = "permissions:admin.servers.stars.create")]
-    public async Task<StarDetailResponse> Create([FromBody] CreateStarRequest request)
+    public async Task<ActionResult<StarResponse>> Create([FromBody] CreateStarRequest request)
     {
         var star = StarMapper.ToStar(request);
 
@@ -95,7 +93,7 @@ public class StarsController : Controller
 
     [HttpPatch("{id:int}")]
     [Authorize(Policy = "permissions:admin.servers.stars.update")]
-    public async Task<StarDetailResponse> Update(
+    public async Task<ActionResult<StarResponse>> Update(
         [FromRoute] int id,
         [FromBody] UpdateStarRequest request
     )
@@ -105,7 +103,7 @@ public class StarsController : Controller
             .FirstOrDefaultAsync(x => x.Id == id);
 
         if (star == null)
-            throw new HttpApiException("No star with that id found", 404);
+            return Problem("No star with that id found", statusCode: 404);
         
         StarMapper.Merge(request, star);
         await StarRepository.Update(star);
@@ -115,15 +113,16 @@ public class StarsController : Controller
 
     [HttpDelete("{id:int}")]
     [Authorize(Policy = "permissions:admin.servers.stars.delete")]
-    public async Task Delete([FromRoute] int id)
+    public async Task<ActionResult> Delete([FromRoute] int id)
     {
         var star = await StarRepository
             .Get()
             .FirstOrDefaultAsync(x => x.Id == id);
 
         if (star == null)
-            throw new HttpApiException("No star with that id found", 404);
+            return Problem("No star with that id found", statusCode: 404);
         
         await StarRepository.Remove(star);
+        return NoContent();
     }
 }

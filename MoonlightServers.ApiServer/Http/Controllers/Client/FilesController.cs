@@ -3,7 +3,6 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using MoonCore.Exceptions;
 using MoonCore.Extended.Abstractions;
-using Moonlight.ApiServer.Database.Entities;
 using MoonlightServers.ApiServer.Database.Entities;
 using MoonlightServers.ApiServer.Services;
 using MoonlightServers.DaemonShared.Enums;
@@ -38,11 +37,14 @@ public class FilesController : Controller
     }
 
     [HttpGet("list")]
-    public async Task<ServerFilesEntryResponse[]> List([FromRoute] int serverId, [FromQuery] string path)
+    public async Task<ActionResult<ServerFilesEntryResponse[]>> List([FromRoute] int serverId, [FromQuery] string path)
     {
         var server = await GetServerById(serverId, ServerPermissionLevel.Read);
+        
+        if (server.Value == null)
+            return server.Result ?? Problem("Unable to retrieve server");
 
-        var entries = await ServerFileSystemService.List(server, path);
+        var entries = await ServerFileSystemService.List(server.Value, path);
 
         return entries.Select(x => new ServerFilesEntryResponse()
         {
@@ -55,41 +57,62 @@ public class FilesController : Controller
     }
 
     [HttpPost("move")]
-    public async Task Move([FromRoute] int serverId, [FromQuery] string oldPath, [FromQuery] string newPath)
+    public async Task<ActionResult> Move([FromRoute] int serverId, [FromQuery] string oldPath, [FromQuery] string newPath)
     {
         var server = await GetServerById(serverId, ServerPermissionLevel.ReadWrite);
+        
+        if (server.Value == null)
+            return server.Result ?? Problem("Unable to retrieve server");
 
-        await ServerFileSystemService.Move(server, oldPath, newPath);
+        await ServerFileSystemService.Move(server.Value, oldPath, newPath);
+        return NoContent();
     }
 
     [HttpDelete("delete")]
-    public async Task Delete([FromRoute] int serverId, [FromQuery] string path)
+    public async Task<ActionResult> Delete([FromRoute] int serverId, [FromQuery] string path)
     {
         var server = await GetServerById(serverId, ServerPermissionLevel.ReadWrite);
+        
+        if (server.Value == null)
+            return server.Result ?? Problem("Unable to retrieve server");
 
-        await ServerFileSystemService.Delete(server, path);
+        await ServerFileSystemService.Delete(server.Value, path);
+        return NoContent();
     }
 
     [HttpPost("mkdir")]
-    public async Task Mkdir([FromRoute] int serverId, [FromQuery] string path)
+    public async Task<ActionResult> Mkdir([FromRoute] int serverId, [FromQuery] string path)
     {
         var server = await GetServerById(serverId, ServerPermissionLevel.ReadWrite);
+        
+        if (server.Value == null)
+            return server.Result ?? Problem("Unable to retrieve server");
 
-        await ServerFileSystemService.Mkdir(server, path);
+        await ServerFileSystemService.Mkdir(server.Value, path);
+        return NoContent();
     }
 
     [HttpPost("touch")]
-    public async Task Touch([FromRoute] int serverId, [FromQuery] string path)
+    public async Task<ActionResult> Touch([FromRoute] int serverId, [FromQuery] string path)
     {
         var server = await GetServerById(serverId, ServerPermissionLevel.ReadWrite);
+        
+        if (server.Value == null)
+            return server.Result ?? Problem("Unable to retrieve server");
 
-        await ServerFileSystemService.Mkdir(server, path);
+        await ServerFileSystemService.Mkdir(server.Value, path);
+        return NoContent();
     }
 
     [HttpGet("upload")]
-    public async Task<ServerFilesUploadResponse> Upload([FromRoute] int serverId)
+    public async Task<ActionResult<ServerFilesUploadResponse>> Upload([FromRoute] int serverId)
     {
-        var server = await GetServerById(serverId, ServerPermissionLevel.ReadWrite);
+        var serverResult = await GetServerById(serverId, ServerPermissionLevel.ReadWrite);
+        
+        if (serverResult.Value == null)
+            return serverResult.Result ?? Problem("Unable to retrieve server");
+
+        var server = serverResult.Value;
 
         var accessToken = NodeService.CreateAccessToken(
             server.Node,
@@ -114,9 +137,14 @@ public class FilesController : Controller
     }
 
     [HttpGet("download")]
-    public async Task<ServerFilesDownloadResponse> Download([FromRoute] int serverId, [FromQuery] string path)
+    public async Task<ActionResult<ServerFilesDownloadResponse>> Download([FromRoute] int serverId, [FromQuery] string path)
     {
-        var server = await GetServerById(serverId, ServerPermissionLevel.Read);
+        var serverResult = await GetServerById(serverId, ServerPermissionLevel.Read);
+        
+        if (serverResult.Value == null)
+            return serverResult.Result ?? Problem("Unable to retrieve server");
+
+        var server = serverResult.Value;
 
         var accessToken = NodeService.CreateAccessToken(
             server.Node,
@@ -142,28 +170,36 @@ public class FilesController : Controller
     }
 
     [HttpPost("compress")]
-    public async Task Compress([FromRoute] int serverId, [FromBody] ServerFilesCompressRequest request)
+    public async Task<ActionResult> Compress([FromRoute] int serverId, [FromBody] ServerFilesCompressRequest request)
     {
         var server = await GetServerById(serverId, ServerPermissionLevel.ReadWrite);
+        
+        if (server.Value == null)
+            return server.Result ?? Problem("Unable to retrieve server");
 
         if (!Enum.TryParse(request.Type, true, out CompressType type))
-            throw new HttpApiException("Invalid compress type provided", 400);
+            return Problem("Invalid compress type provided", statusCode: 400);
 
-        await ServerFileSystemService.Compress(server, type, request.Items, request.Destination);
+        await ServerFileSystemService.Compress(server.Value, type, request.Items, request.Destination);
+        return Ok();
     }
 
     [HttpPost("decompress")]
-    public async Task Decompress([FromRoute] int serverId, [FromBody] ServerFilesDecompressRequest request)
+    public async Task<ActionResult> Decompress([FromRoute] int serverId, [FromBody] ServerFilesDecompressRequest request)
     {
         var server = await GetServerById(serverId, ServerPermissionLevel.ReadWrite);
+        
+        if (server.Value == null)
+            return server.Result ?? Problem("Unable to retrieve server");
 
         if (!Enum.TryParse(request.Type, true, out CompressType type))
-            throw new HttpApiException("Invalid compress type provided", 400);
+            return Problem("Invalid decompress type provided", statusCode: 400);
 
-        await ServerFileSystemService.Decompress(server, type, request.Path, request.Destination);
+        await ServerFileSystemService.Decompress(server.Value, type, request.Path, request.Destination);
+        return NoContent();
     }
 
-    private async Task<Server> GetServerById(int serverId, ServerPermissionLevel level)
+    private async Task<ActionResult<Server>> GetServerById(int serverId, ServerPermissionLevel level)
     {
         var server = await ServerRepository
             .Get()
@@ -171,7 +207,7 @@ public class FilesController : Controller
             .FirstOrDefaultAsync(x => x.Id == serverId);
 
         if (server == null)
-            throw new HttpApiException("No server with this id found", 404);
+            return Problem("No server with this id found", statusCode: 404);
 
         var authorizeResult = await AuthorizeService.Authorize(
             User, server,
@@ -181,9 +217,9 @@ public class FilesController : Controller
 
         if (!authorizeResult.Succeeded)
         {
-            throw new HttpApiException(
+            return Problem(
                 authorizeResult.Message ?? "No permission for the requested resource",
-                403
+                statusCode: 403
             );
         }
 

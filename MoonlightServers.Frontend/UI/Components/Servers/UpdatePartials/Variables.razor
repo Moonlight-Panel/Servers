@@ -45,13 +45,13 @@
     [Parameter] public UpdateServerRequest Request { get; set; }
     [Parameter] public ServerResponse Server { get; set; }
 
-    private StarVariableDetailResponse[] StarVariables;
+    private StarVariableResponse[] StarVariables;
     private ServerVariableResponse[] ServerVariables;
 
     private async Task Load(LazyLoader _)
     {
-        StarVariables = await PagedData<StarVariableDetailResponse>.All(async (page, pageSize) =>
-            await ApiClient.GetJson<PagedData<StarVariableDetailResponse>>(
+        StarVariables = await PagedData<StarVariableResponse>.All(async (page, pageSize) =>
+            await ApiClient.GetJson<PagedData<StarVariableResponse>>(
                 $"api/admin/servers/stars/{Server.StarId}/variables?page={page}&pageSize={pageSize}"
             )
         );

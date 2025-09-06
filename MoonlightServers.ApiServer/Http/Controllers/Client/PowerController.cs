@@ -14,7 +14,7 @@ namespace MoonlightServers.ApiServer.Http.Controllers.Client;
 
 [ApiController]
 [Authorize]
-[Route("api/client/servers")]
+[Route("api/client/servers/{serverId:int}")]
 public class PowerController : Controller
 {
     private readonly DatabaseRepository<Server> ServerRepository;
@@ -32,31 +32,46 @@ public class PowerController : Controller
         AuthorizeService = authorizeService;
     }
 
-    [HttpPost("{serverId:int}/start")]
+    [HttpPost("start")]
     [Authorize]
-    public async Task Start([FromRoute] int serverId)
+    public async Task<ActionResult> Start([FromRoute] int serverId)
     {
         var server = await GetServerById(serverId);
-        await ServerService.Start(server);
+        
+        if (server.Value == null)
+            return server.Result ?? Problem("Unable to retrieve server");
+        
+        await ServerService.Start(server.Value);
+        return NoContent();
     }
 
-    [HttpPost("{serverId:int}/stop")]
+    [HttpPost("stop")]
     [Authorize]
-    public async Task Stop([FromRoute] int serverId)
+    public async Task<ActionResult> Stop([FromRoute] int serverId)
     {
         var server = await GetServerById(serverId);
-        await ServerService.Stop(server);
+        
+        if (server.Value == null)
+            return server.Result ?? Problem("Unable to retrieve server");
+        
+        await ServerService.Stop(server.Value);
+        return NoContent();
     }
 
-    [HttpPost("{serverId:int}/kill")]
+    [HttpPost("kill")]
     [Authorize]
-    public async Task Kill([FromRoute] int serverId)
+    public async Task<ActionResult> Kill([FromRoute] int serverId)
     {
         var server = await GetServerById(serverId);
-        await ServerService.Kill(server);
+        
+        if (server.Value == null)
+            return server.Result ?? Problem("Unable to retrieve server");
+        
+        await ServerService.Kill(server.Value);
+        return NoContent();
     }
 
-    private async Task<Server> GetServerById(int serverId)
+    private async Task<ActionResult<Server>> GetServerById(int serverId)
     {
         var server = await ServerRepository
             .Get()
@@ -64,7 +79,7 @@ public class PowerController : Controller
             .FirstOrDefaultAsync(x => x.Id == serverId);
 
         if (server == null)
-            throw new HttpApiException("No server with this id found", 404);
+            return Problem("No server with this id found", statusCode: 404);
 
         var authorizeResult = await AuthorizeService.Authorize(
             User, server,
@@ -74,9 +89,9 @@ public class PowerController : Controller
 
         if (!authorizeResult.Succeeded)
         {
-            throw new HttpApiException(
+            return Problem(
                 authorizeResult.Message ?? "No permission for the requested resource",
-                403
+                statusCode: 403
             );
         }
 

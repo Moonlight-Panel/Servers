@@ -1,57 +1,82 @@
-using Microsoft.AspNetCore.SignalR;
-using MoonCore.Exceptions;
-using MoonlightServers.Daemon.Http.Hubs;
-using MoonlightServers.Daemon.Models.Cache;
+using MoonlightServers.Daemon.ServerSystem.Enums;
+using MoonlightServers.Daemon.ServerSystem.Interfaces;
+using MoonlightServers.Daemon.ServerSystem.Models;
 using Stateless;
 
 namespace MoonlightServers.Daemon.ServerSystem;
 
-public class Server : IAsyncDisposable
+public partial class Server : IAsyncDisposable
 {
-    public ServerConfiguration Configuration { get; set; }
-    public CancellationToken TaskCancellation => TaskCancellationSource.Token;
-    internal StateMachine<ServerState, ServerTrigger> StateMachine { get; private set; }
-    private CancellationTokenSource TaskCancellationSource;
+    public int Identifier => InnerContext.Identifier;
+    public ServerContext Context => InnerContext;
 
-    private Dictionary<Type, ServerSubSystem> SubSystems = new();
-    private ServerState InternalState = ServerState.Offline;
+    public IConsole Console { get; }
+    public IFileSystem RuntimeFileSystem { get; }
+    public IFileSystem InstallationFileSystem { get; }
+    public IInstallation Installation { get; }
+    public IOnlineDetector OnlineDetector { get; }
+    public IReporter Reporter { get; }
+    public IRestorer Restorer { get; }
+    public IRuntime Runtime { get; }
+    public IStatistics Statistics { get; }
+    public StateMachine<ServerState, ServerTrigger> StateMachine { get; private set; }
 
-    private readonly IHubContext<ServerWebSocketHub> HubContext;
-    private readonly IServiceScope ServiceScope;
-    private readonly ILoggerFactory LoggerFactory;
+    private readonly IServerStateHandler[] Handlers;
+
+    private readonly IServerComponent[] AllComponents;
+    private readonly ServerContext InnerContext;
     private readonly ILogger Logger;
-    
+
     public Server(
-        ServerConfiguration configuration,
-        IServiceScope serviceScope,
-        IHubContext<ServerWebSocketHub> hubContext
+        ILogger logger,
+        ServerContext context,
+        IConsole console,
+        IFileSystem runtimeFileSystem,
+        IFileSystem installationFileSystem,
+        IInstallation installation,
+        IOnlineDetector onlineDetector,
+        IReporter reporter,
+        IRestorer restorer,
+        IRuntime runtime,
+        IStatistics statistics,
+        IServerStateHandler[] handlers
     )
     {
-        Configuration = configuration;
-        ServiceScope = serviceScope;
-        HubContext = hubContext;
+        Logger = logger;
+        InnerContext = context;
+        Console = console;
+        RuntimeFileSystem = runtimeFileSystem;
+        InstallationFileSystem = installationFileSystem;
+        Installation = installation;
+        OnlineDetector = onlineDetector;
+        Reporter = reporter;
+        Restorer = restorer;
+        Runtime = runtime;
+        Statistics = statistics;
 
-        TaskCancellationSource = new CancellationTokenSource();
+        AllComponents =
+        [
+            Console, RuntimeFileSystem, InstallationFileSystem, Installation, OnlineDetector, Reporter, Restorer,
+            Runtime, Statistics
+        ];
 
-        LoggerFactory = serviceScope.ServiceProvider.GetRequiredService<ILoggerFactory>();
-        Logger = LoggerFactory.CreateLogger($"Server {Configuration.Id}");
+        Handlers = handlers;
+    }
 
+    private void ConfigureStateMachine(ServerState initialState)
+    {
         StateMachine = new StateMachine<ServerState, ServerTrigger>(
-            () => InternalState,
-            state => InternalState = state,
-            FiringMode.Queued
+            initialState, FiringMode.Queued
         );
-
-        // Configure basic state machine flow
 
         StateMachine.Configure(ServerState.Offline)
             .Permit(ServerTrigger.Start, ServerState.Starting)
             .Permit(ServerTrigger.Install, ServerState.Installing)
-            .PermitReentry(ServerTrigger.FailSafe);
+            .PermitReentry(ServerTrigger.Fail);
 
         StateMachine.Configure(ServerState.Starting)
-            .Permit(ServerTrigger.OnlineDetected, ServerState.Online)
-            .Permit(ServerTrigger.FailSafe, ServerState.Offline)
+            .Permit(ServerTrigger.DetectOnline, ServerState.Online)
+            .Permit(ServerTrigger.Fail, ServerState.Offline)
             .Permit(ServerTrigger.Exited, ServerState.Offline)
             .Permit(ServerTrigger.Stop, ServerState.Stopping)
             .Permit(ServerTrigger.Kill, ServerState.Stopping);
@@ -62,128 +87,98 @@ public class Server : IAsyncDisposable
             .Permit(ServerTrigger.Exited, ServerState.Offline);
 
         StateMachine.Configure(ServerState.Stopping)
-            .PermitReentry(ServerTrigger.FailSafe)
+            .PermitReentry(ServerTrigger.Fail)
             .PermitReentry(ServerTrigger.Kill)
             .Permit(ServerTrigger.Exited, ServerState.Offline);
 
         StateMachine.Configure(ServerState.Installing)
-            .Permit(ServerTrigger.FailSafe, ServerState.Offline)
+            .Permit(ServerTrigger.Fail, ServerState.Offline) // TODO: Add kill
             .Permit(ServerTrigger.Exited, ServerState.Offline);
-        
-        StateMachine.Configure(ServerState.Offline)
-            .OnEntryAsync(async () =>
-            {
-                // Configure task reset when server goes offline
-                
-                if (!TaskCancellationSource.IsCancellationRequested)
-                    await TaskCancellationSource.CancelAsync();
-            })
-            .OnExit(() =>
-            {
-                // Activate tasks when the server goes online
-                // If we don't separate the disabling and enabling
-                // of the tasks and would do both it in just the offline handler
-                // we would have edge cases where reconnect loops would already have the new task activated
-                // while they are supposed to shut down. I tested the handling of the state machine,
-                // and it executes on exit before the other listeners from the other sub systems
-                TaskCancellationSource = new();
-            });
+    }
 
-        // Setup websocket notify for state changes
+    private void ConfigureStateMachineEvents()
+    {
+        // Configure the calling of the handlers
         StateMachine.OnTransitionedAsync(async transition =>
         {
-            await HubContext.Clients
-                .Group(Configuration.Id.ToString())
-                .SendAsync("StateChanged", transition.Destination.ToString());
+            var hasFailed = false;
+
+            foreach (var handler in Handlers)
+            {
+                try
+                {
+                    await handler.ExecuteAsync(transition);
+                }
+                catch (Exception e)
+                {
+                    Logger.LogError(
+                        e,
+                        "Handler {name} has thrown an unexpected exception",
+                        handler.GetType().FullName
+                    );
+
+                    hasFailed = true;
+                    break;
+                }
+            }
+            
+            if(!hasFailed)
+                return; // Everything went fine, we can exit now
+            
+            // Something has failed, lets check if we can handle the error
+            // via a fail trigger
+            
+            if(!StateMachine.CanFire(ServerTrigger.Fail))
+                return;
+            
+            // Trigger the fail so the server gets a chance to handle the error softly
+            await StateMachine.FireAsync(ServerTrigger.Fail);
         });
     }
 
-    public async Task Initialize(Type[] subSystemTypes)
+    private async Task HandleSaveAsync(Func<Task> callback)
     {
-        foreach (var type in subSystemTypes)
+        try
         {
-            var logger = LoggerFactory.CreateLogger($"Server {Configuration.Id} - {type.Name}");
-
-            var subSystem = ActivatorUtilities.CreateInstance(
-                ServiceScope.ServiceProvider,
-                type,
-                this,
-                logger
-            ) as ServerSubSystem;
-
-            if (subSystem == null)
-            {
-                Logger.LogError("Unable to construct server sub system: {name}", type.Name);
-                continue;
-            }
-
-            SubSystems.Add(type, subSystem);
+            await callback.Invoke();
         }
+        catch (Exception e)
+        {
+            Logger.LogError(e, "An error occured while handling");
 
-        foreach (var type in SubSystems.Keys)
-        { 
-            try
-            {
-                await SubSystems[type].Initialize();
-            }
-            catch (Exception e)
-            {
-                Logger.LogError("An unhandled error occured while initializing sub system {name}: {e}", type.Name, e);
-            }
+            await StateMachine.FireAsync(ServerTrigger.Fail);
         }
     }
 
-    public async Task Trigger(ServerTrigger trigger)
+    private async Task HandleIgnoredAsync(Func<Task> callback)
     {
-        if (!StateMachine.CanFire(trigger))
-            throw new HttpApiException($"The trigger {trigger} is not supported during the state {StateMachine.State}", 400);
-
-        await StateMachine.FireAsync(trigger);
+        try
+        {
+            await callback.Invoke();
+        }
+        catch (Exception e)
+        {
+            Logger.LogError(e, "An error occured while handling");
+        }
     }
 
-    public async Task Delete()
+    public async Task InitializeAsync()
     {
-        foreach (var subSystem in SubSystems.Values)
-            await subSystem.Delete();
-    }
+        foreach (var component in AllComponents)
+            await component.InitializeAsync();
 
-    // This method completely bypasses the state machine.
-    // Using this method without any checks will lead to
-    // broken server states. Use with caution
-    public void OverrideState(ServerState state)
-    {
-        InternalState = state;
-    }
+        var restoredState = ServerState.Offline;
 
-    public T? GetSubSystem<T>() where T : ServerSubSystem
-    {
-        var type = typeof(T);
-        var subSystem = SubSystems.GetValueOrDefault(type);
-
-        if (subSystem == null)
-            return null;
-
-        return subSystem as T;
-    }
-
-    public T GetRequiredSubSystem<T>() where T : ServerSubSystem
-    {
-        var subSystem = GetSubSystem<T>();
-
-        if (subSystem == null)
-            throw new AggregateException("Unable to resolve requested sub system");
-
-        return subSystem;
+        ConfigureStateMachine(restoredState);
+        ConfigureStateMachineEvents();
     }
 
     public async ValueTask DisposeAsync()
     {
-        if (!TaskCancellationSource.IsCancellationRequested)
-            await TaskCancellationSource.CancelAsync();
-
-        foreach (var subSystem in SubSystems.Values)
-            await subSystem.DisposeAsync();
+        foreach (var handler in Handlers)
+            await handler.DisposeAsync();
         
-        ServiceScope.Dispose();
+        foreach (var component in AllComponents)
+            await component.DisposeAsync();
     }
 }

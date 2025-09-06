@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using MoonCore.Exceptions;
 using MoonCore.Extended.Abstractions;
+using MoonCore.Extended.Models;
 using MoonCore.Models;
 using Moonlight.ApiServer.Database.Entities;
 using MoonlightServers.ApiServer.Database.Entities;
@@ -40,24 +41,26 @@ public class VariablesController : Controller
     }
 
     [HttpGet]
-    public async Task<PagedData<ServerVariableDetailResponse>> Get(
+    public async Task<ActionResult<PagedData<ServerVariableDetailResponse>>> Get(
         [FromRoute] int serverId,
-        [FromQuery] [Range(0, int.MaxValue)] int page,
-        [FromQuery] [Range(1, 100)] int pageSize
+        [FromQuery] PagedOptions options
     )
     {
         var server = await GetServerById(serverId, ServerPermissionLevel.Read);
+        
+        if (server.Value == null)
+            return server.Result ?? Problem("Unable to retrieve server");
 
         var query = StarVariableRepository
             .Get()
-            .Where(x => x.Star.Id == server.Star.Id);
+            .Where(x => x.Star.Id == server.Value.Star.Id);
 
         var count = await query.CountAsync();
 
         var starVariables = await query
             .OrderBy(x => x.Id)
-            .Skip(page * pageSize)
-            .Take(pageSize)
+            .Skip(options.Page * options.PageSize)
+            .Take(options.PageSize)
             .ToArrayAsync();
 
         var starVariableKeys = starVariables
@@ -66,7 +69,7 @@ public class VariablesController : Controller
 
         var serverVariables = await ServerVariableRepository
             .Get()
-            .Where(x => x.Server.Id == server.Id && starVariableKeys.Contains(x.Key))
+            .Where(x => x.Server.Id == server.Value.Id && starVariableKeys.Contains(x.Key))
             .ToArrayAsync();
 
         var responses = starVariables.Select(starVariable =>
@@ -87,22 +90,27 @@ public class VariablesController : Controller
         return new PagedData<ServerVariableDetailResponse>()
         {
             Items = responses,
-            CurrentPage = page,
-            PageSize = pageSize,
+            CurrentPage = options.Page,
+            PageSize = options.PageSize,
             TotalItems = count,
-            TotalPages = count == 0 ? 0 : count / pageSize
+            TotalPages = (int)Math.Ceiling(Math.Max(0, count) / (double)options.PageSize)
         };
     }
 
     [HttpPut]
-    public async Task<ServerVariableDetailResponse> UpdateSingle(
+    public async Task<ActionResult<ServerVariableDetailResponse>> UpdateSingle(
         [FromRoute] int serverId,
         [FromBody] UpdateServerVariableRequest request
     )
     {
         // TODO: Handle filter
 
-        var server = await GetServerById(serverId, ServerPermissionLevel.ReadWrite);
+        var serverResult = await GetServerById(serverId, ServerPermissionLevel.ReadWrite);
+        
+        if (serverResult.Value == null)
+            return serverResult.Result ?? Problem("Unable to retrieve server");
+
+        var server = serverResult.Value;
 
         var serverVariable = server.Variables.FirstOrDefault(x => x.Key == request.Key);
         var starVariable = server.Star.Variables.FirstOrDefault(x => x.Key == request.Key);
@@ -125,12 +133,17 @@ public class VariablesController : Controller
     }
 
     [HttpPatch]
-    public async Task<ServerVariableDetailResponse[]> Update(
+    public async Task<ActionResult<ServerVariableDetailResponse[]>> Update(
         [FromRoute] int serverId,
         [FromBody] UpdateServerVariableRangeRequest request
     )
     {
-        var server = await GetServerById(serverId, ServerPermissionLevel.ReadWrite);
+        var serverResult = await GetServerById(serverId, ServerPermissionLevel.ReadWrite);
+        
+        if (serverResult.Value == null)
+            return serverResult.Result ?? Problem("Unable to retrieve server");
+
+        var server = serverResult.Value;
 
         foreach (var variable in request.Variables)
         {
@@ -164,15 +177,17 @@ public class VariablesController : Controller
         }).ToArray();
     }
 
-    private async Task<Server> GetServerById(int serverId, ServerPermissionLevel level)
+    private async Task<ActionResult<Server>> GetServerById(int serverId, ServerPermissionLevel level)
     {
         var server = await ServerRepository
             .Get()
             .Include(x => x.Star)
+            .ThenInclude(x => x.Variables)
+            .Include(x => x.Variables)
             .FirstOrDefaultAsync(x => x.Id == serverId);
 
         if (server == null)
-            throw new HttpApiException("No server with this id found", 404);
+            return Problem("No server with this id found", statusCode: 404);
 
         var authorizeResult = await AuthorizeService.Authorize(
             User, server,
@@ -182,9 +197,9 @@ public class VariablesController : Controller
 
         if (!authorizeResult.Succeeded)
         {
-            throw new HttpApiException(
+            return Problem(
                 authorizeResult.Message ?? "No permission for the requested resource",
-                403
+                statusCode: 403
             );
         }
 

@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using MoonCore.Exceptions;
 using MoonCore.Extended.Abstractions;
+using MoonCore.Extended.Models;
 using MoonCore.Models;
 using Moonlight.ApiServer.Database.Entities;
 using MoonlightServers.ApiServer.Database.Entities;
@@ -51,15 +52,12 @@ public class ServersController : Controller
     }
 
     [HttpGet]
-    public async Task<PagedData<ServerDetailResponse>> GetAll(
-        [FromQuery] [Range(0, int.MaxValue)] int page,
-        [FromQuery] [Range(0, 100)] int pageSize
-    )
+    public async Task<ActionResult<PagedData<ServerDetailResponse>>> GetAll([FromQuery] PagedOptions options)
     {
-        var userIdClaim = User.FindFirstValue("userId");
+        var userIdClaim = User.FindFirstValue("UserId");
 
         if (string.IsNullOrEmpty(userIdClaim))
-            throw new HttpApiException("Only users are able to use this endpoint", 400);
+            return Problem("Only users are able to use this endpoint", statusCode: 400);
 
         var userId = int.Parse(userIdClaim);
 
@@ -71,11 +69,12 @@ public class ServersController : Controller
             .Where(x => x.OwnerId == userId);
 
         var count = await query.CountAsync();
-        
+
         var items = await query
             .OrderBy(x => x.Id)
-            .Skip(page * pageSize)
-            .Take(pageSize)
+            .Skip(options.Page * options.PageSize)
+            .Take(options.PageSize)
+            .AsNoTracking()
             .ToArrayAsync();
 
         var mappedItems = items.Select(x => new ServerDetailResponse()
@@ -98,23 +97,20 @@ public class ServersController : Controller
         return new PagedData<ServerDetailResponse>()
         {
             Items = mappedItems,
-            CurrentPage = page,
-            PageSize = pageSize,
+            CurrentPage = options.Page,
             TotalItems = count,
-            TotalPages = count == 0 ? 0 : count / pageSize
+            PageSize = options.PageSize,
+            TotalPages = (int)Math.Ceiling(Math.Max(0, count) / (double)options.PageSize)
         };
     }
 
     [HttpGet("shared")]
-    public async Task<PagedData<ServerDetailResponse>> GetAllShared(
-        [FromQuery] [Range(0, int.MaxValue)] int page,
-        [FromQuery] [Range(0, 100)] int pageSize
-    )
+    public async Task<ActionResult<PagedData<ServerDetailResponse>>> GetAllShared([FromQuery] PagedOptions options)
     {
-        var userIdClaim = User.FindFirstValue("userId");
+        var userIdClaim = User.FindFirstValue("UserId");
 
         if (string.IsNullOrEmpty(userIdClaim))
-            throw new HttpApiException("Only users are able to use this endpoint", 400);
+            return Problem("Only users are able to use this endpoint", statusCode: 400);
 
         var userId = int.Parse(userIdClaim);
 
@@ -129,11 +125,11 @@ public class ServersController : Controller
             .Where(x => x.UserId == userId);
 
         var count = await query.CountAsync();
-        
+
         var items = await query
             .OrderBy(x => x.Id)
-            .Skip(page * pageSize)
-            .Take(pageSize)
+            .Skip(options.Page * options.PageSize)
+            .Take(options.PageSize)
             .ToArrayAsync();
 
         var ownerIds = items
@@ -171,15 +167,15 @@ public class ServersController : Controller
         return new PagedData<ServerDetailResponse>()
         {
             Items = mappedItems,
-            CurrentPage = page,
-            PageSize = pageSize,
+            CurrentPage = options.Page,
             TotalItems = count,
-            TotalPages = count == 0 ? 0 : count / pageSize
+            PageSize = options.PageSize,
+            TotalPages = (int)Math.Ceiling(Math.Max(0, count) / (double)options.PageSize)
         };
     }
 
     [HttpGet("{serverId:int}")]
-    public async Task<ServerDetailResponse> Get([FromRoute] int serverId)
+    public async Task<ActionResult<ServerDetailResponse>> Get([FromRoute] int serverId)
     {
         var server = await ServerRepository
             .Get()
@@ -189,7 +185,7 @@ public class ServersController : Controller
             .FirstOrDefaultAsync(x => x.Id == serverId);
 
         if (server == null)
-            throw new HttpApiException("No server with this id found", 404);
+            return Problem("No server with this id found", statusCode: 404);
 
         var authorizationResult = await AuthorizeService.Authorize(
             User,
@@ -200,9 +196,9 @@ public class ServersController : Controller
 
         if (!authorizationResult.Succeeded)
         {
-            throw new HttpApiException(
+            return Problem(
                 authorizationResult.Message ?? "No server with this id found",
-                404
+                statusCode: 404
             );
         }
 
@@ -242,15 +238,18 @@ public class ServersController : Controller
     }
 
     [HttpGet("{serverId:int}/status")]
-    public async Task<ServerStatusResponse> GetStatus([FromRoute] int serverId)
+    public async Task<ActionResult<ServerStatusResponse>> GetStatus([FromRoute] int serverId)
     {
         var server = await GetServerById(
             serverId,
             ServerPermissionConstants.Console,
             ServerPermissionLevel.None
         );
+        
+        if (server.Value == null)
+            return server.Result ?? Problem("Unable to retrieve server");
 
-        var status = await ServerService.GetStatus(server);
+        var status = await ServerService.GetStatus(server.Value);
 
         return new ServerStatusResponse()
         {
@@ -259,13 +258,18 @@ public class ServersController : Controller
     }
 
     [HttpGet("{serverId:int}/ws")]
-    public async Task<ServerWebSocketResponse> GetWebSocket([FromRoute] int serverId)
+    public async Task<ActionResult<ServerWebSocketResponse>> GetWebSocket([FromRoute] int serverId)
     {
-        var server = await GetServerById(
+        var serverResult = await GetServerById(
             serverId,
             ServerPermissionConstants.Console,
             ServerPermissionLevel.Read
         );
+        
+        if (serverResult.Value == null)
+            return serverResult.Result ?? Problem("Unable to retrieve server");
+
+        var server = serverResult.Value;
 
         // TODO: Handle transparent node proxy
 
@@ -288,15 +292,18 @@ public class ServersController : Controller
     }
 
     [HttpGet("{serverId:int}/logs")]
-    public async Task<ServerLogsResponse> GetLogs([FromRoute] int serverId)
+    public async Task<ActionResult<ServerLogsResponse>> GetLogs([FromRoute] int serverId)
     {
         var server = await GetServerById(
             serverId,
             ServerPermissionConstants.Console,
             ServerPermissionLevel.Read
         );
+        
+        if (server.Value == null)
+            return server.Result ?? Problem("Unable to retrieve server");
 
-        var logs = await ServerService.GetLogs(server);
+        var logs = await ServerService.GetLogs(server.Value);
 
         return new ServerLogsResponse()
         {
@@ -305,15 +312,18 @@ public class ServersController : Controller
     }
 
     [HttpGet("{serverId:int}/stats")]
-    public async Task<ServerStatsResponse> GetStats([FromRoute] int serverId)
+    public async Task<ActionResult<ServerStatsResponse>> GetStats([FromRoute] int serverId)
     {
         var server = await GetServerById(
             serverId,
             ServerPermissionConstants.Console,
             ServerPermissionLevel.Read
         );
+        
+        if (server.Value == null)
+            return server.Result ?? Problem("Unable to retrieve server");
 
-        var stats = await ServerService.GetStats(server);
+        var stats = await ServerService.GetStats(server.Value);
 
         return new ServerStatsResponse()
         {
@@ -327,7 +337,7 @@ public class ServersController : Controller
     }
 
     [HttpPost("{serverId:int}/command")]
-    public async Task Command([FromRoute] int serverId, [FromBody] ServerCommandRequest request)
+    public async Task<ActionResult> Command([FromRoute] int serverId, [FromBody] ServerCommandRequest request)
     {
         var server = await GetServerById(
             serverId,
@@ -335,10 +345,15 @@ public class ServersController : Controller
             ServerPermissionLevel.ReadWrite
         );
 
-        await ServerService.RunCommand(server, request.Command);
+        if (server.Value == null)
+            return server.Result ?? Problem("Unable to retrieve server");
+
+        await ServerService.RunCommand(server.Value, request.Command);
+
+        return NoContent();
     }
 
-    private async Task<Server> GetServerById(int serverId, string permissionId, ServerPermissionLevel level)
+    private async Task<ActionResult<Server>> GetServerById(int serverId, string permissionId, ServerPermissionLevel level)
     {
         var server = await ServerRepository
             .Get()
@@ -346,15 +361,15 @@ public class ServersController : Controller
             .FirstOrDefaultAsync(x => x.Id == serverId);
 
         if (server == null)
-            throw new HttpApiException("No server with this id found", 404);
+            return Problem("No server with this id found", statusCode: 404);
 
         var authorizeResult = await AuthorizeService.Authorize(User, server, permissionId, level);
 
         if (!authorizeResult.Succeeded)
         {
-            throw new HttpApiException(
+            return Problem(
                 authorizeResult.Message ?? "No permission for the requested resource",
-                403
+                statusCode: 403
             );
         }
 

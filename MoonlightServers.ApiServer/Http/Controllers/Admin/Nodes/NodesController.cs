@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using MoonCore.Extended.Abstractions;
 using Microsoft.AspNetCore.Authorization;
 using MoonCore.Exceptions;
+using MoonCore.Extended.Models;
 using MoonCore.Helpers;
 using MoonCore.Models;
 using MoonlightServers.ApiServer.Database.Entities;
@@ -19,62 +20,55 @@ public class NodesController : Controller
 {
     private readonly DatabaseRepository<Node> NodeRepository;
 
-    public NodesController(
-        DatabaseRepository<Node> nodeRepository
-    )
+    public NodesController(DatabaseRepository<Node> nodeRepository)
     {
         NodeRepository = nodeRepository;
     }
 
     [HttpGet]
     [Authorize(Policy = "permissions:admin.servers.nodes.get")]
-    public async Task<IPagedData<NodeResponse>> Get(
-        [FromQuery] [Range(0, int.MaxValue)] int page,
-        [FromQuery] [Range(1, 100)] int pageSize
-    )
+    public async Task<IPagedData<NodeResponse>> Get([FromQuery] PagedOptions options)
     {
-        var query = NodeRepository
-            .Get();
+        var count = await NodeRepository.Get().CountAsync();
 
-        var count = await query.CountAsync();
-
-        var items = await query
+        var items = await NodeRepository
+            .Get()
             .OrderBy(x => x.Id)
-            .Skip(page * pageSize)
-            .Take(pageSize)
+            .Skip(options.Page * options.PageSize)
+            .Take(options.PageSize)
+            .AsNoTracking()
+            .ProjectToAdminResponse()
             .ToArrayAsync();
-
-        var mappedItems = items
-            .Select(NodeMapper.ToAdminNodeResponse)
-            .ToArray();
 
         return new PagedData<NodeResponse>()
         {
-            Items = mappedItems,
-            CurrentPage = page,
-            PageSize = pageSize,
+            Items = items,
+            CurrentPage = options.Page,
+            PageSize = options.PageSize,
             TotalItems = count,
-            TotalPages = count == 0 ? 0 : count / pageSize
+            TotalPages = (int)Math.Ceiling(Math.Max(0, count) / (double)options.PageSize)
         };
     }
 
     [HttpGet("{id:int}")]
     [Authorize(Policy = "permissions:admin.servers.nodes.get")]
-    public async Task<NodeResponse> GetSingle([FromRoute] int id)
+    public async Task<ActionResult<NodeResponse>> GetSingle([FromRoute] int id)
     {
         var node = await NodeRepository
             .Get()
+            .AsNoTracking()
+            .ProjectToAdminResponse()
             .FirstOrDefaultAsync(x => x.Id == id);
 
         if (node == null)
-            throw new HttpApiException("No node with this id found", 404);
-
-        return NodeMapper.ToAdminNodeResponse(node);
+            return Problem("No node with this id found", statusCode: 404);
+        
+        return node;
     }
 
     [HttpPost]
     [Authorize(Policy = "permissions:admin.servers.nodes.create")]
-    public async Task<NodeResponse> Create([FromBody] CreateNodeRequest request)
+    public async Task<ActionResult<NodeResponse>> Create([FromBody] CreateNodeRequest request)
     {
         var node = NodeMapper.ToNode(request);
 
@@ -88,14 +82,14 @@ public class NodesController : Controller
 
     [HttpPatch("{id:int}")]
     [Authorize(Policy = "permissions:admin.servers.nodes.update")]
-    public async Task<NodeResponse> Update([FromRoute] int id, [FromBody] UpdateNodeRequest request)
+    public async Task<ActionResult<NodeResponse>> Update([FromRoute] int id, [FromBody] UpdateNodeRequest request)
     {
         var node = await NodeRepository
             .Get()
             .FirstOrDefaultAsync(x => x.Id == id);
 
         if (node == null)
-            throw new HttpApiException("No node with this id found", 404);
+            return Problem("No node with this id found", statusCode: 404);
 
         NodeMapper.Merge(request, node);
         await NodeRepository.Update(node);
@@ -105,15 +99,16 @@ public class NodesController : Controller
 
     [HttpDelete("{id:int}")]
     [Authorize(Policy = "permissions:admin.servers.nodes.delete")]
-    public async Task Delete([FromRoute] int id)
+    public async Task<ActionResult> Delete([FromRoute] int id)
     {
         var node = await NodeRepository
             .Get()
             .FirstOrDefaultAsync(x => x.Id == id);
 
         if (node == null)
-            throw new HttpApiException("No node with this id found", 404);
-
+            return Problem("No node with this id found", statusCode: 404);
+        
         await NodeRepository.Remove(node);
+        return Ok();
     }
 }

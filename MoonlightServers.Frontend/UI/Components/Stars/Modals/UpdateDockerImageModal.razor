@@ -34,7 +34,7 @@
 @code
 {
     [Parameter] public Func<UpdateStarDockerImageRequest, Task> OnSubmit { get; set; }
-    [Parameter] public StarDockerImageDetailResponse DockerImage { get; set; }
+    [Parameter] public StarDockerImageResponse DockerImage { get; set; }
 
     private UpdateStarDockerImageRequest Form;
     private HandleForm HandleForm;

@@ -49,13 +49,13 @@
 @code
 {
     [Parameter] public UpdateStarRequest Request { get; set; }
-    [Parameter] public StarDetailResponse Star { get; set; }
+    [Parameter] public StarResponse Star { get; set; }
     
-    private List<StarDockerImageDetailResponse> DockerImages;
+    private List<StarDockerImageResponse> DockerImages;
 
     private async Task Load(LazyLoader _)
     {
-        var pagedVariables = await ApiClient.GetJson<PagedData<StarDockerImageDetailResponse>>(
+        var pagedVariables = await ApiClient.GetJson<PagedData<StarDockerImageResponse>>(
             $"api/admin/servers/stars/{Star.Id}/dockerImages?page=0&pageSize=50"
         );
 

@@ -83,7 +83,7 @@
 {
     private DataTable<ServerResponse> Table;
     
-    private List<StarDetailResponse> Stars = new();
+    private List<StarResponse> Stars = new();
     private List<NodeResponse> Nodes = new();
 
     private async Task<IPagedData<ServerResponse>> LoadData(PaginationOptions options)
@@ -101,7 +101,7 @@
 
             if (Stars.All(x => x.Id != item.StarId))
             {
-                var star = await ApiClient.GetJson<StarDetailResponse>($"api/admin/servers/stars/{item.StarId}");
+                var star = await ApiClient.GetJson<StarResponse>($"api/admin/servers/stars/{item.StarId}");
                 Stars.Add(star);
             }
         }

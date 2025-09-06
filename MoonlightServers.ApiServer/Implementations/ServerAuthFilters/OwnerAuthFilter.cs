@@ -19,7 +19,7 @@ public class OwnerAuthFilter : IServerAuthorizationFilter
         ServerPermissionLevel requiredLevel
     )
     {
-        var userIdValue = user.FindFirstValue("userId");
+        var userIdValue = user.FindFirstValue("UserId");
 
         if (string.IsNullOrEmpty(userIdValue)) // This is the case for api keys
             return Task.FromResult<ServerAuthorizationResult?>(null);

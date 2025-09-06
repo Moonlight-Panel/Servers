@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authorization;
 using MoonCore.Exceptions;
 using MoonCore.Extended.Abstractions;
+using MoonCore.Extended.Models;
 using MoonCore.Models;
 using MoonlightServers.ApiServer.Database.Entities;
 using MoonlightServers.ApiServer.Mappers;
@@ -29,10 +30,9 @@ public class StarVariablesController : Controller
 
     [HttpGet]
     [Authorize(Policy = "permissions:admin.servers.stars.get")]
-    public async Task<IPagedData<StarVariableDetailResponse>> Get(
+    public async Task<ActionResult<IPagedData<StarVariableResponse>>> Get(
         [FromRoute] int starId,
-        [FromQuery] [Range(0, int.MaxValue)] int page,
-        [FromQuery] [Range(1, 100)] int pageSize
+        [FromQuery] PagedOptions options
     )
     {
         var starExists = StarRepository
@@ -40,7 +40,7 @@ public class StarVariablesController : Controller
             .Any(x => x.Id == starId);
 
         if (!starExists)
-            throw new HttpApiException("No star with this id found", 404);
+            return Problem("No star with this id found", statusCode: 404);
 
         var query = VariableRepository
             .Get()
@@ -48,29 +48,27 @@ public class StarVariablesController : Controller
 
         var count = await query.CountAsync();
 
-        var items = await query
+        var variables = await query
             .OrderBy(x => x.Id)
-            .Skip(page * pageSize)
-            .Take(pageSize)
+            .Skip(options.Page * options.PageSize)
+            .Take(options.PageSize)
+            .AsNoTracking()
+            .ProjectToAdminResponse()
             .ToArrayAsync();
 
-        var mappedItems = items
-            .Select(StarVariableMapper.ToAdminResponse)
-            .ToArray();
-
-        return new PagedData<StarVariableDetailResponse>()
+        return new PagedData<StarVariableResponse>()
         {
-            Items = mappedItems,
-            CurrentPage = page,
-            PageSize = pageSize,
+            Items = variables,
+            CurrentPage = options.Page,
+            PageSize = options.PageSize,
             TotalItems = count,
-            TotalPages = count == 0 ? 0 : count / pageSize
+            TotalPages = (int)Math.Ceiling(Math.Max(0, count) / (double)options.PageSize)
         };
     }
 
     [HttpGet("{id:int}")]
     [Authorize(Policy = "permissions:admin.servers.stars.get")]
-    public async Task<StarVariableDetailResponse> GetSingle(
+    public async Task<StarVariableResponse> GetSingle(
         [FromRoute] int starId,
         [FromRoute] int id
     )
@@ -94,7 +92,7 @@ public class StarVariablesController : Controller
 
     [HttpPost("")]
     [Authorize(Policy = "permissions:admin.servers.stars.create")]
-    public async Task<StarVariableDetailResponse> Create([FromRoute] int starId,
+    public async Task<StarVariableResponse> Create([FromRoute] int starId,
         [FromBody] CreateStarVariableRequest request)
     {
         var star = StarRepository
@@ -114,7 +112,7 @@ public class StarVariablesController : Controller
 
     [HttpPatch("{id:int}")]
     [Authorize(Policy = "permissions:admin.servers.stars.update")]
-    public async Task<StarVariableDetailResponse> Update(
+    public async Task<StarVariableResponse> Update(
         [FromRoute] int starId,
         [FromRoute] int id,
         [FromBody] UpdateStarVariableRequest request

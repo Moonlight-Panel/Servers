@@ -27,12 +27,16 @@ public class StatisticsController : Controller
     [HttpGet]
     [SuppressMessage("ReSharper.DPA", "DPA0011: High execution time of MVC action", MessageId = "time: 1142ms",
         Justification = "The daemon has an artificial delay of one second to calculate accurate cpu usage values")]
-    public async Task<StatisticsResponse> Get([FromRoute] int nodeId)
+    public async Task<ActionResult<StatisticsResponse>> Get([FromRoute] int nodeId)
     {
         var node = await GetNode(nodeId);
-        var statistics = await NodeService.GetStatistics(node);
 
-        return new()
+        if (node.Value == null)
+            return node.Result ?? Problem("Unable to retrieve node");
+        
+        var statistics = await NodeService.GetStatistics(node.Value);
+
+        return new StatisticsResponse()
         {
             Cpu = new()
             {
@@ -62,12 +66,16 @@ public class StatisticsController : Controller
     }
 
     [HttpGet("docker")]
-    public async Task<DockerStatisticsResponse> GetDocker([FromRoute] int nodeId)
+    public async Task<ActionResult<DockerStatisticsResponse>> GetDocker([FromRoute] int nodeId)
     {
         var node = await GetNode(nodeId);
-        var statistics = await NodeService.GetDockerStatistics(node);
 
-        return new()
+        if (node.Value == null)
+            return node.Result ?? Problem("Unable to retrieve node");
+        
+        var statistics = await NodeService.GetDockerStatistics(node.Value);
+
+        return new DockerStatisticsResponse()
         {
             BuildCacheReclaimable = statistics.BuildCacheReclaimable,
             BuildCacheUsed = statistics.BuildCacheUsed,
@@ -79,14 +87,14 @@ public class StatisticsController : Controller
         };
     }
 
-    private async Task<Node> GetNode(int nodeId)
+    private async Task<ActionResult<Node>> GetNode(int nodeId)
     {
         var result = await NodeRepository
             .Get()
             .FirstOrDefaultAsync(x => x.Id == nodeId);
 
         if (result == null)
-            throw new HttpApiException("A node with this id could not be found", 404);
+            return Problem("A node with this id could not be found", statusCode: 404);
 
         return result;
     }

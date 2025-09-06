@@ -35,21 +35,21 @@
     </PageHeader>
 </div>
 
-<DataTable @ref="Table" TItem="StarDetailResponse">
+<DataTable @ref="Table" TItem="StarResponse">
     <Configuration>
-        <Pagination TItem="StarDetailResponse" ItemSource="LoadData" />
+        <Pagination TItem="StarResponse" ItemSource="LoadData" />
         
-        <DataTableColumn TItem="StarDetailResponse" Field="@(x => x.Id)" Name="Id"/>
-        <DataTableColumn TItem="StarDetailResponse" Field="@(x => x.Name)" Name="Name">
+        <DataTableColumn TItem="StarResponse" Field="@(x => x.Id)" Name="Id"/>
+        <DataTableColumn TItem="StarResponse" Field="@(x => x.Name)" Name="Name">
             <ColumnTemplate>
                 <a class="text-primary" href="/admin/servers/stars/update/@(context.Id)">
                     @context.Name
                 </a>
             </ColumnTemplate>
         </DataTableColumn>
-        <DataTableColumn TItem="StarDetailResponse" Field="@(x => x.Version)" Name="Version"/>
-        <DataTableColumn TItem="StarDetailResponse" Field="@(x => x.Author)" Name="Author"/>
-        <DataTableColumn TItem="StarDetailResponse">
+        <DataTableColumn TItem="StarResponse" Field="@(x => x.Version)" Name="Version"/>
+        <DataTableColumn TItem="StarResponse" Field="@(x => x.Author)" Name="Author"/>
+        <DataTableColumn TItem="StarResponse">
             <ColumnTemplate>
                 <div class="flex justify-end">
                     @if (!string.IsNullOrEmpty(context.DonateUrl))
@@ -89,19 +89,19 @@
 
 @code
 {
-    private DataTable<StarDetailResponse> Table;
+    private DataTable<StarResponse> Table;
 
-    private async Task<IPagedData<StarDetailResponse>> LoadData(PaginationOptions options)
-     => await ApiClient.GetJson<PagedData<StarDetailResponse>>($"api/admin/servers/stars?page={options.Page}&pageSize={options.PerPage}");
+    private async Task<IPagedData<StarResponse>> LoadData(PaginationOptions options)
+     => await ApiClient.GetJson<PagedData<StarResponse>>($"api/admin/servers/stars?page={options.Page}&pageSize={options.PerPage}");
 
-    private async Task Delete(StarDetailResponse detailResponse)
+    private async Task Delete(StarResponse response)
     {
         await AlertService.ConfirmDanger(
             "Star deletion",
-            $"Do you really want to delete the star '{detailResponse.Name}'",
+            $"Do you really want to delete the star '{response.Name}'",
             async () =>
             {
-                await ApiClient.Delete($"api/admin/servers/stars/{detailResponse.Id}");
+                await ApiClient.Delete($"api/admin/servers/stars/{response.Id}");
                 await ToastService.Success("Successfully deleted star");
 
                 await Table.Refresh();
@@ -109,7 +109,7 @@
         );
     }
     
-    private async Task Export(StarDetailResponse star)
+    private async Task Export(StarResponse star)
     {
         var json = await ApiClient.GetString($"api/admin/servers/stars/{star.Id}/export");
 
@@ -145,7 +145,7 @@
                 var content = new MultipartFormDataContent();
                 content.Add(new StreamContent(stream), "file", file.Name);
 
-                var star = await ApiClient.PostJson<StarDetailResponse>("api/admin/servers/stars/import", content);
+                var star = await ApiClient.PostJson<StarResponse>("api/admin/servers/stars/import", content);
                 
                 await ToastService.Success($"Successfully imported '{star.Name}'");
             }

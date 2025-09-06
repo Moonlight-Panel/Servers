@@ -68,11 +68,11 @@
 
     private HandleForm Form;
     private UpdateStarRequest Request;
-    private StarDetailResponse Detail;
+    private StarResponse Detail;
 
     private async Task Load(LazyLoader _)
     {
-        Detail = await ApiClient.GetJson<StarDetailResponse>($"api/admin/servers/stars/{Id}");
+        Detail = await ApiClient.GetJson<StarResponse>($"api/admin/servers/stars/{Id}");
         Request = new()
         {
             Name = Detail.Name,

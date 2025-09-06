@@ -32,7 +32,7 @@
     <div class="sm:col-span-2">
         <label class="block text-sm font-medium leading-6 text-base-content">Star</label>
         <div class="mt-2">
-            <InputItem TItem="StarDetailResponse"
+            <InputItem TItem="StarResponse"
                        DisplayField="@(x => x.Name)"
                        SearchField="@(x => x.Name)"
                        ItemSource="LoadStars"
@@ -91,10 +91,10 @@
     [Parameter] public CreateServerRequest Request { get; set; }
     [Parameter] public Create Parent { get; set; }
 
-    private async Task<StarDetailResponse[]> LoadStars()
+    private async Task<StarResponse[]> LoadStars()
     {
-        return await PagedData<StarDetailResponse>.All(async (page, pageSize) =>
-            await ApiClient.GetJson<PagedData<StarDetailResponse>>(
+        return await PagedData<StarResponse>.All(async (page, pageSize) =>
+            await ApiClient.GetJson<PagedData<StarResponse>>(
                 $"api/admin/servers/stars?page={page}&pageSize={pageSize}"
             )
         );

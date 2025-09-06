@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using MoonCore.Exceptions;
 using MoonCore.Extended.Abstractions;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.EntityFrameworkCore;
 using MoonlightServers.ApiServer.Database.Entities;
 using MoonlightServers.ApiServer.Services;
 using MoonlightServers.Shared.Http.Responses.Admin.Nodes.Sys;
@@ -24,10 +25,13 @@ public class NodeStatusController : Controller
 
     [HttpGet("{nodeId:int}/system/status")]
     [Authorize(Policy = "permissions:admin.servers.nodes.status")]
-    public async Task<NodeSystemStatusResponse> GetStatus([FromRoute] int nodeId)
+    public async Task<ActionResult<NodeSystemStatusResponse>> GetStatus([FromRoute] int nodeId)
     {
-        var node = GetNode(nodeId);
+        var node = await GetNode(nodeId);
 
+        if (node.Value == null)
+            return node.Result ?? Problem("Unable to retrieve node");
+        
         NodeSystemStatusResponse response;
 
         var sw = new Stopwatch();
@@ -35,7 +39,7 @@ public class NodeStatusController : Controller
         
         try
         {
-            var statusResponse = await NodeService.GetSystemStatus(node);
+            var statusResponse = await NodeService.GetSystemStatus(node.Value);
             
             sw.Stop();
 
@@ -65,14 +69,14 @@ public class NodeStatusController : Controller
         return response;
     }
 
-    private Node GetNode(int nodeId)
+    private async Task<ActionResult<Node>> GetNode(int nodeId)
     {
-        var result = NodeRepository
+        var result = await NodeRepository
             .Get()
-            .FirstOrDefault(x => x.Id == nodeId);
+            .FirstOrDefaultAsync(x => x.Id == nodeId);
 
         if (result == null)
-            throw new HttpApiException("A node with this id could not be found", 404);
+            return Problem("A node with this id could not be found", statusCode: 404);
 
         return result;
     }
