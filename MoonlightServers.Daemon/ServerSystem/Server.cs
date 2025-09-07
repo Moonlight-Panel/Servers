@@ -136,32 +136,6 @@ public partial class Server : IAsyncDisposable
         });
     }
 
-    private async Task HandleSaveAsync(Func<Task> callback)
-    {
-        try
-        {
-            await callback.Invoke();
-        }
-        catch (Exception e)
-        {
-            Logger.LogError(e, "An error occured while handling");
-
-            await StateMachine.FireAsync(ServerTrigger.Fail);
-        }
-    }
-
-    private async Task HandleIgnoredAsync(Func<Task> callback)
-    {
-        try
-        {
-            await callback.Invoke();
-        }
-        catch (Exception e)
-        {
-            Logger.LogError(e, "An error occured while handling");
-        }
-    }
-
     public async Task InitializeAsync()
     {
         foreach (var component in AllComponents)

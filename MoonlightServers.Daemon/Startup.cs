@@ -11,6 +11,16 @@ using MoonCore.Logging;
 using MoonlightServers.Daemon.Configuration;
 using MoonlightServers.Daemon.Helpers;
 using MoonlightServers.Daemon.Http.Hubs;
+using MoonlightServers.Daemon.Mappers;
+using MoonlightServers.Daemon.Models.Cache;
+using MoonlightServers.Daemon.ServerSystem;
+using MoonlightServers.Daemon.ServerSystem.Docker;
+using MoonlightServers.Daemon.ServerSystem.Enums;
+using MoonlightServers.Daemon.ServerSystem.FileSystems;
+using MoonlightServers.Daemon.ServerSystem.Handlers;
+using MoonlightServers.Daemon.ServerSystem.Implementations;
+using MoonlightServers.Daemon.ServerSystem.Models;
+using MoonlightServers.Daemon.Services;
 
 namespace MoonlightServers.Daemon;
 
@@ -59,6 +69,64 @@ public class Startup
 
         await MapBase();
         await MapHubs();
+
+        Task.Run(async () =>
+        {
+            try
+            {
+                var serverConfig = new ServerConfiguration()
+                {
+                    Id = 69,
+                    Allocations =
+                    [
+                        new ServerConfiguration.AllocationConfiguration()
+                        {
+                            IpAddress = "0.0.0.0",
+                            Port = 25565
+                        }
+                    ],
+                    Cpu = 400,
+                    Disk = 10240,
+                    Memory = 4096,
+                    OnlineDetection = "\\! For help, type ",
+                    StartupCommand =
+                        "java -Xms128M -Xmx{{SERVER_MEMORY}}M -Dterminal.jline=false -Dterminal.ansi=true -jar {{SERVER_JARFILE}}",
+                    DockerImage = "ghcr.io/nexocrew-hq/moonlightdockerimages:java21",
+                    StopCommand = "stop",
+                    UseVirtualDisk = false,
+                    Bandwidth = 0,
+                    Variables = new Dictionary<string, string>()
+                    {
+                        { "SERVER_JARFILE", "server.jar" }
+                    }
+                };
+                
+                var factory = WebApplication.Services.GetRequiredService<ServerFactory>();
+
+                Console.Write("Press enter to create and init server");
+                Console.ReadLine();
+                
+                var s = await factory.CreateAsync(serverConfig);
+
+                await s.InitializeAsync();
+                
+                s.StateMachine.OnTransitionCompleted(transition =>
+                {
+                    Console.WriteLine(transition.Destination);
+                });
+
+                Console.Write("Press enter to start server");
+                Console.ReadLine();
+
+                await s.StateMachine.FireAsync(ServerTrigger.Start);
+
+                Console.ReadLine();
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+            }
+        });
 
         await WebApplication.RunAsync();
     }
@@ -125,6 +193,10 @@ public class Startup
         ).CreateClient();
 
         WebApplicationBuilder.Services.AddSingleton(dockerClient);
+        WebApplicationBuilder.Services.AddScoped<DockerImageService>();
+
+        WebApplicationBuilder.Services.AddSingleton<DockerEventService>();
+        WebApplicationBuilder.Services.AddHostedService(sp => sp.GetRequiredService<DockerEventService>());
 
         return Task.CompletedTask;
     }
@@ -245,6 +317,10 @@ public class Startup
 
     private Task RegisterServers()
     {
+        WebApplicationBuilder.Services.AddScoped<ServerContext>();
+        WebApplicationBuilder.Services.AddSingleton<ServerFactory>();
+        WebApplicationBuilder.Services.AddSingleton<ServerConfigurationMapper>();
+        
         return Task.CompletedTask;
     }
 

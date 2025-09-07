@@ -57,6 +57,13 @@
       <_ContentIncludedByDefault Remove="volumes\3\version_history.json" />
       <_ContentIncludedByDefault Remove="volumes\3\whitelist.json" />
       <_ContentIncludedByDefault Remove="storage\volumes\69\plugins\spark\config.json" />
+      <_ContentIncludedByDefault Remove="storage\volumes\6\banned-ips.json" />
+      <_ContentIncludedByDefault Remove="storage\volumes\6\banned-players.json" />
+      <_ContentIncludedByDefault Remove="storage\volumes\6\ops.json" />
+      <_ContentIncludedByDefault Remove="storage\volumes\6\plugins\spark\config.json" />
+      <_ContentIncludedByDefault Remove="storage\volumes\6\usercache.json" />
+      <_ContentIncludedByDefault Remove="storage\volumes\6\version_history.json" />
+      <_ContentIncludedByDefault Remove="storage\volumes\6\whitelist.json" />
     </ItemGroup>
 
 </Project>

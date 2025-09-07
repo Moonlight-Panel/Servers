@@ -12,7 +12,7 @@ public class RawInstallationFs : IFileSystem
         BaseDirectory = Path.Combine(
             Directory.GetCurrentDirectory(),
             "storage",
-            "volumes",
+            "install",
             context.Configuration.Id.ToString()
         );
     }

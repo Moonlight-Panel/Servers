@@ -17,7 +17,7 @@ public class ShutdownHandler : IServerStateHandler
     public async Task ExecuteAsync(StateMachine<ServerState, ServerTrigger>.Transition transition)
     {
         // Filter (we only want to handle exists from the runtime, so we filter out the installing state)
-        if (transition is
+        if (transition is not
             {
                 Destination: ServerState.Offline,
                 Source: not ServerState.Installing,

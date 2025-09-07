@@ -5,37 +5,35 @@ using MoonlightServers.Daemon.Mappers;
 using MoonlightServers.Daemon.ServerSystem.Interfaces;
 using MoonlightServers.Daemon.ServerSystem.Models;
 using MoonlightServers.Daemon.Services;
-using MoonlightServers.DaemonShared.PanelSide.Http.Responses;
 
 namespace MoonlightServers.Daemon.ServerSystem.Docker;
 
-public class DockerInstallation : IInstallation
+public class DockerRuntime : IRuntime
 {
-    private readonly DockerEventService DockerEventService;
-    private readonly ServerConfigurationMapper Mapper;
-    private readonly DockerImageService ImageService;
-    private readonly ServerContext ServerContext;
     private readonly DockerClient DockerClient;
-    private IReporter Reporter => ServerContext.Server.Reporter;
-
+    private readonly ServerContext Context;
+    private readonly ServerConfigurationMapper Mapper;
+    private readonly DockerEventService DockerEventService;
+    private readonly DockerImageService ImageService;
     private readonly EventSource<int> ExitEventSource = new();
 
+    private IReporter Reporter => Context.Server.Reporter;
     private IAsyncDisposable ContainerEventSubscription;
     private string ContainerId;
 
-    public DockerInstallation(
+    public DockerRuntime(
         DockerClient dockerClient,
-        ServerContext serverContext,
+        ServerContext context,
         ServerConfigurationMapper mapper,
-        DockerImageService imageService,
-        DockerEventService dockerEventService
+        DockerEventService dockerEventService,
+        DockerImageService imageService
     )
     {
         DockerClient = dockerClient;
-        ServerContext = serverContext;
+        Context = context;
         Mapper = mapper;
-        ImageService = imageService;
         DockerEventService = dockerEventService;
+        ImageService = imageService;
     }
 
     public async Task InitializeAsync()
@@ -71,7 +69,7 @@ public class DockerInstallation : IInstallation
     {
         try
         {
-            var containerName = string.Format(DockerConstants.InstallationNameTemplate, ServerContext.Configuration.Id);
+            var containerName = string.Format(DockerConstants.RuntimeNameTemplate, Context.Configuration.Id);
 
             await DockerClient.Containers.InspectContainerAsync(
                 containerName
@@ -85,38 +83,28 @@ public class DockerInstallation : IInstallation
         }
     }
 
-    public async Task CreateAsync(
-        string runtimePath,
-        string hostPath,
-        ServerInstallDataResponse data
-    )
+    public async Task CreateAsync(string path)
     {
-        var containerName = string.Format(DockerConstants.InstallationNameTemplate, ServerContext.Configuration.Id);
+        var containerName = string.Format(DockerConstants.RuntimeNameTemplate, Context.Configuration.Id);
 
-        var parameters = Mapper.ToInstallParameters(
-            ServerContext.Configuration,
-            data,
-            runtimePath,
-            hostPath,
+        var parameters = Mapper.ToRuntimeParameters(
+            Context.Configuration,
+            path,
             containerName
         );
 
         // Docker image
         await Reporter.StatusAsync("Downloading docker image");
 
-        await ImageService.Download(data.DockerImage, async status => { await Reporter.StatusAsync(status); });
-
-        await Reporter.StatusAsync("Downloaded docker image");
-
-        // Write install script to install fs
-
-        await File.WriteAllTextAsync(
-            Path.Combine(hostPath, "install.sh"),
-            data.Script
+        await ImageService.Download(
+            Context.Configuration.DockerImage,
+            async status => { await Reporter.StatusAsync(status); }
         );
 
+        await Reporter.StatusAsync("Downloaded docker image");
+        
         //
-
+        
         var response = await DockerClient.Containers.CreateContainerAsync(parameters);
         ContainerId = response.ID;
 
@@ -125,21 +113,26 @@ public class DockerInstallation : IInstallation
 
     public async Task StartAsync()
     {
-        var containerName = string.Format(DockerConstants.InstallationNameTemplate, ServerContext.Configuration.Id);
+        var containerName = string.Format(DockerConstants.RuntimeNameTemplate, Context.Configuration.Id);
 
         await DockerClient.Containers.StartContainerAsync(containerName, new());
     }
 
+    public Task UpdateAsync()
+    {
+        return Task.CompletedTask;
+    }
+
     public async Task KillAsync()
     {
-        var containerName = string.Format(DockerConstants.InstallationNameTemplate, ServerContext.Configuration.Id);
+        var containerName = string.Format(DockerConstants.RuntimeNameTemplate, Context.Configuration.Id);
 
         await DockerClient.Containers.KillContainerAsync(containerName, new());
     }
 
     public async Task DestroyAsync()
     {
-        var containerName = string.Format(DockerConstants.InstallationNameTemplate, ServerContext.Configuration.Id);
+        var containerName = string.Format(DockerConstants.RuntimeNameTemplate, Context.Configuration.Id);
 
         try
         {
@@ -166,7 +159,7 @@ public class DockerInstallation : IInstallation
     {
         try
         {
-            var containerName = string.Format(DockerConstants.InstallationNameTemplate, ServerContext.Configuration.Id);
+            var containerName = string.Format(DockerConstants.RuntimeNameTemplate, Context.Configuration.Id);
 
             var container = await DockerClient.Containers.InspectContainerAsync(containerName);
             ContainerId = container.ID;

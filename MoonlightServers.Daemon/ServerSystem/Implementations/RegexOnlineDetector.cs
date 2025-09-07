@@ -7,14 +7,12 @@ namespace MoonlightServers.Daemon.ServerSystem.Implementations;
 public class RegexOnlineDetector : IOnlineDetector
 {
     private readonly ServerContext Context;
-    private readonly ILogger Logger;
     
     private Regex? Expression;
 
-    public RegexOnlineDetector(ServerContext context, ILogger logger)
+    public RegexOnlineDetector(ServerContext context)
     {
         Context = context;
-        Logger = logger;
     }
 
     public Task InitializeAsync()
@@ -25,14 +23,7 @@ public class RegexOnlineDetector : IOnlineDetector
         if(string.IsNullOrEmpty(Context.Configuration.OnlineDetection))
             return Task.CompletedTask;
 
-        try
-        {
-            Expression = new Regex(Context.Configuration.OnlineDetection, RegexOptions.Compiled);
-        }
-        catch (Exception e)
-        {
-            Logger.LogError(e, "An error occured while creating regex. Check the regex expression");
-        }
+        Expression = new Regex(Context.Configuration.OnlineDetection, RegexOptions.Compiled);
         
         return Task.CompletedTask;
     }

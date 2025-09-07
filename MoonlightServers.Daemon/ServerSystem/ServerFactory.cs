@@ -1,6 +1,7 @@
 using MoonlightServers.Daemon.Models.Cache;
 using MoonlightServers.Daemon.ServerSystem.Docker;
 using MoonlightServers.Daemon.ServerSystem.FileSystems;
+using MoonlightServers.Daemon.ServerSystem.Handlers;
 using MoonlightServers.Daemon.ServerSystem.Implementations;
 using MoonlightServers.Daemon.ServerSystem.Interfaces;
 using MoonlightServers.Daemon.ServerSystem.Models;
@@ -16,7 +17,7 @@ public class ServerFactory
         ServiceProvider = serviceProvider;
     }
 
-    public async Task<Server> Create(ServerConfiguration configuration)
+    public async Task<Server> CreateAsync(ServerConfiguration configuration)
     {
         var scope = ServiceProvider.CreateAsyncScope();
 
@@ -28,6 +29,7 @@ public class ServerFactory
         context.Identifier = configuration.Id;
         context.Configuration = configuration;
         context.ServiceScope = scope;
+        context.Logger = logger;
 
         // Define all required components
 
@@ -43,12 +45,21 @@ public class ServerFactory
 
         // Resolve the components
 
-        console = ActivatorUtilities.CreateInstance<DockerConsole>(scope.ServiceProvider, logger);
-        reporter = ActivatorUtilities.CreateInstance<ServerReporter>(scope.ServiceProvider, console, logger);
-        runtimeFs = ActivatorUtilities.CreateInstance<RawRuntimeFs>(scope.ServiceProvider, logger, reporter);
-        installFs = ActivatorUtilities.CreateInstance<RawInstallationFs>(scope.ServiceProvider, logger, reporter);
-        installation = ActivatorUtilities.CreateInstance<DockerInstallation>(scope.ServiceProvider, logger, reporter);
-        onlineDetector = ActivatorUtilities.CreateInstance<RegexOnlineDetector>(scope.ServiceProvider, logger, reporter);
+        console = ActivatorUtilities.CreateInstance<DockerConsole>(scope.ServiceProvider);
+        reporter = ActivatorUtilities.CreateInstance<ServerReporter>(scope.ServiceProvider);
+        runtimeFs = ActivatorUtilities.CreateInstance<RawRuntimeFs>(scope.ServiceProvider);
+        installFs = ActivatorUtilities.CreateInstance<RawInstallationFs>(scope.ServiceProvider);
+        installation = ActivatorUtilities.CreateInstance<DockerInstallation>(scope.ServiceProvider);
+        onlineDetector = ActivatorUtilities.CreateInstance<RegexOnlineDetector>(scope.ServiceProvider);
+        restorer = ActivatorUtilities.CreateInstance<DockerRestorer>(scope.ServiceProvider);
+        runtime = ActivatorUtilities.CreateInstance<DockerRuntime>(scope.ServiceProvider);
+        statistics = ActivatorUtilities.CreateInstance<DockerStatistics>(scope.ServiceProvider);
+        
+        // Resolve handlers
+        var handlers = new List<IServerStateHandler>();
+        
+        handlers.Add(ActivatorUtilities.CreateInstance<StartupHandler>(scope.ServiceProvider));
+        handlers.Add(ActivatorUtilities.CreateInstance<ShutdownHandler>(scope.ServiceProvider));
 
         // TODO: Add a plugin hook for dynamically resolving components and checking if any is unset
 
@@ -67,7 +78,7 @@ public class ServerFactory
             runtime,
             statistics,
             // And now all the handlers
-            []
+            handlers.ToArray()
         );
 
         context.Server = server;

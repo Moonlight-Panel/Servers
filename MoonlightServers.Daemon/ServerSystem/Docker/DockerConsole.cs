@@ -22,6 +22,7 @@ public class DockerConsole : IConsole
     {
         DockerClient = dockerClient;
         Context = context;
+        Logger = Context.Logger;
     }
 
     public Task InitializeAsync()

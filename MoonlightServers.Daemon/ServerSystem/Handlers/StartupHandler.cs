@@ -79,7 +79,7 @@ public class StartupHandler : IServerStateHandler
         await Server.Runtime.StartAsync();
     }
 
-    private async Task OnRuntimeExited(int exitCode)
+    private async ValueTask OnRuntimeExited(int exitCode)
     {
         // TODO: Notify the crash handler component of the exit code
 
