@@ -21,7 +21,7 @@ public class ShutdownHandler : IServerStateHandler
             {
                 Destination: ServerState.Offline,
                 Source: not ServerState.Installing,
-                Trigger: ServerTrigger.Exited
+                Trigger: ServerTrigger.Exited // We don't want to handle the fail event here
             })
             return;
 

@@ -58,6 +58,7 @@ public class ServerFactory
         // Resolve handlers
         var handlers = new List<IServerStateHandler>();
         
+        handlers.Add(ActivatorUtilities.CreateInstance<OnlineDetectionHandler>(scope.ServiceProvider));
         handlers.Add(ActivatorUtilities.CreateInstance<StartupHandler>(scope.ServiceProvider));
         handlers.Add(ActivatorUtilities.CreateInstance<ShutdownHandler>(scope.ServiceProvider));
 

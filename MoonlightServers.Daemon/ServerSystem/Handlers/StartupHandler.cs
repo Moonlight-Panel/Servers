@@ -30,12 +30,13 @@ public class StartupHandler : IServerStateHandler
         // 4. Run file system checks
         // 5. Create runtime
         // 6. Attach console
-        // 7. Attach statistics collector
-        // 8. Create online detector
-        // 9. Start runtime
+        // 7. Start runtime
 
         // 1. Fetch latest configuration
         // TODO
+        // Consider moving it out of the startup handler, as other handlers might need
+        // the updated config as well or add sorting into the handler registration to ensure they are executing in the correct order.
+        // Sort when building server, not when executing handlers
 
         // 2. Check if file system exists
         if (!await Server.RuntimeFileSystem.CheckExistsAsync())
@@ -65,16 +66,7 @@ public class StartupHandler : IServerStateHandler
 
         await Server.Console.AttachRuntimeAsync();
 
-        // 7. Attach statistics collector
-
-        await Server.Statistics.AttachRuntimeAsync();
-
-        // 8. Create online detector
-
-        await Server.OnlineDetector.CreateAsync();
-        await Server.OnlineDetector.DestroyAsync();
-
-        // 9. Start runtime
+        // 7. Start runtime
 
         await Server.Runtime.StartAsync();
     }
