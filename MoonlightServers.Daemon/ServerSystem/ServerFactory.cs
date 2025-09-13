@@ -61,6 +61,8 @@ public class ServerFactory
         handlers.Add(ActivatorUtilities.CreateInstance<OnlineDetectionHandler>(scope.ServiceProvider));
         handlers.Add(ActivatorUtilities.CreateInstance<StartupHandler>(scope.ServiceProvider));
         handlers.Add(ActivatorUtilities.CreateInstance<ShutdownHandler>(scope.ServiceProvider));
+        handlers.Add(ActivatorUtilities.CreateInstance<InstallationHandler>(scope.ServiceProvider));
+        handlers.Add(ActivatorUtilities.CreateInstance<DebugHandler>(scope.ServiceProvider));
 
         // TODO: Add a plugin hook for dynamically resolving components and checking if any is unset
 

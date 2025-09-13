@@ -97,7 +97,8 @@ public class Startup
                     Bandwidth = 0,
                     Variables = new Dictionary<string, string>()
                     {
-                        { "SERVER_JARFILE", "server.jar" }
+                        { "SERVER_JARFILE", "server.jar" },
+                        { "MINECRAFT_VERSION", "latest" },
                     }
                 };
                 
@@ -115,6 +116,13 @@ public class Startup
                     Console.WriteLine(transition.Destination);
                 });
 
+                Console.Write("Press enter to install server");
+                Console.ReadLine();
+
+                await s.StateMachine.FireAsync(ServerTrigger.Install);
+
+                Console.ReadLine();
+                
                 Console.Write("Press enter to start server");
                 Console.ReadLine();
 

@@ -15,7 +15,7 @@ public class DockerConsole : IConsole
     private readonly ServerContext Context;
     private readonly ILogger Logger;
 
-    private MultiplexedStream? BaseStream;
+    private MultiplexedStream? CurrentStream;
     private CancellationTokenSource Cts = new();
 
     public DockerConsole(DockerClient dockerClient, ServerContext context)
@@ -30,7 +30,7 @@ public class DockerConsole : IConsole
 
     public async Task WriteStdInAsync(string content)
     {
-        if (BaseStream == null)
+        if (CurrentStream == null)
         {
             Logger.LogWarning("Unable to write to stdin as no stream is connected");
             return;
@@ -38,7 +38,7 @@ public class DockerConsole : IConsole
 
         var contextBuffer = Encoding.UTF8.GetBytes(content);
 
-        await BaseStream.WriteAsync(contextBuffer, 0, contextBuffer.Length, Cts.Token);
+        await CurrentStream.WriteAsync(contextBuffer, 0, contextBuffer.Length, Cts.Token);
     }
 
     public async Task WriteStdOutAsync(string content)
@@ -69,12 +69,14 @@ public class DockerConsole : IConsole
 
     private async Task AttachToContainer(string containerName)
     {
+        var cts = new CancellationTokenSource();
+        
         // Cancels previous active read task if it exists
         if (!Cts.IsCancellationRequested)
             await Cts.CancelAsync();
 
-        // Reset cancellation token
-        Cts = new();
+        // Update the current cancellation token
+        Cts = cts;
 
         // Start reading task
         Task.Run(async () =>
@@ -82,11 +84,15 @@ public class DockerConsole : IConsole
             // This loop is here to reconnect to the stream when connection is lost.
             // This can occur when docker restarts for example
 
-            while (!Cts.IsCancellationRequested)
+            while (!cts.IsCancellationRequested)
             {
+                MultiplexedStream? innerStream = null;
+                
                 try
                 {
-                    using var stream = await DockerClient.Containers.AttachContainerAsync(
+                    Logger.LogTrace("Attaching");
+                    
+                    innerStream = await DockerClient.Containers.AttachContainerAsync(
                         containerName,
                         true,
                         new()
@@ -96,32 +102,34 @@ public class DockerConsole : IConsole
                             Stdout = true,
                             Stream = true
                         },
-                        Cts.Token
+                        cts.Token
                     );
 
-                    BaseStream = stream;
+                    CurrentStream = innerStream;
 
                     var buffer = new byte[1024];
 
                     try
                     {
                         // Read while server tasks are not canceled
-                        while (!Cts.Token.IsCancellationRequested)
+                        while (!cts.Token.IsCancellationRequested)
                         {
-                            var readResult = await BaseStream.ReadOutputAsync(
+                            var readResult = await innerStream.ReadOutputAsync(
                                 buffer,
                                 0,
                                 buffer.Length,
-                                Cts.Token
+                                cts.Token
                             );
 
                             if (readResult.EOF)
-                                break;
+                                await cts.CancelAsync();
 
                             var decodedText = Encoding.UTF8.GetString(buffer, 0, readResult.Count);
-                            
+
                             await WriteStdOutAsync(decodedText);
                         }
+                        
+                        Logger.LogTrace("Read loop exited");
                     }
                     catch (TaskCanceledException)
                     {
@@ -140,10 +148,19 @@ public class DockerConsole : IConsole
                 {
                     // ignored
                 }
+                catch (DockerContainerNotFoundException)
+                {
+                    // Container got removed. Stop the reconnect loop
+                    
+                    Logger.LogDebug("Container '{name}' got removed. Stopping reconnect stream for console", containerName);
+                    await cts.CancelAsync();
+                }
                 catch (Exception e)
                 {
                     Logger.LogError(e, "An error occured while attaching to container");
                 }
+                
+                innerStream?.Dispose();
             }
 
             Logger.LogDebug("Disconnected from container stream");
@@ -198,7 +215,7 @@ public class DockerConsole : IConsole
         if (!Cts.IsCancellationRequested)
             await Cts.CancelAsync();
 
-        if (BaseStream != null)
-            BaseStream.Dispose();
+        if (CurrentStream != null)
+            CurrentStream.Dispose();
     }
 }

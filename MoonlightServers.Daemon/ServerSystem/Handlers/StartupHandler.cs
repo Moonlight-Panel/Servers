@@ -58,9 +58,7 @@ public class StartupHandler : IServerStateHandler
         await Server.Runtime.CreateAsync(hostPath);
 
         if (ExitSubscription == null)
-        {
             ExitSubscription = await Server.Runtime.SubscribeExited(OnRuntimeExited);
-        }
 
         // 6. Attach console
 
