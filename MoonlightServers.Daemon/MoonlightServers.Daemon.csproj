@@ -17,7 +17,6 @@
     </ItemGroup>
 
     <ItemGroup>
-      <Folder Include="Http\Controllers\Servers\" />
       <Folder Include="Http\Middleware\" />
     </ItemGroup>
 

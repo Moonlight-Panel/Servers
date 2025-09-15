@@ -1,3 +1,4 @@
+using System.Collections;
 using MoonlightServers.Daemon.ServerSystem.Enums;
 using MoonlightServers.Daemon.ServerSystem.Interfaces;
 using MoonlightServers.Daemon.ServerSystem.Models;
@@ -39,7 +40,8 @@ public partial class Server : IAsyncDisposable
         IRestorer restorer,
         IRuntime runtime,
         IStatistics statistics,
-        IServerStateHandler[] handlers
+        IEnumerable<IServerStateHandler> handlers,
+        IEnumerable<IServerComponent> additionalComponents
     )
     {
         Logger = logger;
@@ -54,13 +56,15 @@ public partial class Server : IAsyncDisposable
         Runtime = runtime;
         Statistics = statistics;
 
-        AllComponents =
+        IEnumerable<IServerComponent> defaultComponents =
         [
             Console, RuntimeFileSystem, InstallationFileSystem, Installation, OnlineDetector, Reporter, Restorer,
             Runtime, Statistics
         ];
 
-        Handlers = handlers;
+        AllComponents = defaultComponents.Concat(additionalComponents).ToArray();
+
+        Handlers = handlers.ToArray();
     }
 
     private void ConfigureStateMachine(ServerState initialState)

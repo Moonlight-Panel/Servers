@@ -328,6 +328,9 @@ public class Startup
         WebApplicationBuilder.Services.AddScoped<ServerContext>();
         WebApplicationBuilder.Services.AddSingleton<ServerFactory>();
         WebApplicationBuilder.Services.AddSingleton<ServerConfigurationMapper>();
+
+        WebApplicationBuilder.Services.AddSingleton<ServerService>();
+        WebApplicationBuilder.Services.AddHostedService(sp => sp.GetRequiredService<ServerService>());
         
         return Task.CompletedTask;
     }

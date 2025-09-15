@@ -35,7 +35,7 @@ public class ServerConfigurationMapper
             Cpu = response.Cpu,
             Disk = response.Disk,
             Memory = response.Memory,
-            StopCommand = response.StopCommand
+            StopCommand = response.StopCommand,
         };
     }
 

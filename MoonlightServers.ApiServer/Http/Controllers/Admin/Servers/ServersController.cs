@@ -92,8 +92,9 @@ public class ServersController : Controller
             .Include(x => x.Variables)
             .Include(x => x.Star)
             .AsNoTracking()
+            .Where(x => x.Id == id)
             .ProjectToAdminResponse()
-            .FirstOrDefaultAsync(x => x.Id == id);
+            .FirstOrDefaultAsync();
 
         if (server == null)
             return Problem("No server with that id found", statusCode: 404);

@@ -63,6 +63,11 @@ public class ServerFactory
         handlers.Add(ActivatorUtilities.CreateInstance<ShutdownHandler>(scope.ServiceProvider));
         handlers.Add(ActivatorUtilities.CreateInstance<InstallationHandler>(scope.ServiceProvider));
         handlers.Add(ActivatorUtilities.CreateInstance<DebugHandler>(scope.ServiceProvider));
+        
+        // Resolve additional components
+        var components = new List<IServerComponent>();
+        
+        components.Add(ActivatorUtilities.CreateInstance<ConsoleSignalRComponent>(scope.ServiceProvider));
 
         // TODO: Add a plugin hook for dynamically resolving components and checking if any is unset
 
@@ -81,7 +86,8 @@ public class ServerFactory
             runtime,
             statistics,
             // And now all the handlers
-            handlers.ToArray()
+            handlers,
+            components
         );
 
         context.Server = server;
