@@ -1,5 +1,6 @@
 @using MoonCore.Blazor.FlyonUi.Alerts
-@using MoonCore.Blazor.FlyonUi.DataTables
+@using MoonCore.Blazor.FlyonUi.Grid
+@using MoonCore.Blazor.FlyonUi.Grid.Columns
 @using MoonCore.Blazor.FlyonUi.Modals
 @using MoonCore.Blazor.FlyonUi.Toasts
 @using MoonlightServers.Shared.Http.Responses.Admin.Nodes
@@ -22,38 +23,38 @@
             </div>
             <div class="card-body">
                 <div class="flex flex-col gap-y-3">
-                    <button type="button" @onclick="AddAllocation" class="btn btn-primary">Create</button>
-                    <button type="button" @onclick="AddAllocationRange" class="btn btn-accent">Create multiple</button>
-                    <button type="button" @onclick="DeleteAllAllocations" class="btn btn-error">Delete all</button>
+                    <button type="button" @onclick="AddAllocationAsync" class="btn btn-primary">Create</button>
+                    <button type="button" @onclick="AddAllocationRangeAsync" class="btn btn-accent">Create multiple
+                    </button>
+                    <button type="button" @onclick="DeleteAllAllocationsAsync" class="btn btn-error">Delete all</button>
                 </div>
             </div>
         </div>
     </div>
     <div class="col-span-1 md:col-span-2 -mb-3">
-        <DataTable @ref="Table" TItem="NodeAllocationResponse">
-            <Configuration>
-                <Pagination TItem="NodeAllocationResponse" ItemSource="LoadData"/>
-
-                <DataTableColumn TItem="NodeAllocationResponse" Field="@(x => x.IpAddress)" Name="IP Address"/>
-                <DataTableColumn TItem="NodeAllocationResponse" Field="@(x => x.Port)" Name="Port"/>
-                <DataTableColumn TItem="NodeAllocationResponse">
-                    <ColumnTemplate>
-                        <div class="flex justify-end items-center">
-                            <a @onclick="() => UpdateAllocation(context)"
-                               @onclick:preventDefault href="#"
-                               class="text-primary mr-2 sm:mr-3">
-                                <i class="icon-pencil text-base"></i>
-                            </a>
-                            <a @onclick="() => DeleteAllocation(context)"
-                               @onclick:preventDefault href="#"
-                               class="text-error">
-                                <i class="icon-trash text-base"></i>
-                            </a>
-                        </div>
-                    </ColumnTemplate>
-                </DataTableColumn>
-            </Configuration>
-        </DataTable>
+        <DataGrid @ref="Grid"
+                  TGridItem="NodeAllocationResponse"
+                  EnablePagination="true"
+                  ItemsProvider="ItemsProviderAsync">
+            <PropertyColumn Field="x => x.IpAddress" Title="IP Address" />
+            <PropertyColumn Field="x => x.Port"/>
+            <TemplateColumn>
+                <td>
+                    <div class="flex justify-end items-center">
+                        <a @onclick="() => UpdateAllocationAsync(context)"
+                           @onclick:preventDefault href="#"
+                           class="text-primary mr-2 sm:mr-3">
+                            <i class="icon-pencil text-base"></i>
+                        </a>
+                        <a @onclick="() => DeleteAllocationAsync(context)"
+                           @onclick:preventDefault href="#"
+                           class="text-error">
+                            <i class="icon-trash text-base"></i>
+                        </a>
+                    </div>
+                </td>
+            </TemplateColumn>
+        </DataGrid>
     </div>
 </div>
 
@@ -61,84 +62,94 @@
 {
     [Parameter] public NodeResponse Node { get; set; }
 
-    private DataTable<NodeAllocationResponse> Table;
-
-    private async Task<IPagedData<NodeAllocationResponse>> LoadData(PaginationOptions options)
+    private DataGrid<NodeAllocationResponse> Grid;
+    
+    private async Task<DataGridItemResult<NodeAllocationResponse>> ItemsProviderAsync(
+        DataGridItemRequest request
+    )
     {
-        return await ApiClient.GetJson<PagedData<NodeAllocationResponse>>(
-            $"api/admin/servers/nodes/{Node.Id}/allocations?page={options.Page}&pageSize={options.PerPage}"
+        var query = $"?startIndex={request.StartIndex}&count={request.Count}";
+
+        var countedData = await ApiClient.GetJson<CountedData<NodeAllocationResponse>>(
+            $"api/admin/servers/nodes/{Node.Id}/allocations{query}"
         );
+
+        return new()
+        {
+            TotalCount = countedData.TotalCount,
+            Items = countedData.Items
+        };
     }
 
-    private async Task AddAllocationRange()
+    private async Task AddAllocationRangeAsync()
     {
         Func<CreateNodeAllocationRangeRequest, Task> onSubmit = async request =>
         {
             await ApiClient.Post($"api/admin/servers/nodes/{Node.Id}/allocations/range", request);
 
-            await ToastService.Success("Successfully created allocations");
-            await Table.Refresh();
+            await ToastService.SuccessAsync("Successfully created allocations");
+            await Grid.RefreshAsync();
         };
 
-        await ModalService.Launch<CreateMultipleAllocationModal>(parameters => { parameters.Add("OnSubmit", onSubmit); });
+        await ModalService.LaunchAsync<CreateMultipleAllocationModal>(parameters => { parameters.Add("OnSubmit", onSubmit); });
     }
 
-    private async Task AddAllocation()
+    private async Task AddAllocationAsync()
     {
         Func<CreateNodeAllocationRequest, Task> onSubmit = async request =>
         {
             await ApiClient.Post($"api/admin/servers/nodes/{Node.Id}/allocations", request);
 
-            await ToastService.Success("Successfully created allocation");
-            await Table.Refresh();
+            await ToastService.SuccessAsync("Successfully created allocation");
+            await Grid.RefreshAsync();
         };
 
-        await ModalService.Launch<CreateAllocationModal>(parameters => { parameters.Add("OnSubmit", onSubmit); });
+        await ModalService.LaunchAsync<CreateAllocationModal>(parameters => { parameters.Add("OnSubmit", onSubmit); });
     }
 
-    private async Task UpdateAllocation(NodeAllocationResponse allocation)
+    private async Task UpdateAllocationAsync(NodeAllocationResponse allocation)
     {
         Func<UpdateNodeAllocationRequest, Task> onSubmit = async request =>
         {
             await ApiClient.Patch($"api/admin/servers/nodes/{Node.Id}/allocations/{allocation.Id}", request);
 
-            await ToastService.Success("Successfully updated allocation");
-            await Table.Refresh();
+            await ToastService.SuccessAsync("Successfully updated allocation");
+            await Grid.RefreshAsync();
         };
 
-        await ModalService.Launch<UpdateAllocationModal>(parameters =>
+        await ModalService.LaunchAsync<UpdateAllocationModal>(parameters =>
         {
             parameters.Add("OnSubmit", onSubmit);
             parameters.Add("Allocation", allocation);
         });
     }
 
-    private async Task DeleteAllocation(NodeAllocationResponse allocation)
+    private async Task DeleteAllocationAsync(NodeAllocationResponse allocation)
     {
-        await AlertService.ConfirmDanger(
+        await AlertService.ConfirmDangerAsync(
             "Delete allocation",
             "Do you really want to delete the selected allocation? This cannot be undone",
             async () =>
             {
                 await ApiClient.Delete($"api/admin/servers/nodes/{Node.Id}/allocations/{allocation.Id}");
 
-                await ToastService.Success("Successfully deleted allocation");
-                await Table.Refresh();
+                await ToastService.SuccessAsync("Successfully deleted allocation");
+                await Grid.RefreshAsync();
             }
         );
     }
 
-    private async Task DeleteAllAllocations()
+    private async Task DeleteAllAllocationsAsync()
     {
-        await AlertService.ConfirmDanger(
+        await AlertService.ConfirmDangerAsync(
             "Delete all allocations",
             "Do you really want to delete all allocations? This cannot be undone",
             async () =>
             {
                 await ApiClient.Delete($"api/admin/servers/nodes/{Node.Id}/allocations/all");
 
-                await ToastService.Success("Successfully deleted allocations");
-                await Table.Refresh();
+                await ToastService.SuccessAsync("Successfully deleted allocations");
+                await Grid.RefreshAsync();
             }
         );
     }

@@ -1,11 +1,9 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
-using MoonCore.Attributes;
 using MoonlightServers.ApiServer.Database.Entities;
 using MoonlightServers.ApiServer.Interfaces;
 using MoonlightServers.ApiServer.Models;
 using MoonlightServers.Shared.Enums;
-using MoonlightServers.Shared.Models;
 
 namespace MoonlightServers.ApiServer.Implementations.ServerAuthFilters;
 
@@ -20,7 +18,7 @@ public class AdminAuthFilter : IServerAuthorizationFilter
         AuthorizationService = authorizationService;
     }
 
-    public async Task<ServerAuthorizationResult?> Process(
+    public async Task<ServerAuthorizationResult?> ProcessAsync(
         ClaimsPrincipal user,
         Server server,
         string permissionId,

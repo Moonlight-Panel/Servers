@@ -17,9 +17,6 @@ public class UpdateServerRequest
     
     [Range(1, int.MaxValue, ErrorMessage = "You need to provide a valid disk amount")]
     public int Disk { get; set; }
-    
-    [Range(0, int.MaxValue, ErrorMessage = "You need to provide a valid bandwidth amount")]
-    public int Bandwidth { get; set; }
 
     public string? StartupOverride { get; set; }
     

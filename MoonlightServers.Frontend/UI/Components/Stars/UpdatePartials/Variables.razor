@@ -15,10 +15,10 @@
 @inject ToastService ToastService
 
 <div class="flex justify-end mb-5">
-    <button type="button" @onclick="AddVariable" class="btn btn-primary">Add variable</button>
+    <button type="button" @onclick="AddVariableAsync" class="btn btn-primary">Add variable</button>
 </div>
 
-<LazyLoader @ref="LazyLoader" Load="Load">
+<LazyLoader @ref="LazyLoader" Load="LoadAsync">
     <div class="grid sm:grid-cols-2 xl:grid-cols-3 gap-4">
         @foreach (var variable in CurrentVariables)
         {
@@ -30,11 +30,11 @@
                     </div>
                     
                     <div class="gap-x-2">
-                        <button type="button" @onclick="() => UpdateVariable(variable)" class="btn btn-primary">
+                        <button type="button" @onclick="() => UpdateVariableAsync(variable)" class="btn btn-primary">
                             <i class="icon-settings text-base"></i>
                         </button>
 
-                        <button type="button" @onclick="() => DeleteVariable(variable)" class="btn btn-error">
+                        <button type="button" @onclick="() => DeleteVariableAsync(variable)" class="btn btn-error">
                             <i class="icon-trash text-base"></i>
                         </button>
                     </div>
@@ -51,59 +51,59 @@
     private StarVariableResponse[] CurrentVariables;
     private LazyLoader LazyLoader;
 
-    private async Task Load(LazyLoader arg)
+    private async Task LoadAsync(LazyLoader arg)
     {
-        var pagedVariables = await ApiClient.GetJson<PagedData<StarVariableResponse>>(
-            $"api/admin/servers/stars/{Star.Id}/variables?page=0&pageSize=50"
+        var pagedVariables = await ApiClient.GetJson<CountedData<StarVariableResponse>>(
+            $"api/admin/servers/stars/{Star.Id}/variables?startIndex=0&count=100"
         );
 
         CurrentVariables = pagedVariables.Items;
     }
 
-    private async Task AddVariable()
+    private async Task AddVariableAsync()
     {
         Func<CreateStarVariableRequest, Task> onSubmit = async request =>
         {
             await ApiClient.Post($"api/admin/servers/stars/{Star.Id}/variables", request);
             
-            await ToastService.Success("Successfully created variable");
-            await LazyLoader.Reload();
+            await ToastService.SuccessAsync("Successfully created variable");
+            await LazyLoader.ReloadAsync();
         };
         
-        await ModalService.Launch<CreateVariableModal>(parameters =>
+        await ModalService.LaunchAsync<CreateVariableModal>(parameters =>
         {
             parameters.Add("OnSubmit", onSubmit);
         }, "max-w-xl");
     }
     
-    private async Task UpdateVariable(StarVariableResponse variable)
+    private async Task UpdateVariableAsync(StarVariableResponse variable)
     {
         Func<UpdateStarVariableRequest, Task> onSubmit = async request =>
         {
             await ApiClient.Patch($"api/admin/servers/stars/{Star.Id}/variables/{variable.Id}", request);
             
-            await ToastService.Success("Successfully updated variable");
-            await LazyLoader.Reload();
+            await ToastService.SuccessAsync("Successfully updated variable");
+            await LazyLoader.ReloadAsync();
         };
         
-        await ModalService.Launch<UpdateVariableModal>(parameters =>
+        await ModalService.LaunchAsync<UpdateVariableModal>(parameters =>
         {
             parameters.Add("OnSubmit", onSubmit);
             parameters.Add("Variable", variable);
         }, "max-w-xl");
     }
 
-    private async Task DeleteVariable(StarVariableResponse variable)
+    private async Task DeleteVariableAsync(StarVariableResponse variable)
     {
-        await AlertService.ConfirmDanger(
+        await AlertService.ConfirmDangerAsync(
             "Delete variable",
             "Do you really want to delete the selected variable? This cannot be undone",
             async () =>
             {
                 await ApiClient.Delete($"api/admin/servers/stars/{Star.Id}/variables/{variable.Id}");
             
-                await ToastService.Success("Successfully deleted variable");
-                await LazyLoader.Reload();
+                await ToastService.SuccessAsync("Successfully deleted variable");
+                await LazyLoader.ReloadAsync();
             }
         );
     }

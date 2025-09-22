@@ -10,7 +10,7 @@ namespace MoonlightServers.Frontend.Startup;
 
 public class PluginStartup : IPluginStartup
 {
-    public Task BuildApplication(IServiceProvider serviceProvider, WebAssemblyHostBuilder builder)
+    public Task BuildApplicationAsync(IServiceProvider serviceProvider, WebAssemblyHostBuilder builder)
     {
         builder.Services.AddSingleton<ISidebarItemProvider, SidebarImplementation>();
         builder.Services.AddSingleton<IServerTabProvider, DefaultServerTabProvider>();
@@ -21,7 +21,7 @@ public class PluginStartup : IPluginStartup
         return Task.CompletedTask;
     }
 
-    public Task ConfigureApplication(IServiceProvider serviceProvider, WebAssemblyHost app)
+    public Task ConfigureApplicationAsync(IServiceProvider serviceProvider, WebAssemblyHost app)
     {
         return Task.CompletedTask;
     }

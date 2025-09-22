@@ -1,5 +1,3 @@
-using MoonlightServers.DaemonShared.Enums;
-using MoonlightServers.Shared.Enums;
 using ServerState = MoonlightServers.Shared.Enums.ServerState;
 
 namespace MoonlightServers.ApiServer.Extensions;

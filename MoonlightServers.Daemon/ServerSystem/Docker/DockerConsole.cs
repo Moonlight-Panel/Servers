@@ -57,17 +57,17 @@ public class DockerConsole : IConsole
     {
         var containerName = string.Format(DockerConstants.RuntimeNameTemplate, Context.Configuration.Id);
 
-        await AttachToContainer(containerName);
+        await AttachToContainerAsync(containerName);
     }
 
     public async Task AttachInstallationAsync()
     {
         var containerName = string.Format(DockerConstants.InstallationNameTemplate, Context.Configuration.Id);
 
-        await AttachToContainer(containerName);
+        await AttachToContainerAsync(containerName);
     }
 
-    private async Task AttachToContainer(string containerName)
+    private async Task AttachToContainerAsync(string containerName)
     {
         var cts = new CancellationTokenSource();
         
@@ -171,17 +171,17 @@ public class DockerConsole : IConsole
     {
         var containerName = string.Format(DockerConstants.RuntimeNameTemplate, Context.Configuration.Id);
 
-        await FetchFromContainer(containerName);
+        await FetchFromContainerAsync(containerName);
     }
 
     public async Task FetchInstallationAsync()
     {
         var containerName = string.Format(DockerConstants.InstallationNameTemplate, Context.Configuration.Id);
 
-        await FetchFromContainer(containerName);
+        await FetchFromContainerAsync(containerName);
     }
 
-    private async Task FetchFromContainer(string containerName)
+    private async Task FetchFromContainerAsync(string containerName)
     {
         var logStream = await DockerClient.Containers.GetContainerLogsAsync(containerName, true, new()
         {

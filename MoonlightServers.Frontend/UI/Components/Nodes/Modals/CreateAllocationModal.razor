@@ -3,25 +3,38 @@
 
 @inherits MoonCore.Blazor.FlyonUi.Modals.Components.BaseModal
 
-<h1 class="mb-5 font-semibold text-xl">Add a new allocation</h1>
-
-<HandleForm @ref="HandleForm" Model="Form" OnValidSubmit="OnValidSubmit">
-    <div class="grid grid-cols-1 gap-2">
-        <div class="col-span-1">
-            <label class="block text-sm font-medium leading-6 text-base-content">IP Address</label>
-            <input @bind="Form.IpAddress" type="text" class="input w-full"/>
+<div class="p-5">
+    <div class="flex items-center gap-4">
+        <div class="avatar avatar-placeholder max-sm:hidden">
+            <div class="border-base-content/20 rounded-box w-13 border-1">
+                <span class="icon-ethernet-port text-xl"></span>
+            </div>
         </div>
-
-        <div class="col-span-1">
-            <label class="block text-sm font-medium leading-6 text-base-content">Port</label>
-            <input @bind="Form.Port" type="text" class="input w-full"/>
+        <div class="space-y-1">
+            <h3 class="text-base-content text-2xl font-semibold">Add a new allocation</h3>
+            <p class="text-base-content/80">Add a new allocation to the selected node</p>
         </div>
     </div>
-</HandleForm>
-
-<div class="mt-5 flex space-x-2">
-    <WButton OnClick="_ => Hide()" CssClasses="btn btn-secondary grow">Cancel</WButton>
-    <WButton OnClick="_ => Submit()" CssClasses="btn btn-primary grow">Create</WButton>
+    <div class="mt-5">
+        <HandleForm @ref="HandleForm" Model="Form" OnValidSubmit="OnValidSubmit">
+            <div class="mt-2">
+                <label class="label-text">IP Address</label>
+                <input class="input" @bind="Form.IpAddress" type="text"/>
+            </div>
+            <div class="mt-2">
+                <label class="label-text">Port</label>
+                <input class="input" @bind="Form.Port" type="number"/>
+            </div>
+        </HandleForm>
+    </div>
+    <div class="mt-5 flex justify-end">
+        <button @onclick="HideAsync" type="button" class="btn btn-secondary me-2">
+            Cancel
+        </button>
+        <WButton OnClick="SubmitAsync">
+            Create
+        </WButton>
+    </div>
 </div>
 
 @code
@@ -42,8 +55,8 @@
     private async Task OnValidSubmit()
     {
         await OnSubmit.Invoke(Form);
-        await Hide();
+        await HideAsync();
     }
 
-    private Task Submit() => HandleForm.Submit();
+    private Task SubmitAsync() => HandleForm.SubmitAsync();
 }

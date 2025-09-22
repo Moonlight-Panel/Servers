@@ -3,7 +3,6 @@ using ICSharpCode.SharpZipLib.GZip;
 using ICSharpCode.SharpZipLib.Tar;
 using ICSharpCode.SharpZipLib.Zip;
 using Mono.Unix.Native;
-using MoonCore.Unix.Exceptions;
 using MoonCore.Unix.SecureFs;
 using MoonlightServers.DaemonShared.DaemonSide.Http.Responses.Servers;
 using MoonlightServers.DaemonShared.Enums;
@@ -19,7 +18,7 @@ public class ServerFileSystem
         FileSystem = fileSystem;
     }
 
-    public Task<ServerFileSystemResponse[]> List(string inputPath)
+    public Task<ServerFileSystemResponse[]> ListAsync(string inputPath)
     {
         var path = Normalize(inputPath);
         var entries = FileSystem.ReadDir(path);
@@ -45,7 +44,7 @@ public class ServerFileSystem
         return Task.FromResult(result);
     }
 
-    public Task Move(string inputOldPath, string inputNewPath)
+    public Task MoveAsync(string inputOldPath, string inputNewPath)
     {
         var oldPath = Normalize(inputOldPath);
         var newPath = Normalize(inputNewPath);
@@ -55,7 +54,7 @@ public class ServerFileSystem
         return Task.CompletedTask;
     }
 
-    public Task Delete(string inputPath)
+    public Task DeleteAsync(string inputPath)
     {
         var path = Normalize(inputPath);
 
@@ -64,7 +63,7 @@ public class ServerFileSystem
         return Task.CompletedTask;
     }
 
-    public Task Mkdir(string inputPath)
+    public Task MkdirAsync(string inputPath)
     {
         var path = Normalize(inputPath);
 
@@ -73,7 +72,7 @@ public class ServerFileSystem
         return Task.CompletedTask;
     }
 
-    public Task Touch(string inputPath)
+    public Task TouchAsync(string inputPath)
     {
         var path = Normalize(inputPath);
 
@@ -91,7 +90,7 @@ public class ServerFileSystem
         return Task.CompletedTask;
     }
 
-    public Task CreateChunk(string inputPath, long totalSize, long positionToSkip, Stream chunkStream)
+    public Task CreateChunkAsync(string inputPath, long totalSize, long positionToSkip, Stream chunkStream)
     {
         var path = Normalize(inputPath);
 
@@ -114,7 +113,7 @@ public class ServerFileSystem
         return Task.CompletedTask;
     }
 
-    public Task Create(string inputPath, Stream dataStream)
+    public Task CreateAsync(string inputPath, Stream dataStream)
     {
         var path = Normalize(inputPath);
 
@@ -134,7 +133,7 @@ public class ServerFileSystem
         return Task.CompletedTask;
     }
 
-    public Task Read(string inputPath, Func<Stream, Task> onHandle)
+    public Task ReadAsync(string inputPath, Func<Stream, Task> onHandle)
     {
         var path = Normalize(inputPath);
 
@@ -149,7 +148,7 @@ public class ServerFileSystem
 
     #region Compression
 
-    public Task Compress(string[] itemsInput, string destinationInput, CompressType type)
+    public Task CompressAsync(string[] itemsInput, string destinationInput, CompressType type)
     {
         var destination = Normalize(destinationInput);
         var items = itemsInput.Select(Normalize);
@@ -191,7 +190,7 @@ public class ServerFileSystem
         return Task.CompletedTask;
     }
 
-    public Task Decompress(string pathInput, string destinationInput, CompressType type)
+    public Task DecompressAsync(string pathInput, string destinationInput, CompressType type)
     {
         var path = Normalize(pathInput);
         var destination = Normalize(destinationInput);

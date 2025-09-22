@@ -17,7 +17,7 @@ public class UnsafeDockerClient
         Configuration = configuration;
     }
 
-    public Task<HttpClient> CreateHttpClient()
+    public Task<HttpClient> CreateHttpClientAsync()
     {
         var client = new HttpClient(new SocketsHttpHandler()
         {
@@ -35,9 +35,9 @@ public class UnsafeDockerClient
         return Task.FromResult(client);
     }
 
-    public async Task<DataUsageResponse> GetDataUsage()
+    public async Task<DataUsageResponse> GetDataUsageAsync()
     {
-        using var client = await CreateHttpClient();
+        using var client = await CreateHttpClientAsync();
         var responseJson = await client.GetStringAsync("http://some.random.domain/v1.47/system/df");
         var response = JsonSerializer.Deserialize<DataUsageResponse>(responseJson)!;
 

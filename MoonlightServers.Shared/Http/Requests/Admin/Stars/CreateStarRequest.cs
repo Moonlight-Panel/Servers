@@ -1,5 +1,4 @@
 using System.ComponentModel.DataAnnotations;
-using MoonlightServers.Shared.Http.Requests.Admin.StarVariables;
 
 namespace MoonlightServers.Shared.Http.Requests.Admin.Stars;
 

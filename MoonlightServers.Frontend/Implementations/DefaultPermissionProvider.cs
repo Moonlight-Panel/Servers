@@ -7,7 +7,7 @@ namespace MoonlightServers.Frontend.Implementations;
 
 public class DefaultPermissionProvider : IServerPermissionProvider
 {
-    public Task<ServerPermission[]> GetPermissions(ServerDetailResponse server)
+    public Task<ServerPermission[]> GetPermissionsAsync(ServerDetailResponse server)
     {
         ServerPermission[] permissions = [
             new()

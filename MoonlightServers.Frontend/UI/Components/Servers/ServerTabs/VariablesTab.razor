@@ -9,7 +9,7 @@
 @inject ServerService ServerService
 @inject ToastService ToastService
 
-<LazyLoader @ref="LazyLoader" Load="Load">
+<LazyLoader @ref="LazyLoader" Load="LoadAsync">
     <div class="grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-6">
         @foreach (var variable in Variables)
         {
@@ -24,7 +24,7 @@
                         @variable.Description
                     </p>
                     <div class="mt-auto">
-                        <input @onchange="e => UpdateVariable(variable, e)"
+                        <input @onchange="e => UpdateVariableAsync(variable, e)"
                                value="@variable.Value"
                                type="text"
                                class="input w-full">
@@ -40,26 +40,26 @@
     private ServerVariableDetailResponse[] Variables;
     private LazyLoader LazyLoader;
 
-    private async Task Load(LazyLoader _)
+    private async Task LoadAsync(LazyLoader _)
     {
-        Variables = await PagedData<ServerVariableDetailResponse>.All(async (page, pageSize)
-            => await ServerService.GetVariables(Server.Id, page, pageSize)
+        Variables = await CountedData<ServerVariableDetailResponse>.LoadAllAsync(async (startIndex, count)
+            => await ServerService.GetVariablesAsync(Server.Id, startIndex, count)
         );
     }
 
-    private async Task UpdateVariable(ServerVariableDetailResponse variable, ChangeEventArgs args)
+    private async Task UpdateVariableAsync(ServerVariableDetailResponse variable, ChangeEventArgs args)
     {
         var value = args.Value?.ToString() ?? "";
 
-        await ServerService.UpdateVariable(Server.Id, new()
+        await ServerService.UpdateVariableAsync(Server.Id, new()
         {
             Key = variable.Key,
             Value = value
         });
 
         // Fetch the current data to make sure the user sees the latest data
-        await LazyLoader.Reload();
+        await LazyLoader.ReloadAsync();
 
-        await ToastService.Success("Successfully updated variable");
+        await ToastService.SuccessAsync("Successfully updated variable");
     }
 }

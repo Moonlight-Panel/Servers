@@ -1,9 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using MoonCore.Exceptions;
 using MoonCore.Extended.Abstractions;
-using MoonCore.Extended.Models;
 using MoonCore.Models;
 using MoonlightServers.ApiServer.Database.Entities;
 using MoonlightServers.ApiServer.Mappers;
@@ -30,38 +28,39 @@ public class NodeAllocationsController : Controller
 
     [HttpGet]
     [Authorize(Policy = "permissions:admin.servers.nodes.get")]
-    public async Task<ActionResult<IPagedData<NodeAllocationResponse>>> Get(
+    public async Task<ActionResult<CountedData<NodeAllocationResponse>>> GetAsync(
         [FromRoute] int nodeId,
-        [FromQuery] PagedOptions options
+        [FromQuery] int startIndex,
+        [FromQuery] int count
     )
     {
-        var count = await AllocationRepository
+        if (count > 100)
+            return Problem("Only 100 items can be fetched at a time", statusCode: 400);
+        
+        var totalCount = await AllocationRepository
             .Get()
             .CountAsync(x => x.Node.Id == nodeId);
 
         var allocations = await AllocationRepository
             .Get()
             .OrderBy(x => x.Id)
-            .Skip(options.Page * options.PageSize)
-            .Take(options.PageSize)
+            .Skip(startIndex)
+            .Take(count)
             .Where(x => x.Node.Id == nodeId)
             .AsNoTracking()
             .ProjectToAdminResponse()
             .ToArrayAsync();
 
-        return new PagedData<NodeAllocationResponse>()
+        return new CountedData<NodeAllocationResponse>()
         {
             Items = allocations,
-            CurrentPage = options.Page,
-            PageSize = options.PageSize,
-            TotalItems = count,
-            TotalPages = (int)Math.Ceiling(Math.Max(0, count) / (double)options.PageSize)
+            TotalCount = totalCount
         };
     }
 
     [HttpGet("{id:int}")]
     [Authorize(Policy = "permissions:admin.servers.nodes.get")]
-    public async Task<ActionResult<NodeAllocationResponse>> GetSingle([FromRoute] int nodeId, [FromRoute] int id)
+    public async Task<ActionResult<NodeAllocationResponse>> GetSingleAsync([FromRoute] int nodeId, [FromRoute] int id)
     {
         var allocation = await AllocationRepository
             .Get()
@@ -78,7 +77,7 @@ public class NodeAllocationsController : Controller
 
     [HttpPost]
     [Authorize(Policy = "permissions:admin.servers.nodes.create")]
-    public async Task<ActionResult<NodeAllocationResponse>> Create(
+    public async Task<ActionResult<NodeAllocationResponse>> CreateAsync(
         [FromRoute] int nodeId,
         [FromBody] CreateNodeAllocationRequest request
     )
@@ -92,13 +91,13 @@ public class NodeAllocationsController : Controller
 
         var allocation = AllocationMapper.ToAllocation(request);
 
-        var finalAllocation = await AllocationRepository.Add(allocation);
+        var finalAllocation = await AllocationRepository.AddAsync(allocation);
 
         return AllocationMapper.ToNodeAllocation(finalAllocation);
     }
 
     [HttpPatch("{id:int}")]
-    public async Task<ActionResult<NodeAllocationResponse>> Update(
+    public async Task<ActionResult<NodeAllocationResponse>> UpdateAsync(
         [FromRoute] int nodeId,
         [FromRoute] int id,
         [FromBody] UpdateNodeAllocationRequest request
@@ -113,13 +112,13 @@ public class NodeAllocationsController : Controller
             return Problem("No allocation with that id found", statusCode: 404);
 
         AllocationMapper.Merge(request, allocation);
-        await AllocationRepository.Update(allocation);
+        await AllocationRepository.UpdateAsync(allocation);
 
         return AllocationMapper.ToNodeAllocation(allocation);
     }
 
     [HttpDelete("{id:int}")]
-    public async Task<ActionResult> Delete([FromRoute] int nodeId, [FromRoute] int id)
+    public async Task<ActionResult> DeleteAsync([FromRoute] int nodeId, [FromRoute] int id)
     {
         var allocation = await AllocationRepository
             .Get()
@@ -129,12 +128,12 @@ public class NodeAllocationsController : Controller
         if (allocation == null)
             return Problem("No allocation with that id found", statusCode: 404);
 
-        await AllocationRepository.Remove(allocation);
+        await AllocationRepository.RemoveAsync(allocation);
         return NoContent();
     }
 
     [HttpPost("range")]
-    public async Task<ActionResult> CreateRange(
+    public async Task<ActionResult> CreateRangeAsync(
         [FromRoute] int nodeId,
         [FromBody] CreateNodeAllocationRangeRequest request
     )
@@ -179,58 +178,60 @@ public class NodeAllocationsController : Controller
             })
             .ToArray();
         
-        await AllocationRepository.RunTransaction(async set => { await set.AddRangeAsync(allocations); });
+        await AllocationRepository.RunTransactionAsync(async set => { await set.AddRangeAsync(allocations); });
         return NoContent();
     }
 
     [HttpDelete("all")]
-    public async Task<ActionResult> DeleteAll([FromRoute] int nodeId)
+    public async Task<ActionResult> DeleteAllAsync([FromRoute] int nodeId)
     {
         var allocations = AllocationRepository
             .Get()
             .Where(x => x.Node.Id == nodeId)
             .ToArray();
 
-        await AllocationRepository.RunTransaction(set => { set.RemoveRange(allocations); });
+        await AllocationRepository.RunTransactionAsync(set => { set.RemoveRange(allocations); });
         return NoContent();
     }
 
     [HttpGet("free")]
     [Authorize(Policy = "permissions:admin.servers.nodes.get")]
-    public async Task<IPagedData<NodeAllocationResponse>> GetFree(
+    public async Task<ActionResult<CountedData<NodeAllocationResponse>>> GetFreeAsync(
         [FromRoute] int nodeId,
-        [FromQuery] PagedOptions options,
+        [FromQuery] int startIndex,
+        [FromQuery] int count,
         [FromQuery] int serverId = -1
     )
     {
+        if (count > 100)
+            return Problem("Only 100 items can be fetched at a time", statusCode: 400);
+        
         var node = NodeRepository
             .Get()
             .FirstOrDefault(x => x.Id == nodeId);
 
         if (node == null)
-            throw new HttpApiException("A node with this id could not be found", 404);
+            return Problem("A node with this id could not be found", statusCode: 404);
 
         var freeAllocationsQuery = AllocationRepository
             .Get()
+            .OrderBy(x => x.Id)
             .Where(x => x.Node.Id == node.Id)
             .Where(x => x.Server == null || x.Server.Id == serverId);
 
-        var count = await freeAllocationsQuery.CountAsync();
+        var totalCount = await freeAllocationsQuery.CountAsync();
 
         var allocations = await freeAllocationsQuery
-            .Skip(options.Page * options.PageSize)
-            .Take(options.PageSize)
+            .Skip(startIndex)
+            .Take(count)
             .AsNoTracking()
             .ProjectToAdminResponse()
             .ToArrayAsync();
 
-        return new PagedData<NodeAllocationResponse>()
+        return new CountedData<NodeAllocationResponse>()
         {
             Items = allocations,
-            CurrentPage = options.Page,
-            PageSize = options.PageSize,
-            TotalItems = count,
-            TotalPages = (int)Math.Ceiling(Math.Max(0, count) / (double)options.PageSize)
+            TotalCount = totalCount
         };
     }
 }

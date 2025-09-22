@@ -18,49 +18,49 @@ public class ServerService
         HttpApiClient = httpApiClient;
     }
 
-    public async Task<PagedData<ServerDetailResponse>> GetServers(int page, int perPage)
+    public async Task<CountedData<ServerDetailResponse>> GetServersAsync(int startIndex, int count)
     {
-        return await HttpApiClient.GetJson<PagedData<ServerDetailResponse>>(
-            $"api/client/servers?page={page}&pageSize={perPage}"
+        return await HttpApiClient.GetJson<CountedData<ServerDetailResponse>>(
+            $"api/client/servers?startIndex={startIndex}&count={count}"
         );
     }
     
-    public async Task<PagedData<ServerDetailResponse>> GetSharedServers(int page, int perPage)
+    public async Task<CountedData<ServerDetailResponse>> GetSharedServersAsync(int startIndex, int count)
     {
-        return await HttpApiClient.GetJson<PagedData<ServerDetailResponse>>(
-            $"api/client/servers/shared?page={page}&pageSize={perPage}"
+        return await HttpApiClient.GetJson<CountedData<ServerDetailResponse>>(
+            $"api/client/servers/shared?startIndex={startIndex}&count={count}"
         );
     }
 
-    public async Task<ServerDetailResponse> GetServer(int serverId)
+    public async Task<ServerDetailResponse> GetServerAsync(int serverId)
     {
         return await HttpApiClient.GetJson<ServerDetailResponse>(
             $"api/client/servers/{serverId}"
         );
     }
 
-    public async Task<ServerStatusResponse> GetStatus(int serverId)
+    public async Task<ServerStatusResponse> GetStatusAsync(int serverId)
     {
         return await HttpApiClient.GetJson<ServerStatusResponse>(
             $"api/client/servers/{serverId}/status"
         );
     }
 
-    public async Task<ServerLogsResponse> GetLogs(int serverId)
+    public async Task<ServerLogsResponse> GetLogsAsync(int serverId)
     {
         return await HttpApiClient.GetJson<ServerLogsResponse>(
             $"api/client/servers/{serverId}/logs"
         );
     }
 
-    public async Task<ServerStatsResponse> GetStats(int serverId)
+    public async Task<ServerStatsResponse> GetStatsAsync(int serverId)
     {
         return await HttpApiClient.GetJson<ServerStatsResponse>(
             $"api/client/servers/{serverId}/stats"
         );
     }
 
-    public async Task RunCommand(int serverId, string command)
+    public async Task RunCommandAsync(int serverId, string command)
     {
         await HttpApiClient.Post(
             $"api/client/servers/{serverId}/command",
@@ -71,14 +71,14 @@ public class ServerService
         );
     }
 
-    public async Task<ServerWebSocketResponse> GetWebSocket(int serverId)
+    public async Task<ServerWebSocketResponse> GetWebSocketAsync(int serverId)
     {
         return await HttpApiClient.GetJson<ServerWebSocketResponse>(
             $"api/client/servers/{serverId}/ws"
         );
     }
 
-    public async Task Install(int serverId)
+    public async Task InstallAsync(int serverId)
     {
         await HttpApiClient.Post(
             $"api/client/servers/{serverId}/install"
@@ -87,21 +87,21 @@ public class ServerService
 
     #region Power actions
 
-    public async Task Start(int serverId)
+    public async Task StartAsync(int serverId)
     {
         await HttpApiClient.Post(
             $"api/client/servers/{serverId}/start"
         );
     }
 
-    public async Task Stop(int serverId)
+    public async Task StopAsync(int serverId)
     {
         await HttpApiClient.Post(
             $"api/client/servers/{serverId}/stop"
         );
     }
 
-    public async Task Kill(int serverId)
+    public async Task KillAsync(int serverId)
     {
         await HttpApiClient.Post(
             $"api/client/servers/{serverId}/kill"
@@ -112,14 +112,14 @@ public class ServerService
 
     #region Variables
 
-    public async Task<PagedData<ServerVariableDetailResponse>> GetVariables(int serverId, int page, int pageSize)
+    public async Task<CountedData<ServerVariableDetailResponse>> GetVariablesAsync(int serverId, int startIndex, int count)
     {
-        return await HttpApiClient.GetJson<PagedData<ServerVariableDetailResponse>>(
-            $"api/client/servers/{serverId}/variables?page={page}&pageSize={pageSize}"
+        return await HttpApiClient.GetJson<CountedData<ServerVariableDetailResponse>>(
+            $"api/client/servers/{serverId}/variables?startIndex={startIndex}&count={count}"
         );
     }
 
-    public async Task UpdateVariables(int serverId, UpdateServerVariableRangeRequest request)
+    public async Task UpdateVariablesAsync(int serverId, UpdateServerVariableRangeRequest request)
     {
         await HttpApiClient.Patch(
             $"api/client/servers/{serverId}/variables",
@@ -127,7 +127,7 @@ public class ServerService
         );
     }
     
-    public async Task UpdateVariable(int serverId, UpdateServerVariableRequest request)
+    public async Task UpdateVariableAsync(int serverId, UpdateServerVariableRequest request)
     {
         await HttpApiClient.Put(
             $"api/client/servers/{serverId}/variables",

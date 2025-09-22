@@ -31,8 +31,14 @@ public class ServersController : Controller
     }
 
     [HttpGet]
-    public async Task<PagedData<ServerDataResponse>> Get([FromQuery] int page, [FromQuery] int pageSize)
+    public async Task<ActionResult<CountedData<ServerDataResponse>>> GetAsync(
+        [FromQuery] int startIndex,
+        [FromQuery] int count
+    )
     {
+        if (count > 100)
+            return Problem("Only 100 items can be fetched at a time", statusCode: 400);
+        
         // Load the node via the id
         var nodeId = int.Parse(User.Claims.First(x => x.Type == "nodeId").Value);
 
@@ -52,8 +58,8 @@ public class ServersController : Controller
             .ThenInclude(x => x.DockerImages)
             .Include(x => x.Variables)
             .Include(x => x.Allocations)
-            .Skip(page * pageSize)
-            .Take(pageSize)
+            .Skip(startIndex)
+            .Take(count)
             .ToArrayAsync();
 
         var serverData = new List<ServerDataResponse>();
@@ -68,18 +74,15 @@ public class ServersController : Controller
             serverData.Add(convertedData);
         }
 
-        return new PagedData<ServerDataResponse>()
+        return new CountedData<ServerDataResponse>()
         {
             Items = serverData.ToArray(),
-            CurrentPage = page,
-            PageSize = pageSize,
-            TotalItems = total,
-            TotalPages = total == 0 ? 0 : total / pageSize
+            TotalCount = total
         };
     }
 
     [HttpGet("{id:int}")]
-    public async Task<ServerDataResponse> Get([FromRoute] int id)
+    public async Task<ServerDataResponse> GetAsync([FromRoute] int id)
     {
         // Load the node via the id
         var nodeId = int.Parse(User.Claims.First(x => x.Type == "nodeId").Value);
@@ -111,7 +114,7 @@ public class ServersController : Controller
     }
 
     [HttpGet("{id:int}/install")]
-    public async Task<ServerInstallDataResponse> GetInstall([FromRoute] int id)
+    public async Task<ServerInstallDataResponse> GetInstallAsync([FromRoute] int id)
     {
         // Load the node via the id
         var nodeId = int.Parse(User.Claims.First(x => x.Type == "nodeId").Value);
@@ -180,7 +183,6 @@ public class ServersController : Controller
                 Port = x.Port
             }).ToArray(),
             Variables = server.Variables.ToDictionary(x => x.Key, x => x.Value),
-            Bandwidth = server.Bandwidth,
             Cpu = server.Cpu,
             Disk = server.Disk,
             Memory = server.Memory,
@@ -189,7 +191,6 @@ public class ServersController : Controller
             PullDockerImage = dockerImage.AutoPulling,
             ParseConiguration = server.Star.ParseConfiguration,
             StopCommand = server.Star.StopCommand,
-            UseVirtualDisk = server.UseVirtualDisk
         };
     }
 }

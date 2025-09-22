@@ -1,6 +1,5 @@
 using MoonlightServers.Shared.Enums;
 using MoonlightServers.Shared.Http.Responses.Client.Servers.Allocations;
-using MoonlightServers.Shared.Models;
 
 namespace MoonlightServers.Shared.Http.Responses.Client.Servers;
 

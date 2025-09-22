@@ -19,7 +19,7 @@ public class ServerAuthorizeService
         AuthorizationFilters = authorizationFilters.ToArray();
     }
 
-    public async Task<ServerAuthorizationResult> Authorize(
+    public async Task<ServerAuthorizationResult> AuthorizeAsync(
         ClaimsPrincipal user,
         Server server,
         string permissionIdentifier,
@@ -28,7 +28,7 @@ public class ServerAuthorizeService
     {
         foreach (var authorizationFilter in AuthorizationFilters)
         {
-            var result = await authorizationFilter.Process(
+            var result = await authorizationFilter.ProcessAsync(
                 user,
                 server,
                 permissionIdentifier,

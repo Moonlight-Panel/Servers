@@ -1,6 +1,3 @@
-using System.IdentityModel.Tokens.Jwt;
-using System.Text;
-using Microsoft.IdentityModel.Tokens;
 using MoonCore.Attributes;
 using MoonCore.Helpers;
 using MoonCore.Models;
@@ -19,26 +16,26 @@ public class RemoteService
         ApiClient = CreateHttpClient(configuration);
     }
 
-    public async Task GetStatus()
+    public async Task GetStatusAsync()
     {
         await ApiClient.Get("api/remote/servers/node/trip");
     }
 
-    public async Task<PagedData<ServerDataResponse>> GetServers(int page, int perPage)
+    public async Task<CountedData<ServerDataResponse>> GetServersAsync(int startIndex, int count)
     {
-        return await ApiClient.GetJson<PagedData<ServerDataResponse>>(
-            $"api/remote/servers?page={page}&pageSize={perPage}"
+        return await ApiClient.GetJson<CountedData<ServerDataResponse>>(
+            $"api/remote/servers?startIndex={startIndex}&count={count}"
         );
     }
 
-    public async Task<ServerDataResponse> GetServer(int serverId)
+    public async Task<ServerDataResponse> GetServerAsync(int serverId)
     {
         return await ApiClient.GetJson<ServerDataResponse>(
             $"api/remote/servers/{serverId}"
         );
     }
 
-    public async Task<ServerInstallDataResponse> GetServerInstallation(int serverId)
+    public async Task<ServerInstallDataResponse> GetServerInstallationAsync(int serverId)
     {
         return await ApiClient.GetJson<ServerInstallDataResponse>(
             $"api/remote/servers/{serverId}/install"

@@ -17,7 +17,7 @@
         <i class="icon-chevron-left"></i>
         Back
     </a>
-    <WButton OnClick="_ => Form.Submit()" CssClasses="btn btn-primary">
+    <WButton OnClick="Form.SubmitAsync" CssClasses="btn btn-primary">
         <i class="icon-check"></i>
         Create
     </WButton>
@@ -61,7 +61,7 @@
     {
         await ApiClient.Post("api/admin/servers/stars", Request);
 
-        await ToastService.Success("Successfully created star");
+        await ToastService.SuccessAsync("Successfully created star");
         Navigation.NavigateTo("/admin/servers/stars");
     }
 }

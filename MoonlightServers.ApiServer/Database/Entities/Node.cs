@@ -18,8 +18,4 @@ public class Node
     public int HttpPort { get; set; }
     public int FtpPort { get; set; }
     public bool UseSsl { get; set; }
-    
-    // Misc
-    public bool EnableTransparentMode { get; set; }
-    public bool EnableDynamicFirewall { get; set; }
 }

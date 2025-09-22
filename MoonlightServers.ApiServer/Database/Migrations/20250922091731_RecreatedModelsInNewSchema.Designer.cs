@@ -12,15 +12,16 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace MoonlightServers.ApiServer.Database.Migrations
 {
     [DbContext(typeof(ServersDataContext))]
-    [Migration("20250226210232_RecreatedMigrationsForPostgresql")]
-    partial class RecreatedMigrationsForPostgresql
+    [Migration("20250922091731_RecreatedModelsInNewSchema")]
+    partial class RecreatedModelsInNewSchema
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "8.0.11")
+                .HasDefaultSchema("servers")
+                .HasAnnotation("ProductVersion", "9.0.9")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
@@ -52,7 +53,7 @@ namespace MoonlightServers.ApiServer.Database.Migrations
 
                     b.HasIndex("ServerId");
 
-                    b.ToTable("Servers_Allocations", (string)null);
+                    b.ToTable("Allocations", "servers");
                 });
 
             modelBuilder.Entity("MoonlightServers.ApiServer.Database.Entities.Node", b =>
@@ -62,12 +63,6 @@ namespace MoonlightServers.ApiServer.Database.Migrations
                         .HasColumnType("integer");
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<bool>("EnableDynamicFirewall")
-                        .HasColumnType("boolean");
-
-                    b.Property<bool>("EnableTransparentMode")
-                        .HasColumnType("boolean");
 
                     b.Property<string>("Fqdn")
                         .IsRequired()
@@ -87,12 +82,16 @@ namespace MoonlightServers.ApiServer.Database.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<string>("TokenId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
                     b.Property<bool>("UseSsl")
                         .HasColumnType("boolean");
 
                     b.HasKey("Id");
 
-                    b.ToTable("Servers_Nodes", (string)null);
+                    b.ToTable("Nodes", "servers");
                 });
 
             modelBuilder.Entity("MoonlightServers.ApiServer.Database.Entities.Server", b =>
@@ -102,9 +101,6 @@ namespace MoonlightServers.ApiServer.Database.Migrations
                         .HasColumnType("integer");
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<int>("Bandwidth")
-                        .HasColumnType("integer");
 
                     b.Property<int>("Cpu")
                         .HasColumnType("integer");
@@ -134,16 +130,13 @@ namespace MoonlightServers.ApiServer.Database.Migrations
                     b.Property<string>("StartupOverride")
                         .HasColumnType("text");
 
-                    b.Property<bool>("UseVirtualDisk")
-                        .HasColumnType("boolean");
-
                     b.HasKey("Id");
 
                     b.HasIndex("NodeId");
 
                     b.HasIndex("StarId");
 
-                    b.ToTable("Servers_Servers", (string)null);
+                    b.ToTable("Servers", "servers");
                 });
 
             modelBuilder.Entity("MoonlightServers.ApiServer.Database.Entities.ServerBackup", b =>
@@ -176,7 +169,34 @@ namespace MoonlightServers.ApiServer.Database.Migrations
 
                     b.HasIndex("ServerId");
 
-                    b.ToTable("Servers_ServerBackups", (string)null);
+                    b.ToTable("ServerBackups", "servers");
+                });
+
+            modelBuilder.Entity("MoonlightServers.ApiServer.Database.Entities.ServerShare", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("ServerId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ServerId");
+
+                    b.ToTable("ServerShares", "servers");
                 });
 
             modelBuilder.Entity("MoonlightServers.ApiServer.Database.Entities.ServerVariable", b =>
@@ -202,7 +222,7 @@ namespace MoonlightServers.ApiServer.Database.Migrations
 
                     b.HasIndex("ServerId");
 
-                    b.ToTable("Servers_ServerVariables", (string)null);
+                    b.ToTable("ServerVariables", "servers");
                 });
 
             modelBuilder.Entity("MoonlightServers.ApiServer.Database.Entities.Star", b =>
@@ -270,7 +290,7 @@ namespace MoonlightServers.ApiServer.Database.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Servers_Stars", (string)null);
+                    b.ToTable("Stars", "servers");
                 });
 
             modelBuilder.Entity("MoonlightServers.ApiServer.Database.Entities.StarDockerImage", b =>
@@ -299,7 +319,7 @@ namespace MoonlightServers.ApiServer.Database.Migrations
 
                     b.HasIndex("StarId");
 
-                    b.ToTable("Servers_StarDockerImages", (string)null);
+                    b.ToTable("StarDockerImages", "servers");
                 });
 
             modelBuilder.Entity("MoonlightServers.ApiServer.Database.Entities.StarVariable", b =>
@@ -345,7 +365,7 @@ namespace MoonlightServers.ApiServer.Database.Migrations
 
                     b.HasIndex("StarId");
 
-                    b.ToTable("Servers_StarVariables", (string)null);
+                    b.ToTable("StarVariables", "servers");
                 });
 
             modelBuilder.Entity("MoonlightServers.ApiServer.Database.Entities.Allocation", b =>
@@ -389,6 +409,61 @@ namespace MoonlightServers.ApiServer.Database.Migrations
                     b.HasOne("MoonlightServers.ApiServer.Database.Entities.Server", null)
                         .WithMany("Backups")
                         .HasForeignKey("ServerId");
+                });
+
+            modelBuilder.Entity("MoonlightServers.ApiServer.Database.Entities.ServerShare", b =>
+                {
+                    b.HasOne("MoonlightServers.ApiServer.Database.Entities.Server", "Server")
+                        .WithMany("Shares")
+                        .HasForeignKey("ServerId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.OwnsOne("MoonlightServers.ApiServer.Models.ServerShareContent", "Content", b1 =>
+                        {
+                            b1.Property<int>("ServerShareId")
+                                .HasColumnType("integer");
+
+                            b1.HasKey("ServerShareId");
+
+                            b1.ToTable("ServerShares", "servers");
+
+                            b1.ToJson("Content");
+
+                            b1.WithOwner()
+                                .HasForeignKey("ServerShareId");
+
+                            b1.OwnsMany("MoonlightServers.ApiServer.Models.ServerShareContent+SharePermission", "Permissions", b2 =>
+                                {
+                                    b2.Property<int>("ServerShareContentServerShareId")
+                                        .HasColumnType("integer");
+
+                                    b2.Property<int>("__synthesizedOrdinal")
+                                        .ValueGeneratedOnAdd()
+                                        .HasColumnType("integer");
+
+                                    b2.Property<string>("Identifier")
+                                        .IsRequired()
+                                        .HasColumnType("text");
+
+                                    b2.Property<int>("Level")
+                                        .HasColumnType("integer");
+
+                                    b2.HasKey("ServerShareContentServerShareId", "__synthesizedOrdinal");
+
+                                    b2.ToTable("ServerShares", "servers");
+
+                                    b2.WithOwner()
+                                        .HasForeignKey("ServerShareContentServerShareId");
+                                });
+
+                            b1.Navigation("Permissions");
+                        });
+
+                    b.Navigation("Content")
+                        .IsRequired();
+
+                    b.Navigation("Server");
                 });
 
             modelBuilder.Entity("MoonlightServers.ApiServer.Database.Entities.ServerVariable", b =>
@@ -436,6 +511,8 @@ namespace MoonlightServers.ApiServer.Database.Migrations
                     b.Navigation("Allocations");
 
                     b.Navigation("Backups");
+
+                    b.Navigation("Shares");
 
                     b.Navigation("Variables");
                 });

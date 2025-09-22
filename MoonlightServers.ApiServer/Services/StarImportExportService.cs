@@ -23,7 +23,7 @@ public class StarImportExportService
         Logger = logger;
     }
 
-    public async Task<string> Export(int id)
+    public async Task<string> ExportAsync(int id)
     {
         var star = StarRepository
             .Get()
@@ -78,20 +78,20 @@ public class StarImportExportService
         return json;
     }
 
-    public async Task<Star> Import(string json)
+    public async Task<Star> ImportAsync(string json)
     {
         // Determine which importer to use based on simple patterns
         if (json.Contains("RequiredAllocations"))
-            return await ImportStar(json);
+            return await ImportStarAsync(json);
         else if (json.Contains("AllocationsNeeded"))
-            return await ImportImage(json);
+            return await ImportImageAsync(json);
         else if (json.Contains("_comment"))
-            return await ImportEgg(json);
+            return await ImportEggAsync(json);
         else
             throw new HttpApiException("Unable to determine the format of the imported star/image/egg", 400);
     }
 
-    public async Task<Star> ImportStar(string json)
+    public async Task<Star> ImportStarAsync(string json)
     {
         try
         {
@@ -138,7 +138,7 @@ public class StarImportExportService
                 }).ToList()
             };
 
-            var finalStar = await StarRepository.Add(star);
+            var finalStar = await StarRepository.AddAsync(star);
 
             return finalStar;
         }
@@ -149,7 +149,7 @@ public class StarImportExportService
         }
     }
 
-    public async Task<Star> ImportImage(string json)
+    public async Task<Star> ImportImageAsync(string json)
     {
         try
         {
@@ -235,7 +235,7 @@ public class StarImportExportService
 
             #endregion
 
-            var finalStar = await StarRepository.Add(star);
+            var finalStar = await StarRepository.AddAsync(star);
 
             return finalStar;
         }
@@ -246,7 +246,7 @@ public class StarImportExportService
         }
     }
 
-    public async Task<Star> ImportEgg(string json)
+    public async Task<Star> ImportEggAsync(string json)
     {
         // Create result
         var star = new Star();
@@ -403,7 +403,7 @@ public class StarImportExportService
         star.AllowDockerImageChange = true;
         
         // Finally save it to the db
-        var finalStar = await StarRepository.Add(star);
+        var finalStar = await StarRepository.AddAsync(star);
 
         return finalStar;
     }

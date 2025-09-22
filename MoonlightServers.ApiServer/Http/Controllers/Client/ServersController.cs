@@ -1,24 +1,19 @@
-using System.ComponentModel.DataAnnotations;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using MoonCore.Exceptions;
 using MoonCore.Extended.Abstractions;
-using MoonCore.Extended.Models;
 using MoonCore.Models;
 using Moonlight.ApiServer.Database.Entities;
 using MoonlightServers.ApiServer.Database.Entities;
 using MoonlightServers.ApiServer.Extensions;
 using MoonlightServers.ApiServer.Mappers;
-using MoonlightServers.ApiServer.Models;
 using MoonlightServers.ApiServer.Services;
 using MoonlightServers.Shared.Constants;
 using MoonlightServers.Shared.Enums;
 using MoonlightServers.Shared.Http.Requests.Client.Servers;
 using MoonlightServers.Shared.Http.Responses.Client.Servers;
 using MoonlightServers.Shared.Http.Responses.Client.Servers.Allocations;
-using MoonlightServers.Shared.Models;
 
 namespace MoonlightServers.ApiServer.Http.Controllers.Client;
 
@@ -52,8 +47,14 @@ public class ServersController : Controller
     }
 
     [HttpGet]
-    public async Task<ActionResult<PagedData<ServerDetailResponse>>> GetAll([FromQuery] PagedOptions options)
+    public async Task<ActionResult<CountedData<ServerDetailResponse>>> GetAllAsync(
+        [FromQuery] int startIndex,
+        [FromQuery] int count
+    )
     {
+        if (count > 100)
+            return Problem("Only 100 items can be fetched at a time", statusCode: 400);
+
         var userIdClaim = User.FindFirstValue("UserId");
 
         if (string.IsNullOrEmpty(userIdClaim))
@@ -68,12 +69,12 @@ public class ServersController : Controller
             .Include(x => x.Node)
             .Where(x => x.OwnerId == userId);
 
-        var count = await query.CountAsync();
+        var totalCount = await query.CountAsync();
 
         var items = await query
             .OrderBy(x => x.Id)
-            .Skip(options.Page * options.PageSize)
-            .Take(options.PageSize)
+            .Skip(startIndex)
+            .Take(count)
             .AsNoTracking()
             .ToArrayAsync();
 
@@ -94,19 +95,22 @@ public class ServersController : Controller
             }).ToArray()
         }).ToArray();
 
-        return new PagedData<ServerDetailResponse>()
+        return new CountedData<ServerDetailResponse>()
         {
             Items = mappedItems,
-            CurrentPage = options.Page,
-            TotalItems = count,
-            PageSize = options.PageSize,
-            TotalPages = (int)Math.Ceiling(Math.Max(0, count) / (double)options.PageSize)
+            TotalCount = totalCount
         };
     }
 
     [HttpGet("shared")]
-    public async Task<ActionResult<PagedData<ServerDetailResponse>>> GetAllShared([FromQuery] PagedOptions options)
+    public async Task<ActionResult<CountedData<ServerDetailResponse>>> GetAllSharedAsync(
+        [FromQuery] int startIndex,
+        [FromQuery] int count
+    )
     {
+        if (count > 100)
+            return Problem("Only 100 items can be fetched at a time", statusCode: 400);
+        
         var userIdClaim = User.FindFirstValue("UserId");
 
         if (string.IsNullOrEmpty(userIdClaim))
@@ -124,12 +128,12 @@ public class ServersController : Controller
             .ThenInclude(x => x.Allocations)
             .Where(x => x.UserId == userId);
 
-        var count = await query.CountAsync();
+        var totalCount = await query.CountAsync();
 
         var items = await query
             .OrderBy(x => x.Id)
-            .Skip(options.Page * options.PageSize)
-            .Take(options.PageSize)
+            .Skip(startIndex)
+            .Take(count)
             .ToArrayAsync();
 
         var ownerIds = items
@@ -164,18 +168,15 @@ public class ServersController : Controller
             }
         }).ToArray();
 
-        return new PagedData<ServerDetailResponse>()
+        return new CountedData<ServerDetailResponse>()
         {
             Items = mappedItems,
-            CurrentPage = options.Page,
-            TotalItems = count,
-            PageSize = options.PageSize,
-            TotalPages = (int)Math.Ceiling(Math.Max(0, count) / (double)options.PageSize)
+            TotalCount = totalCount
         };
     }
 
     [HttpGet("{serverId:int}")]
-    public async Task<ActionResult<ServerDetailResponse>> Get([FromRoute] int serverId)
+    public async Task<ActionResult<ServerDetailResponse>> GetAsync([FromRoute] int serverId)
     {
         var server = await ServerRepository
             .Get()
@@ -187,7 +188,7 @@ public class ServersController : Controller
         if (server == null)
             return Problem("No server with this id found", statusCode: 404);
 
-        var authorizationResult = await AuthorizeService.Authorize(
+        var authorizationResult = await AuthorizeService.AuthorizeAsync(
             User,
             server,
             String.Empty,
@@ -238,18 +239,18 @@ public class ServersController : Controller
     }
 
     [HttpGet("{serverId:int}/status")]
-    public async Task<ActionResult<ServerStatusResponse>> GetStatus([FromRoute] int serverId)
+    public async Task<ActionResult<ServerStatusResponse>> GetStatusAsync([FromRoute] int serverId)
     {
-        var server = await GetServerById(
+        var server = await GetServerByIdAsync(
             serverId,
             ServerPermissionConstants.Console,
             ServerPermissionLevel.None
         );
-        
+
         if (server.Value == null)
             return server.Result ?? Problem("Unable to retrieve server");
 
-        var status = await ServerService.GetStatus(server.Value);
+        var status = await ServerService.GetStatusAsync(server.Value);
 
         return new ServerStatusResponse()
         {
@@ -258,14 +259,14 @@ public class ServersController : Controller
     }
 
     [HttpGet("{serverId:int}/ws")]
-    public async Task<ActionResult<ServerWebSocketResponse>> GetWebSocket([FromRoute] int serverId)
+    public async Task<ActionResult<ServerWebSocketResponse>> GetWebSocketAsync([FromRoute] int serverId)
     {
-        var serverResult = await GetServerById(
+        var serverResult = await GetServerByIdAsync(
             serverId,
             ServerPermissionConstants.Console,
             ServerPermissionLevel.Read
         );
-        
+
         if (serverResult.Value == null)
             return serverResult.Result ?? Problem("Unable to retrieve server");
 
@@ -292,18 +293,18 @@ public class ServersController : Controller
     }
 
     [HttpGet("{serverId:int}/logs")]
-    public async Task<ActionResult<ServerLogsResponse>> GetLogs([FromRoute] int serverId)
+    public async Task<ActionResult<ServerLogsResponse>> GetLogsAsync([FromRoute] int serverId)
     {
-        var server = await GetServerById(
+        var server = await GetServerByIdAsync(
             serverId,
             ServerPermissionConstants.Console,
             ServerPermissionLevel.Read
         );
-        
+
         if (server.Value == null)
             return server.Result ?? Problem("Unable to retrieve server");
 
-        var logs = await ServerService.GetLogs(server.Value);
+        var logs = await ServerService.GetLogsAsync(server.Value);
 
         return new ServerLogsResponse()
         {
@@ -312,18 +313,18 @@ public class ServersController : Controller
     }
 
     [HttpGet("{serverId:int}/stats")]
-    public async Task<ActionResult<ServerStatsResponse>> GetStats([FromRoute] int serverId)
+    public async Task<ActionResult<ServerStatsResponse>> GetStatsAsync([FromRoute] int serverId)
     {
-        var server = await GetServerById(
+        var server = await GetServerByIdAsync(
             serverId,
             ServerPermissionConstants.Console,
             ServerPermissionLevel.Read
         );
-        
+
         if (server.Value == null)
             return server.Result ?? Problem("Unable to retrieve server");
 
-        var stats = await ServerService.GetStats(server.Value);
+        var stats = await ServerService.GetStatsAsync(server.Value);
 
         return new ServerStatsResponse()
         {
@@ -337,9 +338,9 @@ public class ServersController : Controller
     }
 
     [HttpPost("{serverId:int}/command")]
-    public async Task<ActionResult> Command([FromRoute] int serverId, [FromBody] ServerCommandRequest request)
+    public async Task<ActionResult> CommandAsync([FromRoute] int serverId, [FromBody] ServerCommandRequest request)
     {
-        var server = await GetServerById(
+        var server = await GetServerByIdAsync(
             serverId,
             ServerPermissionConstants.Console,
             ServerPermissionLevel.ReadWrite
@@ -348,12 +349,13 @@ public class ServersController : Controller
         if (server.Value == null)
             return server.Result ?? Problem("Unable to retrieve server");
 
-        await ServerService.RunCommand(server.Value, request.Command);
+        await ServerService.RunCommandAsync(server.Value, request.Command);
 
         return NoContent();
     }
 
-    private async Task<ActionResult<Server>> GetServerById(int serverId, string permissionId, ServerPermissionLevel level)
+    private async Task<ActionResult<Server>> GetServerByIdAsync(int serverId, string permissionId,
+        ServerPermissionLevel level)
     {
         var server = await ServerRepository
             .Get()
@@ -363,7 +365,7 @@ public class ServersController : Controller
         if (server == null)
             return Problem("No server with this id found", statusCode: 404);
 
-        var authorizeResult = await AuthorizeService.Authorize(User, server, permissionId, level);
+        var authorizeResult = await AuthorizeService.AuthorizeAsync(User, server, permissionId, level);
 
         if (!authorizeResult.Succeeded)
         {

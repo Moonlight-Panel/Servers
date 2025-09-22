@@ -1,6 +1,5 @@
 using System.ComponentModel.DataAnnotations;
 using MoonlightServers.Shared.Enums;
-using MoonlightServers.Shared.Models;
 
 namespace MoonlightServers.Shared.Http.Requests.Client.Servers.Shares;
 

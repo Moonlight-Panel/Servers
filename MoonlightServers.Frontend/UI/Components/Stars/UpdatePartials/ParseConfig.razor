@@ -13,7 +13,7 @@
 @inject ToastService ToastService
 
 <div class="flex justify-end mb-5">
-    <button type="button" @onclick="AddConfig" class="btn btn-primary">Add parse configuration</button>
+    <button type="button" @onclick="AddConfigAsync" class="btn btn-primary">Add parse configuration</button>
 </div>
 
 @if (HasParseError)
@@ -33,11 +33,11 @@ else
                     </div>
 
                     <div class="gap-x-2">
-                        <button type="button" @onclick="() => UpdateConfig(configuration)" class="btn btn-primary">
+                        <button type="button" @onclick="() => UpdateConfigAsync(configuration)" class="btn btn-primary">
                             <i class="icon-settings text-base"></i>
                         </button>
 
-                        <button type="button" @onclick="() => DeleteConfig(configuration)" class="btn btn-error">
+                        <button type="button" @onclick="() => DeleteConfigAsync(configuration)" class="btn btn-error">
                             <i class="icon-trash text-base"></i>
                         </button>
                     </div>
@@ -60,7 +60,7 @@ else
         return Task.CompletedTask;
     }
 
-    private async Task AddConfig()
+    private async Task AddConfigAsync()
     {
         Func<ParseConfiguration, Task> onSubmit = async configuration =>
         {
@@ -68,35 +68,35 @@ else
             SaveChanges();
             
             await InvokeAsync(StateHasChanged);
-            await ToastService.Success("Successfully created parse configuration");
+            await ToastService.SuccessAsync("Successfully created parse configuration");
         };
         
-        await ModalService.Launch<CreateParseConfigModal>(parameters =>
+        await ModalService.LaunchAsync<CreateParseConfigModal>(parameters =>
         {
             parameters.Add("OnSubmit", onSubmit);
         }, "max-w-xl");
     }
     
-    private async Task UpdateConfig(ParseConfiguration configuration)
+    private async Task UpdateConfigAsync(ParseConfiguration configuration)
     {
         Func<ParseConfiguration, Task> onSubmit = async _ =>
         {
             SaveChanges();
             
             await InvokeAsync(StateHasChanged);
-            await ToastService.Success("Successfully updated parse configuration");
+            await ToastService.SuccessAsync("Successfully updated parse configuration");
         };
         
-        await ModalService.Launch<UpdateParseConfigModal>(parameters =>
+        await ModalService.LaunchAsync<UpdateParseConfigModal>(parameters =>
         {
             parameters.Add("OnSubmit", onSubmit);
             parameters.Add("Configuration", configuration);
         }, "max-w-xl");
     }
     
-    private async Task DeleteConfig(ParseConfiguration configuration)
+    private async Task DeleteConfigAsync(ParseConfiguration configuration)
     {
-        await AlertService.ConfirmDanger(
+        await AlertService.ConfirmDangerAsync(
             "Parse configuration deletion",
             "Do you really want to delete the selected parse configuration",
             async () =>
@@ -105,7 +105,7 @@ else
                 SaveChanges();
 
                 await InvokeAsync(StateHasChanged);
-                await ToastService.Success("Successfully deleted parse configuration");
+                await ToastService.SuccessAsync("Successfully deleted parse configuration");
             }
         );
     }

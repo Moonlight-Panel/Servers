@@ -1,9 +1,7 @@
 using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
 using System.Text;
 using Microsoft.IdentityModel.Tokens;
 using MoonCore.Attributes;
-using MoonCore.Extended.Helpers;
 using MoonCore.Helpers;
 using MoonlightServers.ApiServer.Database.Entities;
 using MoonlightServers.DaemonShared.DaemonSide.Http.Responses.Statistics;
@@ -41,7 +39,7 @@ public class NodeService
         return jwtSecurityTokenHandler.WriteToken(securityToken);
     }
 
-    public async Task<SystemStatusResponse> GetSystemStatus(Node node)
+    public async Task<SystemStatusResponse> GetSystemStatusAsync(Node node)
     {
         using var apiClient = CreateApiClient(node);
         return await apiClient.GetJson<SystemStatusResponse>("api/system/status");
@@ -49,13 +47,13 @@ public class NodeService
 
     #region Statistics
 
-    public async Task<StatisticsResponse> GetStatistics(Node node)
+    public async Task<StatisticsResponse> GetStatisticsAsync(Node node)
     {
         using var apiClient = CreateApiClient(node);
         return await apiClient.GetJson<StatisticsResponse>("api/statistics");
     }
 
-    public async Task<StatisticsDockerResponse> GetDockerStatistics(Node node)
+    public async Task<StatisticsDockerResponse> GetDockerStatisticsAsync(Node node)
     {
         using var apiClient = CreateApiClient(node);
         return await apiClient.GetJson<StatisticsDockerResponse>("api/statistics/docker");

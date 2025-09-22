@@ -14,9 +14,6 @@ public class ServerDataResponse
     public int Memory { get; set; }
     public int Disk { get; set; }
 
-    public bool UseVirtualDisk { get; set; }
-    public int Bandwidth { get; set; }
-
     public AllocationDataResponse[] Allocations { get; set; }
     public Dictionary<string, string> Variables { get; set; }
 }

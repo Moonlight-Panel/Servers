@@ -20,13 +20,13 @@ public class StatisticsDockerController : Controller
     }
 
     [HttpGet]
-    public async Task<StatisticsDockerResponse> Get()
+    public async Task<StatisticsDockerResponse> GetAsync()
     {
-        var usage = await DockerInfoService.GetDataUsage();
+        var usage = await DockerInfoService.GetDataUsageAsync();
 
         return new StatisticsDockerResponse
         {
-            Version = await DockerInfoService.GetDockerVersion(),
+            Version = await DockerInfoService.GetDockerVersionAsync(),
             ContainersReclaimable = usage.Containers.Reclaimable,
             ContainersUsed = usage.Containers.Used,
             BuildCacheReclaimable = usage.BuildCache.Reclaimable,

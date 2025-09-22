@@ -1,13 +1,8 @@
-using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Logging;
-using MoonCore.Exceptions;
 using MoonCore.Extended.Abstractions;
-using MoonCore.Extended.Helpers;
-using MoonCore.Extended.Models;
-using MoonCore.Helpers;
 using MoonCore.Models;
 using Moonlight.ApiServer.Database.Entities;
 using MoonlightServers.ApiServer.Database.Entities;
@@ -54,9 +49,15 @@ public class ServersController : Controller
 
     [HttpGet]
     [Authorize(Policy = "permissions:admin.servers.read")]
-    public async Task<ActionResult<IPagedData<ServerResponse>>> Get([FromQuery] PagedOptions options)
+    public async Task<ActionResult<CountedData<ServerResponse>>> GetAsync(
+        [FromQuery] int startIndex,
+        [FromQuery] int count
+    )
     {
-        var count = await ServerRepository.Get().CountAsync();
+        if (count > 100)
+            return Problem("Only 100 items can be fetched at a time", statusCode: 400);
+
+        var totalCount = await ServerRepository.Get().CountAsync();
 
         var servers = await ServerRepository
             .Get()
@@ -65,25 +66,22 @@ public class ServersController : Controller
             .Include(x => x.Variables)
             .Include(x => x.Star)
             .OrderBy(x => x.Id)
-            .Skip(options.Page * options.PageSize)
-            .Take(options.PageSize)
+            .Skip(startIndex)
+            .Take(count)
             .AsNoTracking()
             .ProjectToAdminResponse()
             .ToArrayAsync();
 
-        return new PagedData<ServerResponse>()
+        return new CountedData<ServerResponse>()
         {
             Items = servers,
-            CurrentPage = options.Page,
-            PageSize = options.PageSize,
-            TotalItems = count,
-            TotalPages = (int)Math.Ceiling(Math.Max(0, count) / (double)options.PageSize)
+            TotalCount = totalCount
         };
     }
 
     [HttpGet("{id:int}")]
     [Authorize(Policy = "permissions:admin.servers.read")]
-    public async Task<ActionResult<ServerResponse>> GetSingle([FromRoute] int id)
+    public async Task<ActionResult<ServerResponse>> GetSingleAsync([FromRoute] int id)
     {
         var server = await ServerRepository
             .Get()
@@ -104,7 +102,7 @@ public class ServersController : Controller
 
     [HttpPost]
     [Authorize(Policy = "permissions:admin.servers.write")]
-    public async Task<ActionResult<ServerResponse>> Create([FromBody] CreateServerRequest request)
+    public async Task<ActionResult<ServerResponse>> CreateAsync([FromBody] CreateServerRequest request)
     {
         // Check if owner user exist
         if (UserRepository.Get().All(x => x.Id != request.OwnerId))
@@ -192,11 +190,11 @@ public class ServersController : Controller
         server.Node = node;
         server.Star = star;
 
-        var finalServer = await ServerRepository.Add(server);
+        var finalServer = await ServerRepository.AddAsync(server);
 
         try
         {
-            await ServerService.Sync(finalServer);
+            await ServerService.SyncAsync(finalServer);
         }
         catch (Exception e)
         {
@@ -204,7 +202,7 @@ public class ServersController : Controller
 
             // We are deleting the server from the database after the creation has failed
             // to ensure we won't have a bugged server in the database which doesn't exist on the node
-            await ServerRepository.Remove(finalServer);
+            await ServerRepository.RemoveAsync(finalServer);
 
             throw;
         }
@@ -214,7 +212,10 @@ public class ServersController : Controller
 
     [HttpPatch("{id:int}")]
     [Authorize(Policy = "permissions:admin.servers.write")]
-    public async Task<ActionResult<ServerResponse>> Update([FromRoute] int id, [FromBody] UpdateServerRequest request)
+    public async Task<ActionResult<ServerResponse>> UpdateAsync(
+        [FromRoute] int id,
+        [FromBody] UpdateServerRequest request
+    )
     {
         //TODO: Handle shrinking virtual disk
 
@@ -277,16 +278,16 @@ public class ServersController : Controller
             serverVar.Value = variable.Value;
         }
 
-        await ServerRepository.Update(server);
+        await ServerRepository.UpdateAsync(server);
 
         // Notify the node about the changes
-        await ServerService.Sync(server);
+        await ServerService.SyncAsync(server);
 
         return ServerMapper.ToAdminServerResponse(server);
     }
 
     [HttpDelete("{id:int}")]
-    public async Task<ActionResult> Delete([FromRoute] int id, [FromQuery] bool force = false)
+    public async Task<ActionResult> DeleteAsync([FromRoute] int id, [FromQuery] bool force = false)
     {
         var server = await ServerRepository
             .Get()
@@ -308,7 +309,7 @@ public class ServersController : Controller
         {
             // If the sync fails on the node and we aren't forcing the deletion,
             // we don't want to delete it from the database yet
-            await ServerService.SyncDelete(server);
+            await ServerService.SyncDeleteAsync(server);
         }
         catch (Exception e)
         {
@@ -323,7 +324,7 @@ public class ServersController : Controller
                 throw;
         }
 
-        await ServerRepository.Remove(server);
+        await ServerRepository.RemoveAsync(server);
         return NoContent();
     }
 }

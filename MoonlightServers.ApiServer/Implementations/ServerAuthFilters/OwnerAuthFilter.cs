@@ -1,10 +1,8 @@
 using System.Security.Claims;
-using MoonCore.Attributes;
 using MoonlightServers.ApiServer.Database.Entities;
 using MoonlightServers.ApiServer.Interfaces;
 using MoonlightServers.ApiServer.Models;
 using MoonlightServers.Shared.Enums;
-using MoonlightServers.Shared.Models;
 
 namespace MoonlightServers.ApiServer.Implementations.ServerAuthFilters;
 
@@ -12,7 +10,7 @@ public class OwnerAuthFilter : IServerAuthorizationFilter
 {
     public int Priority => 0;
 
-    public Task<ServerAuthorizationResult?> Process(
+    public Task<ServerAuthorizationResult?> ProcessAsync(
         ClaimsPrincipal user,
         Server server,
         string permissionId,

@@ -6,7 +6,7 @@
 
 @inject IEnumerable<IServerPermissionProvider> PermissionProviders
 
-<LazyLoader Load="Load">
+<LazyLoader Load="LoadAsync">
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-y-3">
         @foreach (var permission in AvailablePermissions)
         {
@@ -30,7 +30,7 @@
                     }
                     else
                     {
-                        <input @onclick="() => Set(permission.Identifier, ServerPermissionLevel.None)"
+                        <input @onclick="() => SetAsync(permission.Identifier, ServerPermissionLevel.None)"
                                class="join-item btn btn-soft"
                                type="radio" name="share-@permission.Identifier" aria-label="None"/>
                     }
@@ -43,7 +43,7 @@
                     }
                     else
                     {
-                        <input @onclick="() => Set(permission.Identifier, ServerPermissionLevel.Read)"
+                        <input @onclick="() => SetAsync(permission.Identifier, ServerPermissionLevel.Read)"
                                class="join-item btn btn-soft"
                                type="radio" name="share-@permission.Identifier" aria-label="Read"/>
                     }
@@ -56,7 +56,7 @@
                     }
                     else
                     {
-                        <input @onclick="() => Set(permission.Identifier, ServerPermissionLevel.ReadWrite)"
+                        <input @onclick="() => SetAsync(permission.Identifier, ServerPermissionLevel.ReadWrite)"
                                class="join-item btn btn-soft"
                                type="radio" name="share-@permission.Identifier" aria-label="Read & Write"/>
                     }
@@ -73,21 +73,21 @@
 
     private ServerPermission[] AvailablePermissions;
 
-    private async Task Load(LazyLoader _)
+    private async Task LoadAsync(LazyLoader _)
     {
         var permissions = new List<ServerPermission>();
 
         foreach (var provider in PermissionProviders)
         {
             permissions.AddRange(
-                await provider.GetPermissions(Server)
+                await provider.GetPermissionsAsync(Server)
             );
         }
 
         AvailablePermissions = permissions.ToArray();
     }
 
-    private async Task Set(string name, ServerPermissionLevel level)
+    private async Task SetAsync(string name, ServerPermissionLevel level)
     {
         PermissionLevels[name] = level;
         await InvokeAsync(StateHasChanged);

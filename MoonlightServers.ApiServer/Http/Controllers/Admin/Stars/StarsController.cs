@@ -1,10 +1,7 @@
-using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authorization;
-using MoonCore.Exceptions;
 using MoonCore.Extended.Abstractions;
-using MoonCore.Extended.Models;
 using MoonCore.Models;
 using MoonlightServers.ApiServer.Database.Entities;
 using MoonlightServers.ApiServer.Mappers;
@@ -26,32 +23,35 @@ public class StarsController : Controller
 
     [HttpGet]
     [Authorize(Policy = "permissions:admin.servers.stars.read")]
-    public async Task<ActionResult<IPagedData<StarResponse>>> Get([FromQuery] PagedOptions options)
+    public async Task<ActionResult<CountedData<StarResponse>>> GetAsync(
+        [FromQuery] int startIndex,
+        [FromQuery] int count
+    )
     {
-        var count = await StarRepository.Get().CountAsync();
+        if (count > 100)
+            return Problem("Only 100 items can be fetched at a time", statusCode: 400);
+        
+        var totalCount = await StarRepository.Get().CountAsync();
 
         var stars = await StarRepository
             .Get()
             .OrderBy(x => x.Id)
-            .Skip(options.Page * options.PageSize)
-            .Take(options.PageSize)
+            .Skip(startIndex)
+            .Take(count)
             .AsNoTracking()
             .ProjectToAdminResponse()
             .ToArrayAsync();
 
-        return new PagedData<StarResponse>()
+        return new CountedData<StarResponse>()
         {
-            CurrentPage = options.Page,
             Items = stars,
-            PageSize = options.PageSize,
-            TotalItems = count,
-            TotalPages = (int)Math.Ceiling(Math.Max(0, count) / (double)options.PageSize)
+            TotalCount = totalCount
         };
     }
 
     [HttpGet("{id:int}")]
     [Authorize(Policy = "permissions:admin.servers.stars.read")]
-    public async Task<ActionResult<StarResponse>> GetSingle([FromRoute] int id)
+    public async Task<ActionResult<StarResponse>> GetSingleAsync([FromRoute] int id)
     {
         var star = await StarRepository
             .Get()
@@ -67,7 +67,7 @@ public class StarsController : Controller
 
     [HttpPost]
     [Authorize(Policy = "permissions:admin.servers.stars.create")]
-    public async Task<ActionResult<StarResponse>> Create([FromBody] CreateStarRequest request)
+    public async Task<ActionResult<StarResponse>> CreateAsync([FromBody] CreateStarRequest request)
     {
         var star = StarMapper.ToStar(request);
 
@@ -86,14 +86,14 @@ public class StarsController : Controller
         star.DefaultDockerImage = -1;
         star.ParseConfiguration = "[]";
 
-        var finalStar = await StarRepository.Add(star);
+        var finalStar = await StarRepository.AddAsync(star);
 
         return StarMapper.ToAdminResponse(finalStar);
     }
 
     [HttpPatch("{id:int}")]
     [Authorize(Policy = "permissions:admin.servers.stars.update")]
-    public async Task<ActionResult<StarResponse>> Update(
+    public async Task<ActionResult<StarResponse>> UpdateAsync(
         [FromRoute] int id,
         [FromBody] UpdateStarRequest request
     )
@@ -104,16 +104,16 @@ public class StarsController : Controller
 
         if (star == null)
             return Problem("No star with that id found", statusCode: 404);
-        
+
         StarMapper.Merge(request, star);
-        await StarRepository.Update(star);
-        
+        await StarRepository.UpdateAsync(star);
+
         return StarMapper.ToAdminResponse(star);
     }
 
     [HttpDelete("{id:int}")]
     [Authorize(Policy = "permissions:admin.servers.stars.delete")]
-    public async Task<ActionResult> Delete([FromRoute] int id)
+    public async Task<ActionResult> DeleteAsync([FromRoute] int id)
     {
         var star = await StarRepository
             .Get()
@@ -121,8 +121,8 @@ public class StarsController : Controller
 
         if (star == null)
             return Problem("No star with that id found", statusCode: 404);
-        
-        await StarRepository.Remove(star);
+
+        await StarRepository.RemoveAsync(star);
         return NoContent();
     }
 }

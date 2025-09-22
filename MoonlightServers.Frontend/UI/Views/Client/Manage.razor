@@ -17,7 +17,7 @@
 
 @implements IAsyncDisposable
 
-<LazyLoader Load="Load">
+<LazyLoader Load="LoadAsync">
     @if (NotFound)
     {
         <IconAlert Title="Server not found" Icon="icon-search" Color="text-primary">
@@ -69,7 +69,7 @@
                     {
                         @if (State == ServerState.Offline)
                         {
-                            <WButton CssClasses="btn btn-success" OnClick="_ => Start()">
+                            <WButton CssClasses="btn btn-success" OnClick="_ => StartAsync()">
                                 <i class="icon-play align-middle"></i>
                                 <span class="align-middle">Start</span>
                             </WButton>
@@ -101,14 +101,14 @@
                         {
                             if (State == ServerState.Stopping)
                             {
-                                <WButton CssClasses="btn btn-error" OnClick="_ => Kill()">
+                                <WButton CssClasses="btn btn-error" OnClick="_ => KillAsync()">
                                     <i class="icon-bomb align-middle"></i>
                                     <span class="align-middle">Kill</span>
                                 </WButton>
                             }
                             else
                             {
-                                <WButton CssClasses="btn btn-error" OnClick="_ => Stop()">
+                                <WButton CssClasses="btn btn-error" OnClick="_ => StopAsync()">
                                     <i class="icon-squircle align-middle"></i>
                                     <span class="align-middle">Stop</span>
                                 </WButton>
@@ -153,7 +153,7 @@
                        data-tab="na"
                        role="tab"
                        @onclick:preventDefault
-                       @onclick="() => SwitchTab(tab)">
+                       @onclick="() => SwitchTabAsync(tab)">
                         @tab.Name
                     </a>
                 }
@@ -201,18 +201,18 @@
 
     public ConcurrentList<string> CommandHistory = new();
 
-    private async Task Load(LazyLoader _)
+    private async Task LoadAsync(LazyLoader _)
     {
         try
         {
             // Load meta data
-            Server = await ServerService.GetServer(ServerId);
+            Server = await ServerService.GetServerAsync(ServerId);
 
             // Load server tabs
             var tmpTabs = new List<ServerTab>();
 
             foreach (var serverTabProvider in TabProviders)
-                tmpTabs.AddRange(await serverTabProvider.GetTabs(Server));
+                tmpTabs.AddRange(await serverTabProvider.GetTabsAsync(Server));
 
             // If we are accessing a shared server, we need to handle permissions
             if (Server.Share != null)
@@ -245,7 +245,7 @@
                 CurrentTab = Tabs.FirstOrDefault();
 
             // Load initial status for first render
-            var status = await ServerService.GetStatus(ServerId);
+            var status = await ServerService.GetStatusAsync(ServerId);
 
             State = status.State;
 
@@ -253,7 +253,7 @@
                 return; // Exit early if we don't have permissions to load the console
 
             // Load initial messages
-            var initialLogs = await ServerService.GetLogs(ServerId);
+            var initialLogs = await ServerService.GetLogsAsync(ServerId);
 
             InitialConsoleMessage = "";
 
@@ -261,7 +261,7 @@
                 InitialConsoleMessage += message;
 
             // Load websocket meta
-            var websocketDetails = await ServerService.GetWebSocket(ServerId);
+            var websocketDetails = await ServerService.GetWebSocketAsync(ServerId);
 
             // Build signal r
             HubConnection = new HubConnectionBuilder()
@@ -269,7 +269,7 @@
                 {
                     options.AccessTokenProvider = async () =>
                     {
-                        var details = await ServerService.GetWebSocket(ServerId);
+                        var details = await ServerService.GetWebSocketAsync(ServerId);
                         return details.AccessToken;
                     };
                 })
@@ -317,7 +317,7 @@
         return acquiredLevel >= level;
     }
 
-    private async Task SwitchTab(ServerTab tab)
+    private async Task SwitchTabAsync(ServerTab tab)
     {
         CurrentTab = tab;
         Navigation.NavigateTo($"/servers/{ServerId}/{tab.Path}");
@@ -325,14 +325,14 @@
         await InvokeAsync(StateHasChanged);
     }
 
-    private async Task Start()
-        => await ServerService.Start(ServerId);
+    private async Task StartAsync()
+        => await ServerService.StartAsync(ServerId);
 
-    private async Task Stop()
-        => await ServerService.Stop(ServerId);
+    private async Task StopAsync()
+        => await ServerService.StopAsync(ServerId);
 
-    private async Task Kill()
-        => await ServerService.Kill(ServerId);
+    private async Task KillAsync()
+        => await ServerService.KillAsync(ServerId);
 
     public async ValueTask DisposeAsync()
     {

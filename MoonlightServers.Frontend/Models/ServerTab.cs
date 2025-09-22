@@ -1,6 +1,5 @@
 using MoonlightServers.Frontend.UI.Components.Servers.ServerTabs;
 using MoonlightServers.Shared.Enums;
-using MoonlightServers.Shared.Models;
 
 namespace MoonlightServers.Frontend.Models;
 

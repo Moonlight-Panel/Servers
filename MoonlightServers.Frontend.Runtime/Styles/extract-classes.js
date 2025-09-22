@@ -21,8 +21,8 @@ module.exports = (opts = {}) => {
                 fs.mkdirSync("../../MoonlightServers.Frontend/Styles/mappings");
             }
             
-            fs.writeFileSync('../../MoonlightServers.Frontend/mappings/classes.map', classArray.join('\n'));
-            console.log(`✅ Extracted ${classArray.length} Tailwind classes to tailwind-classes.txt`);
+            fs.writeFileSync('../../MoonlightServers.Frontend/Styles/mappings/classes.map', classArray.join('\n'));
+            console.log(`Extracted ${classArray.length} Tailwind classes`);
         }
     };
 };

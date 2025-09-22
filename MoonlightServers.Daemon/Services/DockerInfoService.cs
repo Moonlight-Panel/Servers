@@ -17,16 +17,16 @@ public class DockerInfoService
         UnsafeDockerClient = unsafeDockerClient;
     }
 
-    public async Task<string> GetDockerVersion()
+    public async Task<string> GetDockerVersionAsync()
     {
         var version = await DockerClient.System.GetVersionAsync();
 
         return $"{version.Version} commit {version.GitCommit} ({version.APIVersion})";
     }
 
-    public async Task<UsageDataReport> GetDataUsage()
+    public async Task<UsageDataReport> GetDataUsageAsync()
     {
-        var response = await UnsafeDockerClient.GetDataUsage();
+        var response = await UnsafeDockerClient.GetDataUsageAsync();
 
         var report = new UsageDataReport()
         {

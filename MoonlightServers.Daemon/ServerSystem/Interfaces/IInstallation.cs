@@ -42,7 +42,7 @@ public interface IInstallation : IServerComponent
     /// </summary>
     /// <param name="callback">Callback to invoke whenever the installation exists</param>
     /// <returns>Subscription disposable to unsubscribe from the event</returns>
-    public Task<IAsyncDisposable> SubscribeExited(Func<int, ValueTask> callback);
+    public Task<IAsyncDisposable> SubscribeExitedAsync(Func<int, ValueTask> callback);
     
     /// <summary>
     /// Connects an existing installation to this abstraction in order to restore it.

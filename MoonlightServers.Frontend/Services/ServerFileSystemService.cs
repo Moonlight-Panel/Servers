@@ -1,4 +1,3 @@
-using System.Net;
 using MoonCore.Attributes;
 using MoonCore.Helpers;
 using MoonlightServers.Shared.Http.Requests.Client.Servers.Files;
@@ -16,56 +15,56 @@ public class ServerFileSystemService
         ApiClient = apiClient;
     }
 
-    public async Task<ServerFilesEntryResponse[]> List(int serverId, string path)
+    public async Task<ServerFilesEntryResponse[]> ListAsync(int serverId, string path)
     {
         return await ApiClient.GetJson<ServerFilesEntryResponse[]>(
             $"api/client/servers/{serverId}/files/list?path={path}"
         );
     }
 
-    public async Task Move(int serverId, string oldPath, string newPath)
+    public async Task MoveAsync(int serverId, string oldPath, string newPath)
     {
         await ApiClient.Post(
             $"api/client/servers/{serverId}/files/move?oldPath={oldPath}&newPath={newPath}"
         );
     }
 
-    public async Task Delete(int serverId, string path)
+    public async Task DeleteAsync(int serverId, string path)
     {
         await ApiClient.Delete(
             $"api/client/servers/{serverId}/files/delete?path={path}"
         );
     }
 
-    public async Task Mkdir(int serverId, string path)
+    public async Task MkdirAsync(int serverId, string path)
     {
         await ApiClient.Post(
             $"api/client/servers/{serverId}/files/mkdir?path={path}"
         );
     }
     
-    public async Task Touch(int serverId, string path)
+    public async Task TouchAsync(int serverId, string path)
     {
         await ApiClient.Post(
             $"api/client/servers/{serverId}/files/touch?path={path}"
         );
     }
 
-    public async Task<ServerFilesUploadResponse> Upload(int serverId)
+    public async Task<ServerFilesUploadResponse> UploadAsync(int serverId)
     {
         return await ApiClient.GetJson<ServerFilesUploadResponse>(
             $"api/client/servers/{serverId}/files/upload"
         );
     }
 
-    public async Task<ServerFilesDownloadResponse> Download(int serverId, string path)
+    public async Task<ServerFilesDownloadResponse> DownloadAsync(int serverId, string path)
     {
         return await ApiClient.GetJson<ServerFilesDownloadResponse>(
             $"api/client/servers/{serverId}/files/download?path={path}"
         );
     }
 
-    public async Task Compress(int serverId, string type, string[] items, string destination)
+    public async Task CompressAsync(int serverId, string type, string[] items, string destination)
     {
         await ApiClient.Post(
             $"api/client/servers/{serverId}/files/compress",
@@ -78,7 +77,7 @@ public class ServerFileSystemService
         );
     }
     
-    public async Task Decompress(int serverId, string type, string path, string destination)
+    public async Task DecompressAsync(int serverId, string type, string path, string destination)
     {
         await ApiClient.Post(
             $"api/client/servers/{serverId}/files/decompress",

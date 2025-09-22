@@ -9,5 +9,5 @@ namespace MoonlightServers.ApiServer.Http.Controllers.Remote.Nodes;
 public class NodeTripController : Controller
 {
     [HttpGet("trip")]
-    public Task Get() => Task.CompletedTask;
+    public Task GetAsync() => Task.CompletedTask;
 }

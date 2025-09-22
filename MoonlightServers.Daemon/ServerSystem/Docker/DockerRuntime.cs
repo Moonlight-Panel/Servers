@@ -96,7 +96,7 @@ public class DockerRuntime : IRuntime
         // Docker image
         await Reporter.StatusAsync("Downloading docker image");
 
-        await ImageService.Download(
+        await ImageService.DownloadAsync(
             Context.Configuration.DockerImage,
             async status => { await Reporter.StatusAsync(status); }
         );
@@ -152,7 +152,7 @@ public class DockerRuntime : IRuntime
         }
     }
 
-    public async Task<IAsyncDisposable> SubscribeExited(Func<int, ValueTask> callback)
+    public async Task<IAsyncDisposable> SubscribeExitedAsync(Func<int, ValueTask> callback)
         => await ExitEventSource.SubscribeAsync(callback);
 
     public async Task RestoreAsync()

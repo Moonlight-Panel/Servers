@@ -1,5 +1,3 @@
-using MoonCore.Helpers;
-
 namespace MoonlightServers.Daemon.Configuration;
 
 public class AppConfiguration

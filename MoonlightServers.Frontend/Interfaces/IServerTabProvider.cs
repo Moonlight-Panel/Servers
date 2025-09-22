@@ -5,5 +5,5 @@ namespace MoonlightServers.Frontend.Interfaces;
 
 public interface IServerTabProvider
 {
-    public Task<ServerTab[]> GetTabs(ServerDetailResponse server);
+    public Task<ServerTab[]> GetTabsAsync(ServerDetailResponse server);
 }

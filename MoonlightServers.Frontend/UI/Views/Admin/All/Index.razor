@@ -1,7 +1,6 @@
 @page "/admin/servers/all"
 
 @using MoonCore.Blazor.FlyonUi.Alerts
-@using MoonCore.Blazor.FlyonUi.DataTables
 @using MoonCore.Blazor.FlyonUi.Toasts
 @using MoonCore.Helpers
 @using MoonCore.Models
@@ -9,6 +8,9 @@
 @using MoonlightServers.Shared.Http.Responses.Admin.Servers
 @using MoonlightServers.Shared.Http.Responses.Admin.Stars
 @using MoonCore.Blazor.FlyonUi.Components
+@using MoonCore.Blazor.FlyonUi.Grid
+@using MoonCore.Blazor.FlyonUi.Grid.Columns
+@using Moonlight.Shared.Http.Responses.Admin.Users
 
 @inject HttpApiClient ApiClient
 @inject AlertService AlertService
@@ -28,98 +30,136 @@
     </PageHeader>
 </div>
 
-<DataTable @ref="Table" TItem="ServerResponse">
-    <Configuration>
-        <Pagination TItem="ServerResponse" ItemSource="LoadData" />
-        
-        <DataTableColumn TItem="ServerResponse" Field="@(x => x.Id)" Name="Id"/>
-        <DataTableColumn TItem="ServerResponse" Field="@(x => x.Name)" Name="Name">
-            <ColumnTemplate>
-                <a class="text-primary" href="/admin/servers/all/update/@context.Id">
-                    @context.Name
+<DataGrid @ref="Grid"
+          TGridItem="ServerResponse"
+          EnablePagination="true"
+          ItemsProvider="ItemsProviderAsync">
+    <PropertyColumn Field="x => x.Id"/>
+    <TemplateColumn Title="Name">
+        <td>
+            <a class="text-primary" href="/admin/servers/all/update/@context.Id">
+                @context.Name
+            </a>
+        </td>
+    </TemplateColumn>
+    <TemplateColumn Title="Owner">
+        <td>
+            @{
+                var owner = Users.GetValueOrDefault(context.OwnerId);
+            }
+
+            <span>
+                @(owner?.Username ?? "N/A")
+            </span>
+        </td>
+    </TemplateColumn>
+    <TemplateColumn Title="Node">
+        <td>
+            @{
+                var node = Nodes.GetValueOrDefault(context.NodeId);
+            }
+
+            <span>
+                @(node?.Name ?? "N/A")
+            </span>
+        </td>
+    </TemplateColumn>
+    <TemplateColumn Title="Star">
+        <td>
+            @{
+                var star = Stars.GetValueOrDefault(context.StarId);
+            }
+
+            <span>
+                @(star?.Name ?? "N/A")
+            </span>
+        </td>
+    </TemplateColumn>
+    <TemplateColumn Title="Actions">
+        <td>
+            <div class="flex justify-end">
+                <a href="/admin/servers/all/update/@(context.Id)" class="text-primary mr-2 sm:mr-3">
+                    <i class="icon-pencil text-base"></i>
                 </a>
-            </ColumnTemplate>
-        </DataTableColumn>
-        <DataTableColumn TItem="ServerResponse" Field="@(x => x.NodeId)" Name="Node">
-            <ColumnTemplate>
-                @{
-                    var node = Nodes.FirstOrDefault(x => x.Id == context.NodeId);
-                }
 
-                <span>
-                    @(node?.Name ?? "N/A")
-                </span>
-            </ColumnTemplate>
-        </DataTableColumn>
-        <DataTableColumn TItem="ServerResponse" Field="@(x => x.StarId)" Name="Star">
-            <ColumnTemplate>
-                @{
-                    var star = Stars.FirstOrDefault(x => x.Id == context.StarId);
-                }
-
-                <span>
-                    @(star?.Name ?? "N/A")
-                </span>
-            </ColumnTemplate>
-        </DataTableColumn>
-        <DataTableColumn TItem="ServerResponse">
-            <ColumnTemplate>
-                <div class="flex justify-end">
-                    <a href="/admin/servers/all/update/@(context.Id)" class="text-primary mr-2 sm:mr-3">
-                        <i class="icon-pencil text-base"></i>
-                    </a>
-
-                    <a href="#" @onclick="() => Delete(context)" @onclick:preventDefault
-                       class="text-error">
-                        <i class="icon-trash text-base"></i>
-                    </a>
-                </div>
-            </ColumnTemplate>
-        </DataTableColumn>
-    </Configuration>
-</DataTable>
+                <a href="#" @onclick="() => DeleteAsync(context)" @onclick:preventDefault
+                   class="text-error">
+                    <i class="icon-trash text-base"></i>
+                </a>
+            </div>
+        </td>
+    </TemplateColumn>
+</DataGrid>
 
 @code
 {
-    private DataTable<ServerResponse> Table;
-    
-    private List<StarResponse> Stars = new();
-    private List<NodeResponse> Nodes = new();
+    private DataGrid<ServerResponse> Grid;
 
-    private async Task<IPagedData<ServerResponse>> LoadData(PaginationOptions options)
+    private Dictionary<int, StarResponse> Stars = new();
+    private Dictionary<int, NodeResponse> Nodes = new();
+    private Dictionary<int, UserResponse> Users = new();
+
+    private async Task<DataGridItemResult<ServerResponse>> ItemsProviderAsync(
+        DataGridItemRequest request
+    )
     {
-        // Clear potential previous data
-        var data = await ApiClient.GetJson<PagedData<ServerResponse>>($"api/admin/servers?page={options.Page}&pageSize={options.PerPage}");
+        var query = $"?startIndex={request.StartIndex}&count={request.Count}";
 
-        foreach (var item in data.Items)
+        var countedData = await ApiClient.GetJson<CountedData<ServerResponse>>($"api/admin/servers{query}");
+
+        // Fetch relations
+
+        var nodesToFetch = countedData.Items
+            .Where(x => !Nodes.ContainsKey(x.Id))
+            .Select(x => x.Id)
+            .Distinct();
+
+        foreach (var id in nodesToFetch)
         {
-            if (Nodes.All(x => x.Id != item.NodeId))
-            {
-                var node = await ApiClient.GetJson<NodeResponse>($"api/admin/servers/nodes/{item.NodeId}");
-                Nodes.Add(node);
-            }
-
-            if (Stars.All(x => x.Id != item.StarId))
-            {
-                var star = await ApiClient.GetJson<StarResponse>($"api/admin/servers/stars/{item.StarId}");
-                Stars.Add(star);
-            }
+            var node = await ApiClient.GetJson<NodeResponse>($"api/admin/servers/nodes/{id}");
+            Nodes[node.Id] = node;
         }
 
-        return data;
+        var starsToFetch = countedData.Items
+            .Where(x => !Stars.ContainsKey(x.Id))
+            .Select(x => x.Id)
+            .Distinct();
+
+        foreach (var id in starsToFetch)
+        {
+            var star = await ApiClient.GetJson<StarResponse>($"api/admin/servers/stars/{id}");
+            Stars[star.Id] = star;
+        }
+
+        var usersToFetch = countedData.Items
+            .Where(x => !Users.ContainsKey(x.Id))
+            .Select(x => x.Id)
+            .Distinct();
+
+        foreach (var id in usersToFetch)
+        {
+            var user = await ApiClient.GetJson<UserResponse>($"api/admin/users/{id}");
+            Users[user.Id] = user;
+        }
+
+        return new()
+        {
+            Items = countedData.Items,
+            TotalCount = countedData.TotalCount
+        };
     }
-    
-    private async Task Delete(ServerResponse response)
+
+    private async Task DeleteAsync(ServerResponse response)
     {
-        await AlertService.ConfirmDanger(
+        await AlertService.ConfirmDangerAsync(
             "Server deletion",
             $"Do you really want to delete the server '{response.Name}'",
             async () =>
             {
                 await ApiClient.Delete($"api/admin/servers/{response.Id}");
-                await ToastService.Success("Successfully deleted server");
+                await ToastService.SuccessAsync("Successfully deleted server");
 
-                await Table.Refresh();
+                await Grid.RefreshAsync();
             }
         );
     }

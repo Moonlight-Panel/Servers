@@ -1,4 +1,3 @@
-@using System.Text.Json.Serialization
 @using Microsoft.Extensions.Logging
 @using XtermBlazor
 @inherits MoonCore.Blazor.FlyonUi.Modals.Components.BaseModal
@@ -15,11 +14,11 @@
                Addons="Parent.Addons"
                Options="Parent.Options"
                Class="h-full w-full"
-               OnFirstRender="HandleFirstRender"/>
+               OnFirstRender="HandleFirstRenderAsync"/>
     }
 
     <div class="absolute top-4 right-4">
-        <button @onclick="Hide" class="btn btn-error btn-square">
+        <button @onclick="HideAsync" class="btn btn-error btn-square">
             <i class="icon-x text-lg"></i>
         </button>
     </div>
@@ -50,13 +49,13 @@
         }
 
         // Subscribe to parent events
-        Parent.OnWrite += HandleWrite;
+        Parent.OnWrite += HandleWriteAsync;
 
         IsInitialized = true;
         await InvokeAsync(StateHasChanged);
     }
 
-    private async Task HandleFirstRender()
+    private async Task HandleFirstRenderAsync()
     {
         IsReadyToWrite = true;
 
@@ -73,7 +72,7 @@
         await Terminal.Write(outputToWrite);
     }
 
-    private async Task HandleWrite(string content)
+    private async Task HandleWriteAsync(string content)
     {
         if (!IsReadyToWrite)
             return;
@@ -83,7 +82,7 @@
 
     public async ValueTask DisposeAsync()
     {
-        Parent.OnWrite -= HandleWrite;
+        Parent.OnWrite -= HandleWriteAsync;
         await Terminal.DisposeAsync();
     }
 }

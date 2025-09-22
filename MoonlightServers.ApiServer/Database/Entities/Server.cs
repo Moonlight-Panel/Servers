@@ -24,6 +24,4 @@ public class Server
     public int Cpu { get; set; }
     public int Memory { get; set; }
     public int Disk { get; set; }
-    public bool UseVirtualDisk { get; set; }
-    public int Bandwidth { get; set; }
 }

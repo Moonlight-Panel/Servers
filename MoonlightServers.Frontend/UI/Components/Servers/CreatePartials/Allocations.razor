@@ -4,7 +4,6 @@
 @using MoonlightServers.Shared.Http.Responses.Admin.NodeAllocations
 @using MoonCore.Blazor.FlyonUi.Forms
 @using MoonlightServers.Frontend.UI.Views.Admin.All
-@using MoonlightServers.Shared.Http.Responses.Admin.Nodes
 
 @inject HttpApiClient ApiClient
 
@@ -16,7 +15,7 @@
                                DisplayField="@(x => $"{x.IpAddress}:{x.Port}")"
                                SearchField="@(x => $"{x.IpAddress}:{x.Port}")"
                                Value="Parent.Allocations"
-                               ItemSource="ItemSource">
+                               ItemSource="ItemSourceAsync">
             </InputMultipleItem>
         </div>
     </div>
@@ -27,16 +26,16 @@
     [Parameter] public CreateServerRequest Request { get; set; }
     [Parameter] public Create Parent { get; set; }
 
-    private async Task<NodeAllocationResponse[]> ItemSource()
+    private async Task<NodeAllocationResponse[]> ItemSourceAsync()
     {
         // Handle unselected node
         // ReSharper disable once ConditionIsAlwaysTrueOrFalseAccordingToNullableAPIContract
         if (Parent.Node == null)
             return [];
 
-        var items = await PagedData<NodeAllocationResponse>.All(async (page, pageSize) =>
-            await ApiClient.GetJson<PagedData<NodeAllocationResponse>>(
-                $"api/admin/servers/nodes/{Parent.Node.Id}/allocations/free?page={page}&pageSize={pageSize}"
+        var items = await CountedData<NodeAllocationResponse>.LoadAllAsync(async (startIndex, count) =>
+            await ApiClient.GetJson<CountedData<NodeAllocationResponse>>(
+                $"api/admin/servers/nodes/{Parent.Node.Id}/allocations/free?startIndex={startIndex}&count={count}"
             )
         );
         

@@ -15,19 +15,19 @@ public class NodeService
         HttpApiClient = httpApiClient;
     }
 
-    public async Task<NodeSystemStatusResponse> GetSystemStatus(int nodeId)
+    public async Task<NodeSystemStatusResponse> GetSystemStatusAsync(int nodeId)
     {
         return await HttpApiClient.GetJson<NodeSystemStatusResponse>($"api/admin/servers/nodes/{nodeId}/system/status");
     }
 
-    public async Task<StatisticsResponse> GetStatistics(int nodeId)
+    public async Task<StatisticsResponse> GetStatisticsAsync(int nodeId)
     {
         return await HttpApiClient.GetJson<StatisticsResponse>(
             $"api/admin/servers/nodes/{nodeId}/statistics"
         );
     }
     
-    public async Task<DockerStatisticsResponse> GetDockerStatistics(int nodeId)
+    public async Task<DockerStatisticsResponse> GetDockerStatisticsAsync(int nodeId)
     {
         return await HttpApiClient.GetJson<DockerStatisticsResponse>(
             $"api/admin/servers/nodes/{nodeId}/statistics/docker"

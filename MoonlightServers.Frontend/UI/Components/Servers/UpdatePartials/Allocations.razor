@@ -16,7 +16,7 @@
                                Value="Parent.Allocations"
                                DisplayField="@(x => $"{x.IpAddress}:{x.Port}")"
                                SearchField="@(x => $"{x.IpAddress}:{x.Port}")"
-                               ItemSource="Loader">
+                               ItemSource="LoaderAsync">
             </InputMultipleItem>
         </div>
     </div>
@@ -28,11 +28,11 @@
     [Parameter] public ServerResponse Server { get; set; }
     [Parameter] public Update Parent { get; set; }
 
-    private async Task<NodeAllocationResponse[]> Loader()
+    private async Task<NodeAllocationResponse[]> LoaderAsync()
     {
-        return await PagedData<NodeAllocationResponse>.All(async (page, pageSize) =>
-            await ApiClient.GetJson<PagedData<NodeAllocationResponse>>(
-                $"api/admin/servers/nodes/{Server.NodeId}/allocations/free?page={page}&pageSize={pageSize}&serverId={Server.Id}"
+        return await CountedData<NodeAllocationResponse>.LoadAllAsync(async (startIndex, count) =>
+            await ApiClient.GetJson<CountedData<NodeAllocationResponse>>(
+                $"api/admin/servers/nodes/{Server.NodeId}/allocations/free?startIndex={startIndex}&count={count}&serverId={Server.Id}"
             )
         );
     }

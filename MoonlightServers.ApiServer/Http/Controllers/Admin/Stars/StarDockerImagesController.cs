@@ -1,12 +1,7 @@
-using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using MoonCore.Exceptions;
 using MoonCore.Extended.Abstractions;
-using MoonCore.Extended.Helpers;
 using Microsoft.AspNetCore.Authorization;
-using MoonCore.Extended.Models;
-using MoonCore.Helpers;
 using MoonCore.Models;
 using MoonlightServers.ApiServer.Database.Entities;
 using MoonlightServers.ApiServer.Mappers;
@@ -33,9 +28,10 @@ public class StarDockerImagesController : Controller
 
     [HttpGet]
     [Authorize(Policy = "permissions:admin.servers.stars.get")]
-    public async Task<ActionResult<IPagedData<StarDockerImageResponse>>> Get(
+    public async Task<ActionResult<CountedData<StarDockerImageResponse>>> GetAsync(
         [FromRoute] int starId,
-        [FromQuery] PagedOptions options
+        [FromQuery] int startIndex,
+        [FromQuery] int count
     )
     {
         var starExists = StarRepository
@@ -49,29 +45,26 @@ public class StarDockerImagesController : Controller
             .Get()
             .Where(x => x.Star.Id == starId);
 
-        var count = await query.CountAsync();
+        var totalCount = await query.CountAsync();
 
         var dockerImages = await query
             .OrderBy(x => x.Id)
-            .Skip(options.Page * options.PageSize)
-            .Take(options.PageSize)
+            .Skip(startIndex)
+            .Take(count)
             .AsNoTracking()
             .ProjectToAdminResponse()
             .ToArrayAsync();
 
-        return new PagedData<StarDockerImageResponse>()
+        return new CountedData<StarDockerImageResponse>()
         {
             Items = dockerImages,
-            CurrentPage = options.Page,
-            PageSize = options.PageSize,
-            TotalItems = count,
-            TotalPages = (int)Math.Ceiling(Math.Max(0, count) / (double)options.PageSize)
+            TotalCount = totalCount
         };
     }
 
     [HttpGet("{id:int}")]
     [Authorize(Policy = "permissions:admin.servers.stars.read")]
-    public async Task<ActionResult<StarDockerImageResponse>> GetSingle([FromRoute] int starId, [FromRoute] int id)
+    public async Task<ActionResult<StarDockerImageResponse>> GetSingleAsync([FromRoute] int starId, [FromRoute] int id)
     {
         var starExists = StarRepository
             .Get()
@@ -94,7 +87,7 @@ public class StarDockerImagesController : Controller
 
     [HttpPost]
     [Authorize(Policy = "permissions:admin.servers.stars.write")]
-    public async Task<ActionResult<StarDockerImageResponse>> Create(
+    public async Task<ActionResult<StarDockerImageResponse>> CreateAsync(
         [FromRoute] int starId,
         [FromBody] CreateStarDockerImageRequest request
     )
@@ -109,14 +102,14 @@ public class StarDockerImagesController : Controller
         var dockerImage = DockerImageMapper.ToDockerImage(request);
         dockerImage.Star = star;
 
-        var finalDockerImage = await DockerImageRepository.Add(dockerImage);
+        var finalDockerImage = await DockerImageRepository.AddAsync(dockerImage);
 
         return DockerImageMapper.ToAdminResponse(finalDockerImage);
     }
 
     [HttpPatch("{id:int}")]
     [Authorize(Policy = "permissions:admin.servers.stars.write")]
-    public async Task<ActionResult<StarDockerImageResponse>> Update(
+    public async Task<ActionResult<StarDockerImageResponse>> UpdateAsync(
         [FromRoute] int starId,
         [FromRoute] int id,
         [FromBody] UpdateStarDockerImageRequest request
@@ -137,14 +130,14 @@ public class StarDockerImagesController : Controller
             return Problem("No star docker image with this id found", statusCode: 404);
 
         DockerImageMapper.Merge(request, dockerImage);
-        await DockerImageRepository.Update(dockerImage);
+        await DockerImageRepository.UpdateAsync(dockerImage);
 
         return DockerImageMapper.ToAdminResponse(dockerImage);
     }
 
     [HttpDelete("{id:int}")]
     [Authorize(Policy = "permissions:admin.servers.stars.write")]
-    public async Task<ActionResult> Delete([FromRoute] int starId, [FromRoute] int id)
+    public async Task<ActionResult> DeleteAsync([FromRoute] int starId, [FromRoute] int id)
     {
         var starExists = StarRepository
             .Get()
@@ -160,7 +153,7 @@ public class StarDockerImagesController : Controller
         if (dockerImage == null)
             return Problem("No star docker image with this id found", statusCode: 404);
         
-        await DockerImageRepository.Remove(dockerImage);
+        await DockerImageRepository.RemoveAsync(dockerImage);
         return NoContent();
     }
 }

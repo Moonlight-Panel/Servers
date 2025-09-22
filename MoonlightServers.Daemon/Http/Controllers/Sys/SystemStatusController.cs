@@ -18,7 +18,7 @@ public class SystemStatusController : Controller
         RemoteService = remoteService;
     }
 
-    public async Task<SystemStatusResponse> Get()
+    public async Task<SystemStatusResponse> GetAsync()
     {
         SystemStatusResponse response;
         
@@ -27,7 +27,7 @@ public class SystemStatusController : Controller
         
         try
         {
-            await RemoteService.GetStatus();
+            await RemoteService.GetStatusAsync();
             
             sw.Stop();
 

@@ -23,7 +23,7 @@
             <InputItem TItem="UserResponse"
                        DisplayField="@(x => x.Username)"
                        SearchField="@(x => x.Username)"
-                       ItemSource="LoadUsers"
+                       ItemSource="LoadUsersAsync"
                        @bind-Value="Parent.Owner">
             </InputItem>
         </div>
@@ -35,7 +35,7 @@
             <InputItem TItem="StarResponse"
                        DisplayField="@(x => x.Name)"
                        SearchField="@(x => x.Name)"
-                       ItemSource="LoadStars"
+                       ItemSource="LoadStarsAsync"
                        @bind-Value="Parent.Star">
             </InputItem>
         </div>
@@ -47,7 +47,7 @@
             <InputItem TItem="NodeResponse"
                        DisplayField="@(x => x.Name)"
                        SearchField="@(x => x.Name)"
-                       ItemSource="LoadNodes"
+                       ItemSource="LoadNodesAsync"
                        @bind-Value="Parent.Node">
             </InputItem>
         </div>
@@ -91,29 +91,29 @@
     [Parameter] public CreateServerRequest Request { get; set; }
     [Parameter] public Create Parent { get; set; }
 
-    private async Task<StarResponse[]> LoadStars()
+    private async Task<StarResponse[]> LoadStarsAsync()
     {
-        return await PagedData<StarResponse>.All(async (page, pageSize) =>
-            await ApiClient.GetJson<PagedData<StarResponse>>(
-                $"api/admin/servers/stars?page={page}&pageSize={pageSize}"
+        return await CountedData<StarResponse>.LoadAllAsync(async (startIndex, count) =>
+            await ApiClient.GetJson<CountedData<StarResponse>>(
+                $"api/admin/servers/stars?startIndex={startIndex}&count={count}"
             )
         );
     }
 
-    private async Task<NodeResponse[]> LoadNodes()
+    private async Task<NodeResponse[]> LoadNodesAsync()
     {
-        return await PagedData<NodeResponse>.All(async (page, pageSize) =>
-            await ApiClient.GetJson<PagedData<NodeResponse>>(
-                $"api/admin/servers/nodes?page={page}&pageSize={pageSize}"
+        return await CountedData<NodeResponse>.LoadAllAsync(async (startIndex, count) =>
+            await ApiClient.GetJson<CountedData<NodeResponse>>(
+                $"api/admin/servers/nodes?startIndex={startIndex}&count={count}"
             )
         );
     }
 
-    private async Task<UserResponse[]> LoadUsers()
+    private async Task<UserResponse[]> LoadUsersAsync()
     {
-        return await PagedData<UserResponse>.All(async (page, pageSize) =>
-            await ApiClient.GetJson<PagedData<UserResponse>>(
-                $"api/admin/users?page={page}&pageSize={pageSize}"
+        return await CountedData<UserResponse>.LoadAllAsync(async (startIndex, count) =>
+            await ApiClient.GetJson<CountedData<UserResponse>>(
+                $"api/admin/users?startIndex={startIndex}&count={count}"
             )
         );
     }

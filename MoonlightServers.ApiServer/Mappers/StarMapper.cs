@@ -1,5 +1,4 @@
 using MoonlightServers.ApiServer.Database.Entities;
-using MoonlightServers.Shared.Http.Requests.Admin.StarDockerImages;
 using MoonlightServers.Shared.Http.Requests.Admin.Stars;
 using MoonlightServers.Shared.Http.Responses.Admin.Stars;
 using Riok.Mapperly.Abstractions;

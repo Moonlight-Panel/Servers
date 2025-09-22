@@ -16,7 +16,7 @@ public class PowerController : Controller
     }
 
     [HttpPost("start")]
-    public async Task<ActionResult> Start([FromRoute] int id)
+    public async Task<ActionResult> StartAsync([FromRoute] int id)
     {
         var server = ServerService.GetById(id);
 
@@ -31,7 +31,7 @@ public class PowerController : Controller
     }
     
     [HttpPost("stop")]
-    public async Task<ActionResult> Stop([FromRoute] int id)
+    public async Task<ActionResult> StopAsync([FromRoute] int id)
     {
         var server = ServerService.GetById(id);
 
@@ -46,7 +46,7 @@ public class PowerController : Controller
     }
     
     [HttpPost("kill")]
-    public async Task<ActionResult> Kill([FromRoute] int id)
+    public async Task<ActionResult> KillAsync([FromRoute] int id)
     {
         var server = ServerService.GetById(id);
 
@@ -61,7 +61,7 @@ public class PowerController : Controller
     }
     
     [HttpPost("install")]
-    public async Task<ActionResult> Install([FromRoute] int id)
+    public async Task<ActionResult> InstallAsync([FromRoute] int id)
     {
         var server = ServerService.GetById(id);
 

@@ -1,17 +1,12 @@
-using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
-using MoonCore.Extended.SingleDb;
 using Moonlight.ApiServer.Configuration;
 using MoonlightServers.ApiServer.Database.Entities;
 using MoonlightServers.ApiServer.Models;
-using MoonlightServers.Shared.Models;
 
 namespace MoonlightServers.ApiServer.Database;
 
-public class ServersDataContext : DatabaseContext
+public class ServersDataContext : DbContext
 {
-    public override string Prefix { get; } = "Servers";
-
     public DbSet<Allocation> Allocations { get; set; }
     public DbSet<Node> Nodes { get; set; }
     public DbSet<Server> Servers { get; set; }
@@ -22,20 +17,37 @@ public class ServersDataContext : DatabaseContext
     public DbSet<StarDockerImage> StarDockerImages { get; set; }
     public DbSet<StarVariable> StarVariables { get; set; }
 
+    private readonly AppConfiguration Configuration;
+    private readonly string Schema = "servers";
+
     public ServersDataContext(AppConfiguration configuration)
     {
-        Options = new()
+        Configuration = configuration;
+    }
+
+    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+    {
+        if(optionsBuilder.IsConfigured)
+            return;
+        
+        var database = Configuration.Database;
+        
+        var connectionString = $"Host={database.Host};" +
+                               $"Port={database.Port};" +
+                               $"Database={database.Database};" +
+                               $"Username={database.Username};" +
+                               $"Password={database.Password}";
+
+        optionsBuilder.UseNpgsql(connectionString, builder =>
         {
-            Host = configuration.Database.Host,
-            Port = configuration.Database.Port,
-            Username = configuration.Database.Username,
-            Password = configuration.Database.Password,
-            Database = configuration.Database.Database
-        };
+            builder.MigrationsHistoryTable("MigrationsHistory", Schema);
+        });
     }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        modelBuilder.Model.SetDefaultSchema(Schema);
+        
         base.OnModelCreating(modelBuilder);
 
         #region Shares

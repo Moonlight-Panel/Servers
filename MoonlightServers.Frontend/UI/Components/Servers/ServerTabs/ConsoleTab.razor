@@ -23,7 +23,7 @@
         HubConnection.On<string>("ConsoleOutput", async content =>
         {
             if (XtermConsole != null)
-                await XtermConsole.Write(content);
+                await XtermConsole.WriteAsync(content);
         });
 
         return Task.CompletedTask;
@@ -31,9 +31,9 @@
 
     private async Task OnAfterConsoleInitialized()
     {
-        await XtermConsole!.Write(InitialConsoleMessage);
+        await XtermConsole!.WriteAsync(InitialConsoleMessage);
     }
 
     private async Task OnCommand(string command)
-        => await ServerService.RunCommand(Server.Id, command + "\n");
+        => await ServerService.RunCommandAsync(Server.Id, command + "\n");
 }

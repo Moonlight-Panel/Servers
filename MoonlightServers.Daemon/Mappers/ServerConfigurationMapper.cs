@@ -30,8 +30,6 @@ public class ServerConfigurationMapper
             Variables = response.Variables,
             OnlineDetection = response.OnlineDetection,
             DockerImage = response.DockerImage,
-            UseVirtualDisk = response.UseVirtualDisk,
-            Bandwidth = response.Bandwidth,
             Cpu = response.Cpu,
             Disk = response.Disk,
             Memory = response.Memory,

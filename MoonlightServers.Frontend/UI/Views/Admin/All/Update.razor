@@ -15,13 +15,13 @@
 
 @attribute [Authorize(Policy = "permissions:admin.servers.update")]
 
-<LazyLoader Load="Load">
+<LazyLoader Load="LoadAsync">
     <PageHeader Title="Update Server">
         <a href="/admin/servers/all" class="btn btn-secondary">
             <i class="icon-chevron-left"></i>
             Back
         </a>
-        <WButton OnClick="_ => Form.Submit()" CssClasses="btn btn-primary">
+        <WButton OnClick="Form.SubmitAsync" CssClasses="btn btn-primary">
             <i class="icon-check"></i>
             Update
         </WButton>
@@ -58,7 +58,7 @@
     public List<NodeAllocationResponse> Allocations = new();
     public UserResponse Owner;
 
-    private async Task Load(LazyLoader _)
+    private async Task LoadAsync(LazyLoader _)
     {
         Server = await ApiClient.GetJson<ServerResponse>($"api/admin/servers/{Id}");
 
@@ -67,7 +67,6 @@
             Name = Server.Name,
             AllocationIds = Server.AllocationIds,
             OwnerId = Server.OwnerId,
-            Bandwidth = Server.Bandwidth,
             Cpu = Server.Cpu,
             Disk = Server.Disk,
             DockerImageIndex = Server.DockerImageIndex,
@@ -96,7 +95,7 @@
         
         await ApiClient.Patch($"api/admin/servers/{Id}", Request);
 
-        await ToastService.Success("Successfully updated server");
+        await ToastService.SuccessAsync("Successfully updated server");
         Navigation.NavigateTo("/admin/servers/all");
     }
 }

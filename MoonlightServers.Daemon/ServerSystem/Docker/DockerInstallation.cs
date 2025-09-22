@@ -104,7 +104,7 @@ public class DockerInstallation : IInstallation
         // Docker image
         await Reporter.StatusAsync("Downloading docker image");
 
-        await ImageService.Download(data.DockerImage, async status => { await Reporter.StatusAsync(status); });
+        await ImageService.DownloadAsync(data.DockerImage, async status => { await Reporter.StatusAsync(status); });
 
         await Reporter.StatusAsync("Downloaded docker image");
 
@@ -159,7 +159,7 @@ public class DockerInstallation : IInstallation
         }
     }
 
-    public async Task<IAsyncDisposable> SubscribeExited(Func<int, ValueTask> callback)
+    public async Task<IAsyncDisposable> SubscribeExitedAsync(Func<int, ValueTask> callback)
         => await ExitEventSource.SubscribeAsync(callback);
 
     public async Task RestoreAsync()

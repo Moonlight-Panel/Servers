@@ -16,13 +16,13 @@
 
 <div class="flex flex-row mb-5">
     <input @bind="UsernameInput" class="input grow placeholder-base-content/50 me-1.5" autocomplete="none" placeholder="Enter a username"/>
-    <button @onclick="OpenCreateModal" class="btn btn-primary">
+    <button @onclick="OpenCreateModalAsync" class="btn btn-primary">
         <i class="icon-send me-1"></i>
         <span>Invite</span>
     </button>
 </div>
 
-<LazyLoader @ref="LazyLoader" Load="Load">
+<LazyLoader @ref="LazyLoader" Load="LoadAsync">
     @if (Shares.Length == 0)
     {
         <IconAlert Title="No shares found" Color="text-primary" Icon="icon-search">
@@ -40,11 +40,11 @@
                         <span>@share.Username</span>
                     </div>
                     <div class="flex justify-end">
-                        <WButton OnClick="_ => OpenUpdateModal(share)" CssClasses="btn btn-primary me-1.5">
+                        <WButton OnClick="_ => OpenUpdateModalAsync(share)" CssClasses="btn btn-primary me-1.5">
                             <i class="icon-settings-2 me-1"></i>
                             <span>Edit</span>
                         </WButton>
-                        <WButton OnClick="_ => Delete(share)" CssClasses="btn btn-error">
+                        <WButton OnClick="_ => DeleteAsync(share)" CssClasses="btn btn-error">
                             <i class="icon-trash-2 me-1"></i>
                             <span>Delete</span>
                         </WButton>
@@ -63,60 +63,60 @@
 
     private LazyLoader LazyLoader;
 
-    private async Task Load(LazyLoader _)
+    private async Task LoadAsync(LazyLoader _)
     {
-        Shares = await PagedData<ServerShareResponse>.All(async (page, pageSize)
-            => await ShareService.Get(Server.Id, page, pageSize)
+        Shares = await CountedData<ServerShareResponse>.LoadAllAsync(async (startIndex, count)
+            => await ShareService.GetAsync(Server.Id, startIndex, count)
         );
     }
 
-    private async Task OpenCreateModal()
+    private async Task OpenCreateModalAsync()
     {
-        await ModalService.Launch<CreateShareModal>(parameters =>
+        await ModalService.LaunchAsync<CreateShareModal>(parameters =>
         {
             parameters["Username"] = UsernameInput;
             parameters["Server"] = Server;
-            parameters["OnSubmit"] = SubmitCreate;
+            parameters["OnSubmit"] = SubmitCreateAsync;
         }, size: "max-w-2xl");
     }
 
-    private async Task SubmitCreate(CreateShareRequest request)
+    private async Task SubmitCreateAsync(CreateShareRequest request)
     {
-        await ShareService.Create(Server.Id, request);
+        await ShareService.CreateAsync(Server.Id, request);
 
-        await ToastService.Success("Share successfully created");
-        await LazyLoader.Reload();
+        await ToastService.SuccessAsync("Share successfully created");
+        await LazyLoader.ReloadAsync();
     }
 
-    private async Task OpenUpdateModal(ServerShareResponse share)
+    private async Task OpenUpdateModalAsync(ServerShareResponse share)
     {
-        await ModalService.Launch<UpdateShareModal>(parameters =>
+        await ModalService.LaunchAsync<UpdateShareModal>(parameters =>
         {
             parameters["Share"] = share;
             parameters["Server"] = Server;
-            parameters["OnSubmit"] = (UpdateShareRequest request) => SubmitUpdate(share.Id, request);
+            parameters["OnSubmit"] = (UpdateShareRequest request) => SubmitUpdateAsync(share.Id, request);
         }, size: "max-w-2xl");
     }
     
-    private async Task SubmitUpdate(int shareId, UpdateShareRequest request)
+    private async Task SubmitUpdateAsync(int shareId, UpdateShareRequest request)
     {
-        await ShareService.Update(Server.Id, shareId, request);
+        await ShareService.UpdateAsync(Server.Id, shareId, request);
 
-        await ToastService.Success("Share successfully updated");
-        await LazyLoader.Reload();
+        await ToastService.SuccessAsync("Share successfully updated");
+        await LazyLoader.ReloadAsync();
     }
 
-    private async Task Delete(ServerShareResponse share)
+    private async Task DeleteAsync(ServerShareResponse share)
     {
-        await AlertService.ConfirmDanger(
+        await AlertService.ConfirmDangerAsync(
             "Share deletion",
             $"Do you really want to delete the share for the user '{share.Username}'? This cannot be undone",
             async () =>
             {
-                await ShareService.Delete(Server.Id, share.Id);
+                await ShareService.DeleteAsync(Server.Id, share.Id);
 
-                await ToastService.Success("Successfully deleted share");
-                await LazyLoader.Reload();
+                await ToastService.SuccessAsync("Successfully deleted share");
+                await LazyLoader.ReloadAsync();
             }
         );
     }

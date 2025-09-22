@@ -22,7 +22,7 @@
                        DisplayField="@(x => x.Username)"
                        SearchField="@(x => x.Username)"
                        @bind-Value="Parent.Owner"
-                       ItemSource="Loader">
+                       ItemSource="LoaderAsync">
             </InputItem>
 
         </div>
@@ -64,11 +64,11 @@
     [Parameter] public UpdateServerRequest Request { get; set; }
     [Parameter] public Update Parent { get; set; }
 
-    private async Task<UserResponse[]> Loader()
+    private async Task<UserResponse[]> LoaderAsync()
     {
-        return await PagedData<UserResponse>.All(async (page, pageSize) =>
-            await ApiClient.GetJson<PagedData<UserResponse>>(
-                $"api/admin/users?page={page}&pageSize={pageSize}"
+        return await CountedData<UserResponse>.LoadAllAsync(async (startIndex, count) =>
+            await ApiClient.GetJson<CountedData<UserResponse>>(
+                $"api/admin/users?startIndex={startIndex}&count={count}"
             )
         );
     }

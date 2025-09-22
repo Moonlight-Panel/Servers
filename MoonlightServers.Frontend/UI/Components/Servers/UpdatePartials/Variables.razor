@@ -9,7 +9,7 @@
 
 @inject HttpApiClient ApiClient
 
-<LazyLoader Load="Load">
+<LazyLoader Load="LoadAsync">
     <div class="grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-6">
         @foreach (var variable in ServerVariables)
         {
@@ -30,7 +30,7 @@
                 </label>
                 <div class="mt-2">
                     <input type="text" class="input w-full" value="@value"
-                           @onchange="@(args => UpdateValue(variable, args))"/>
+                           @onchange="@(args => UpdateValueAsync(variable, args))"/>
                 </div>
                 <p class="mt-1 text-sm leading-6 text-base-content/60">
                     @starVariable.Description
@@ -48,22 +48,22 @@
     private StarVariableResponse[] StarVariables;
     private ServerVariableResponse[] ServerVariables;
 
-    private async Task Load(LazyLoader _)
+    private async Task LoadAsync(LazyLoader _)
     {
-        StarVariables = await PagedData<StarVariableResponse>.All(async (page, pageSize) =>
-            await ApiClient.GetJson<PagedData<StarVariableResponse>>(
-                $"api/admin/servers/stars/{Server.StarId}/variables?page={page}&pageSize={pageSize}"
+        StarVariables = await CountedData<StarVariableResponse>.LoadAllAsync(async (startIndex, count) =>
+            await ApiClient.GetJson<CountedData<StarVariableResponse>>(
+                $"api/admin/servers/stars/{Server.StarId}/variables?startIndex={startIndex}&count={count}"
             )
         );
 
-        ServerVariables = await PagedData<ServerVariableResponse>.All(async (page, pageSize) =>
-            await ApiClient.GetJson<PagedData<ServerVariableResponse>>(
-                $"api/admin/servers/{Server.Id}/variables?page={page}&pageSize={pageSize}"
+        ServerVariables = await CountedData<ServerVariableResponse>.LoadAllAsync(async (startIndex, count) =>
+            await ApiClient.GetJson<CountedData<ServerVariableResponse>>(
+                $"api/admin/servers/{Server.Id}/variables?startIndex={startIndex}&count={count}"
             )
         );
     }
 
-    private async Task UpdateValue(ServerVariableResponse serverVariable, ChangeEventArgs args)
+    private async Task UpdateValueAsync(ServerVariableResponse serverVariable, ChangeEventArgs args)
     {
         var value = args.Value?.ToString() ?? "";
 

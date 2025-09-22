@@ -2,4 +2,4 @@ using MoonlightServers.Daemon;
 
 var startup = new Startup();
 
-await startup.Run(args);
+await startup.RunAsync(args);

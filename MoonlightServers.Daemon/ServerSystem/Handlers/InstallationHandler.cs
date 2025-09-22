@@ -80,7 +80,7 @@ public class InstallationHandler : IServerStateHandler
         await Server.Installation.CreateAsync(runtimePath, installationPath, installData);
         
         if (ExitSubscription == null)
-            ExitSubscription = await Server.Installation.SubscribeExited(OnInstallationExited);
+            ExitSubscription = await Server.Installation.SubscribeExitedAsync(OnInstallationExited);
 
         // 6. Attach console
 

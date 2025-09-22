@@ -174,8 +174,8 @@
 
         try
         {
-            Status = await ServerService.GetStatus(Server.Id);
-            Stats = await ServerService.GetStats(Server.Id);
+            Status = await ServerService.GetStatusAsync(Server.Id);
+            Stats = await ServerService.GetStatsAsync(Server.Id);
         }
         catch (Exception e)
         {

@@ -5,21 +5,37 @@
 
 @inherits MoonCore.Blazor.FlyonUi.Modals.Components.BaseModal
 
-<div class="text-lg font-semibold mb-5">
-    Create a new share
-</div>
-
-<HandleForm @ref="HandleForm" Model="Request" OnValidSubmit="OnValidSubmit">
-    <div class="mb-8">
-        <label class="block text-sm font-medium leading-6 text-base-content">Username</label>
-        <input @bind="Request.Username" type="text" class="input w-full"/>
+<div class="p-5">
+    <div class="flex items-center gap-4">
+        <div class="avatar avatar-placeholder max-sm:hidden">
+            <div class="border-base-content/20 rounded-box w-13 border-1">
+                <span class="icon-share-2 text-xl"></span>
+            </div>
+        </div>
+        <div class="space-y-1">
+            <h3 class="text-base-content text-2xl font-semibold">Create a new share</h3>
+            <p class="text-base-content/80">Grant access to this server to other users</p>
+        </div>
     </div>
-    <PermissionEditor Server="Server" PermissionLevels="Permissions" />
-</HandleForm>
-
-<div class="mt-8 flex space-x-2">
-    <WButton OnClick="_ => Hide()" CssClasses="btn btn-secondary grow">Cancel</WButton>
-    <WButton OnClick="_ => Submit()" CssClasses="btn btn-primary grow">Create</WButton>
+    <div class="mt-5">
+        <HandleForm @ref="HandleForm" Model="Request" OnValidSubmit="OnValidSubmit">
+            <div class="mt-2">
+                <label class="label-text">Username</label>
+                <input class="input" @bind="Request.Username" type="text"/>
+            </div>
+            <div class="mt-5">
+                <PermissionEditor Server="Server" PermissionLevels="Permissions" />
+            </div>
+        </HandleForm>
+    </div>
+    <div class="mt-5 flex justify-end">
+        <button @onclick="HideAsync" type="button" class="btn btn-secondary me-2">
+            Cancel
+        </button>
+        <WButton OnClick="SubmitAsync">
+            Create
+        </WButton>
+    </div>
 </div>
 
 @code
@@ -33,16 +49,6 @@
 
     private Dictionary<string, ServerPermissionLevel> Permissions = new();
 
-    private string[] Names =
-    [
-        "console",
-        "power",
-        "shares",
-        "files",
-        "variables",
-        "settings"
-    ];
-
     protected override void OnInitialized()
     {
         Request = new()
@@ -51,20 +57,20 @@
         };
     }
 
-    private async Task Set(string name, ServerPermissionLevel level)
+    private async Task SetAsync(string name, ServerPermissionLevel level)
     {
         Permissions[name] = level;
         await InvokeAsync(StateHasChanged);
     }
     
-    private async Task Submit()
-        => await HandleForm.Submit();
+    private async Task SubmitAsync()
+        => await HandleForm.SubmitAsync();
 
     private async Task OnValidSubmit()
     {
         Request.Permissions = Permissions;
         
         await OnSubmit.Invoke(Request);
-        await Hide();
+        await HideAsync();
     }
 }

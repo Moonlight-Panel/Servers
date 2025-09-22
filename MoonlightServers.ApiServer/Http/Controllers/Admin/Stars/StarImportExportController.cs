@@ -1,9 +1,7 @@
 using System.Text;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using MoonCore.Exceptions;
-using MoonCore.Helpers;
 using MoonlightServers.ApiServer.Mappers;
 using MoonlightServers.ApiServer.Services;
 using MoonlightServers.Shared.Http.Responses.Admin.Stars;
@@ -23,15 +21,15 @@ public class StarImportExportController : Controller
 
     [HttpGet("{starId:int}/export")]
     [Authorize(Policy = "permissions:admin.servers.stars.get")]
-    public async Task<ActionResult> Export([FromRoute] int starId)
+    public async Task<ActionResult> ExportAsync([FromRoute] int starId)
     {
-        var exportedStar = await ImportExportService.Export(starId);
+        var exportedStar = await ImportExportService.ExportAsync(starId);
         return Content(exportedStar, "application/json");
     }
 
     [HttpPost("import")]
     [Authorize(Policy = "permissions:admin.servers.stars.create")]
-    public async Task<StarResponse> Import()
+    public async Task<StarResponse> ImportAsync()
     {
         if (Request.Form.Files.Count == 0)
             throw new HttpApiException("No file to import provided", 400);
@@ -44,7 +42,7 @@ public class StarImportExportController : Controller
         using var sr = new StreamReader(stream, Encoding.UTF8);
         var content = await sr.ReadToEndAsync();
 
-        var star = await ImportExportService.Import(content);
+        var star = await ImportExportService.ImportAsync(content);
 
         return StarMapper.ToAdminResponse(star);
     }

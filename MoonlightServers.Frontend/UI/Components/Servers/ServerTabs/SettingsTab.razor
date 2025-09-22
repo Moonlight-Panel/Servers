@@ -19,7 +19,7 @@
         }
         else
         {
-            <WButton CssClasses="btn btn-primary" OnClick="Reinstall">
+            <WButton CssClasses="btn btn-primary" OnClick="ReinstallAsync">
                 <i class="align-middle icon-hammer"></i>
                 <span class="align-middle">Reinstall</span>
             </WButton>
@@ -29,12 +29,12 @@
 
 @code
 {
-    private async Task Reinstall(WButton _)
+    private async Task ReinstallAsync(WButton _)
     {
-        await AlertService.ConfirmDanger(
+        await AlertService.ConfirmDangerAsync(
             "Server installation",
             "Do you really want to reinstall the server? This can potentially lead to loss of data",
-            () => ServerService.Install(Server.Id)
+            () => ServerService.InstallAsync(Server.Id)
         );
     }
 }

@@ -12,7 +12,7 @@ public interface IServerAuthorizationFilter
 
     public int Priority { get; }
     
-    public Task<ServerAuthorizationResult?> Process(
+    public Task<ServerAuthorizationResult?> ProcessAsync(
         ClaimsPrincipal user,
         Server server,
         string permissionId,

@@ -1,6 +1,3 @@
-using MoonlightServers.Shared.Http.Responses.Admin.StarDockerImages;
-using MoonlightServers.Shared.Http.Responses.Admin.StarVariables;
-
 namespace MoonlightServers.Shared.Http.Responses.Admin.Stars;
 
 public class StarResponse

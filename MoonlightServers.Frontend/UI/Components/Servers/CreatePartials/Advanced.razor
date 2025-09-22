@@ -1,27 +1,7 @@
 @using MoonlightServers.Shared.Http.Requests.Admin.Servers
-@using MoonCore.Blazor.FlyonUi.Components
 
 <div class="grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-6">
-    <div class="sm:col-span-2">
-        <label class="block text-sm font-medium leading-6 text-base-content">Storage</label>
-        <div class="mt-2">
-            <div class="select">
-                <span class="icon-hard-drive text-base-content/80 my-auto"></span>
-                <label class="sr-only" for="virtual-disk">Select the storage provider</label>
-                <select @bind="Request.UseVirtualDisk" id="virtual-disk">
-                    <option value="false">Volume</option>
-                    <option value="true">Virtual Disk</option>
-                </select>
-            </div>
-        </div>
-    </div>
-
-    <div class="sm:col-span-2">
-        <label class="block text-sm font-medium leading-6 text-base-content">Bandwidth</label>
-        <div class="mt-2">
-            <input @bind="Request.Bandwidth" type="number" autocomplete="off" class="input w-full">
-        </div>
-    </div>
+    
 </div>
 
 @code

@@ -10,7 +10,7 @@
 
 <Tabs>
     <Tab Name="Your servers">
-        <LazyLoader Load="LoadOwnServers">
+        <LazyLoader Load="LoadOwnServersAsync">
             @if (OwnServers.Length == 0)
             {
                 <IconAlert Title="No servers found" Color="text-primary" Icon="icon-search">
@@ -47,7 +47,7 @@
         </LazyLoader>
     </Tab>
     <Tab Name="Shared servers">
-        <LazyLoader Load="LoadSharedServers">
+        <LazyLoader Load="LoadSharedServersAsync">
             @if (SharedServers.Length == 0)
             {
                 <IconAlert Title="No shared servers found" Color="text-primary" Icon="icon-share-2">
@@ -72,17 +72,17 @@
     private ServerDetailResponse[] OwnServers;
     private ServerDetailResponse[] SharedServers;
 
-    private async Task LoadOwnServers(LazyLoader lazyLoader)
+    private async Task LoadOwnServersAsync(LazyLoader lazyLoader)
     {
-        OwnServers = await PagedData<ServerDetailResponse>.All(async (page, pageSize) =>
-            await ServerService.GetServers(page, pageSize)
+        OwnServers = await CountedData<ServerDetailResponse>.LoadAllAsync(async (startIndex, count) =>
+            await ServerService.GetServersAsync(startIndex, count)
         );
     }
     
-    private async Task LoadSharedServers(LazyLoader lazyLoader)
+    private async Task LoadSharedServersAsync(LazyLoader lazyLoader)
     {
-        SharedServers = await PagedData<ServerDetailResponse>.All(async (page, pageSize) =>
-            await ServerService.GetSharedServers(page, pageSize)
+        SharedServers = await CountedData<ServerDetailResponse>.LoadAllAsync(async (startIndex, count) =>
+            await ServerService.GetSharedServersAsync(startIndex, count)
         );
     }
 }

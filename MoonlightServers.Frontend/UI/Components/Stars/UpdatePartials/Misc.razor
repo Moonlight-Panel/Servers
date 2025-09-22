@@ -8,7 +8,7 @@
 
 @inject HttpApiClient ApiClient
 
-<LazyLoader Load="Load">
+<LazyLoader Load="LoadAsync">
     <div>
         <div class="grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-6">
             <div class="sm:col-span-2">
@@ -53,11 +53,13 @@
     
     private List<StarDockerImageResponse> DockerImages;
 
-    private async Task Load(LazyLoader _)
+    private async Task LoadAsync(LazyLoader _)
     {
-        var pagedVariables = await ApiClient.GetJson<PagedData<StarDockerImageResponse>>(
-            $"api/admin/servers/stars/{Star.Id}/dockerImages?page=0&pageSize=50"
+        var pagedVariables = await ApiClient.GetJson<CountedData<StarDockerImageResponse>>(
+            $"api/admin/servers/stars/{Star.Id}/dockerImages?startIndex=0&count=100"
         );
+        
+        // TODO: Fix this
 
         DockerImages = pagedVariables
             .Items

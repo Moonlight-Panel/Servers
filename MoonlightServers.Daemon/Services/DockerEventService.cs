@@ -1,11 +1,6 @@
-using System.Reactive.Concurrency;
-using System.Reactive.Linq;
-using System.Reactive.Subjects;
 using Docker.DotNet;
 using Docker.DotNet.Models;
 using MoonCore.Events;
-using MoonCore.Observability;
-using MoonlightServers.Daemon.Helpers;
 
 namespace MoonlightServers.Daemon.Services;
 

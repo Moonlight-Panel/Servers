@@ -14,9 +14,9 @@
 @inject ToastService ToastService
 @inject AlertService AlertService
 
-<LazyLoader @ref="LazyLoader" Load="Load">
+<LazyLoader @ref="LazyLoader" Load="LoadAsync">
     <div class="flex justify-end">
-        <button type="button" @onclick="AddDockerImage" class="btn btn-primary">Add docker image</button>
+        <button type="button" @onclick="AddDockerImageAsync" class="btn btn-primary">Add docker image</button>
     </div>
     
     <div class="grid sm:grid-cols-2 xl:grid-cols-3 gap-4 mt-5">
@@ -30,11 +30,11 @@
                     </div>
 
                     <div class="gap-x-2">
-                        <button type="button" @onclick="() => UpdateDockerImage(dockerImage)" class="btn btn-primary">
+                        <button type="button" @onclick="() => UpdateDockerImageAsync(dockerImage)" class="btn btn-primary">
                             <i class="icon-settings text-base"></i>
                         </button>
 
-                        <button type="button" @onclick="() => DeleteDockerImage(dockerImage)" class="btn btn-error">
+                        <button type="button" @onclick="() => DeleteDockerImageAsync(dockerImage)" class="btn btn-error">
                             <i class="icon-trash text-base"></i>
                         </button>
                     </div>
@@ -51,59 +51,61 @@
     private StarDockerImageResponse[] DockerImages;
     private LazyLoader LazyLoader;
 
-    private async Task Load(LazyLoader _)
+    private async Task LoadAsync(LazyLoader _)
     {
-        var pagedVariables = await ApiClient.GetJson<PagedData<StarDockerImageResponse>>(
-            $"api/admin/servers/stars/{Star.Id}/dockerImages?page=0&pageSize=50"
+        var pagedVariables = await ApiClient.GetJson<CountedData<StarDockerImageResponse>>(
+            $"api/admin/servers/stars/{Star.Id}/dockerImages?startIndex=0&count=100"
         );
 
+        // TODO: Improve paged stuff
+        
         DockerImages = pagedVariables.Items;
     }
 
-    private async Task AddDockerImage()
+    private async Task AddDockerImageAsync()
     {
         Func<CreateStarDockerImageRequest, Task> onSubmit = async request =>
         {
             await ApiClient.Post($"api/admin/servers/stars/{Star.Id}/dockerImages", request);
             
-            await ToastService.Success("Successfully created docker image");
-            await LazyLoader.Reload();
+            await ToastService.SuccessAsync("Successfully created docker image");
+            await LazyLoader.ReloadAsync();
         };
         
-        await ModalService.Launch<CreateDockerImageModal>(parameters =>
+        await ModalService.LaunchAsync<CreateDockerImageModal>(parameters =>
         {
             parameters.Add("OnSubmit", onSubmit);
         });
     }
     
-    private async Task UpdateDockerImage(StarDockerImageResponse dockerImage)
+    private async Task UpdateDockerImageAsync(StarDockerImageResponse dockerImage)
     {
         Func<UpdateStarDockerImageRequest, Task> onSubmit = async request =>
         {
             await ApiClient.Patch($"api/admin/servers/stars/{Star.Id}/dockerImages/{dockerImage.Id}", request);
             
-            await ToastService.Success("Successfully updated docker image");
-            await LazyLoader.Reload();
+            await ToastService.SuccessAsync("Successfully updated docker image");
+            await LazyLoader.ReloadAsync();
         };
         
-        await ModalService.Launch<UpdateDockerImageModal>(parameters =>
+        await ModalService.LaunchAsync<UpdateDockerImageModal>(parameters =>
         {
             parameters.Add("OnSubmit", onSubmit);
             parameters.Add("DockerImage", dockerImage);
         });
     }
     
-    private async Task DeleteDockerImage(StarDockerImageResponse dockerImage)
+    private async Task DeleteDockerImageAsync(StarDockerImageResponse dockerImage)
     {
-        await AlertService.ConfirmDanger(
+        await AlertService.ConfirmDangerAsync(
             "Delete docker image",
             "Do you really want to delete the selected docker image? This cannot be undone",
             async () =>
             {
                 await ApiClient.Delete($"api/admin/servers/stars/{Star.Id}/dockerImages/{dockerImage.Id}");
             
-                await ToastService.Success("Successfully deleted docker image");
-                await LazyLoader.Reload();
+                await ToastService.SuccessAsync("Successfully deleted docker image");
+                await LazyLoader.ReloadAsync();
             }
         );
     }

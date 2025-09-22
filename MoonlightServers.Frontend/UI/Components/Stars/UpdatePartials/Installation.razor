@@ -37,6 +37,6 @@
 
     private async Task OnFocusOut()
     {
-        Request.InstallScript = await CodeEditor.GetValue();
+        Request.InstallScript = await CodeEditor.GetValueAsync();
     }
 }

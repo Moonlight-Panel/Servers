@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using MoonCore.Exceptions;
 using MoonCore.Extended.Abstractions;
 using MoonlightServers.ApiServer.Database.Entities;
 using MoonlightServers.ApiServer.Services;
@@ -37,14 +36,14 @@ public class FilesController : Controller
     }
 
     [HttpGet("list")]
-    public async Task<ActionResult<ServerFilesEntryResponse[]>> List([FromRoute] int serverId, [FromQuery] string path)
+    public async Task<ActionResult<ServerFilesEntryResponse[]>> ListAsync([FromRoute] int serverId, [FromQuery] string path)
     {
-        var server = await GetServerById(serverId, ServerPermissionLevel.Read);
+        var server = await GetServerByIdAsync(serverId, ServerPermissionLevel.Read);
         
         if (server.Value == null)
             return server.Result ?? Problem("Unable to retrieve server");
 
-        var entries = await ServerFileSystemService.List(server.Value, path);
+        var entries = await ServerFileSystemService.ListAsync(server.Value, path);
 
         return entries.Select(x => new ServerFilesEntryResponse()
         {
@@ -57,57 +56,57 @@ public class FilesController : Controller
     }
 
     [HttpPost("move")]
-    public async Task<ActionResult> Move([FromRoute] int serverId, [FromQuery] string oldPath, [FromQuery] string newPath)
+    public async Task<ActionResult> MoveAsync([FromRoute] int serverId, [FromQuery] string oldPath, [FromQuery] string newPath)
     {
-        var server = await GetServerById(serverId, ServerPermissionLevel.ReadWrite);
+        var server = await GetServerByIdAsync(serverId, ServerPermissionLevel.ReadWrite);
         
         if (server.Value == null)
             return server.Result ?? Problem("Unable to retrieve server");
 
-        await ServerFileSystemService.Move(server.Value, oldPath, newPath);
+        await ServerFileSystemService.MoveAsync(server.Value, oldPath, newPath);
         return NoContent();
     }
 
     [HttpDelete("delete")]
-    public async Task<ActionResult> Delete([FromRoute] int serverId, [FromQuery] string path)
+    public async Task<ActionResult> DeleteAsync([FromRoute] int serverId, [FromQuery] string path)
     {
-        var server = await GetServerById(serverId, ServerPermissionLevel.ReadWrite);
+        var server = await GetServerByIdAsync(serverId, ServerPermissionLevel.ReadWrite);
         
         if (server.Value == null)
             return server.Result ?? Problem("Unable to retrieve server");
 
-        await ServerFileSystemService.Delete(server.Value, path);
+        await ServerFileSystemService.DeleteAsync(server.Value, path);
         return NoContent();
     }
 
     [HttpPost("mkdir")]
-    public async Task<ActionResult> Mkdir([FromRoute] int serverId, [FromQuery] string path)
+    public async Task<ActionResult> MkdirAsync([FromRoute] int serverId, [FromQuery] string path)
     {
-        var server = await GetServerById(serverId, ServerPermissionLevel.ReadWrite);
+        var server = await GetServerByIdAsync(serverId, ServerPermissionLevel.ReadWrite);
         
         if (server.Value == null)
             return server.Result ?? Problem("Unable to retrieve server");
 
-        await ServerFileSystemService.Mkdir(server.Value, path);
+        await ServerFileSystemService.MkdirAsync(server.Value, path);
         return NoContent();
     }
 
     [HttpPost("touch")]
-    public async Task<ActionResult> Touch([FromRoute] int serverId, [FromQuery] string path)
+    public async Task<ActionResult> TouchAsync([FromRoute] int serverId, [FromQuery] string path)
     {
-        var server = await GetServerById(serverId, ServerPermissionLevel.ReadWrite);
+        var server = await GetServerByIdAsync(serverId, ServerPermissionLevel.ReadWrite);
         
         if (server.Value == null)
             return server.Result ?? Problem("Unable to retrieve server");
 
-        await ServerFileSystemService.Mkdir(server.Value, path);
+        await ServerFileSystemService.MkdirAsync(server.Value, path);
         return NoContent();
     }
 
     [HttpGet("upload")]
-    public async Task<ActionResult<ServerFilesUploadResponse>> Upload([FromRoute] int serverId)
+    public async Task<ActionResult<ServerFilesUploadResponse>> UploadAsync([FromRoute] int serverId)
     {
-        var serverResult = await GetServerById(serverId, ServerPermissionLevel.ReadWrite);
+        var serverResult = await GetServerByIdAsync(serverId, ServerPermissionLevel.ReadWrite);
         
         if (serverResult.Value == null)
             return serverResult.Result ?? Problem("Unable to retrieve server");
@@ -137,9 +136,9 @@ public class FilesController : Controller
     }
 
     [HttpGet("download")]
-    public async Task<ActionResult<ServerFilesDownloadResponse>> Download([FromRoute] int serverId, [FromQuery] string path)
+    public async Task<ActionResult<ServerFilesDownloadResponse>> DownloadAsync([FromRoute] int serverId, [FromQuery] string path)
     {
-        var serverResult = await GetServerById(serverId, ServerPermissionLevel.Read);
+        var serverResult = await GetServerByIdAsync(serverId, ServerPermissionLevel.Read);
         
         if (serverResult.Value == null)
             return serverResult.Result ?? Problem("Unable to retrieve server");
@@ -170,9 +169,9 @@ public class FilesController : Controller
     }
 
     [HttpPost("compress")]
-    public async Task<ActionResult> Compress([FromRoute] int serverId, [FromBody] ServerFilesCompressRequest request)
+    public async Task<ActionResult> CompressAsync([FromRoute] int serverId, [FromBody] ServerFilesCompressRequest request)
     {
-        var server = await GetServerById(serverId, ServerPermissionLevel.ReadWrite);
+        var server = await GetServerByIdAsync(serverId, ServerPermissionLevel.ReadWrite);
         
         if (server.Value == null)
             return server.Result ?? Problem("Unable to retrieve server");
@@ -180,14 +179,14 @@ public class FilesController : Controller
         if (!Enum.TryParse(request.Type, true, out CompressType type))
             return Problem("Invalid compress type provided", statusCode: 400);
 
-        await ServerFileSystemService.Compress(server.Value, type, request.Items, request.Destination);
+        await ServerFileSystemService.CompressAsync(server.Value, type, request.Items, request.Destination);
         return Ok();
     }
 
     [HttpPost("decompress")]
-    public async Task<ActionResult> Decompress([FromRoute] int serverId, [FromBody] ServerFilesDecompressRequest request)
+    public async Task<ActionResult> DecompressAsync([FromRoute] int serverId, [FromBody] ServerFilesDecompressRequest request)
     {
-        var server = await GetServerById(serverId, ServerPermissionLevel.ReadWrite);
+        var server = await GetServerByIdAsync(serverId, ServerPermissionLevel.ReadWrite);
         
         if (server.Value == null)
             return server.Result ?? Problem("Unable to retrieve server");
@@ -195,11 +194,11 @@ public class FilesController : Controller
         if (!Enum.TryParse(request.Type, true, out CompressType type))
             return Problem("Invalid decompress type provided", statusCode: 400);
 
-        await ServerFileSystemService.Decompress(server.Value, type, request.Path, request.Destination);
+        await ServerFileSystemService.DecompressAsync(server.Value, type, request.Path, request.Destination);
         return NoContent();
     }
 
-    private async Task<ActionResult<Server>> GetServerById(int serverId, ServerPermissionLevel level)
+    private async Task<ActionResult<Server>> GetServerByIdAsync(int serverId, ServerPermissionLevel level)
     {
         var server = await ServerRepository
             .Get()
@@ -209,7 +208,7 @@ public class FilesController : Controller
         if (server == null)
             return Problem("No server with this id found", statusCode: 404);
 
-        var authorizeResult = await AuthorizeService.Authorize(
+        var authorizeResult = await AuthorizeService.AuthorizeAsync(
             User, server,
             ServerPermissionConstants.Files,
             level

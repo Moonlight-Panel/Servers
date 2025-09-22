@@ -3,7 +3,6 @@ using MoonlightServers.Daemon.Mappers;
 using MoonlightServers.Daemon.Services;
 using MoonlightServers.DaemonShared.DaemonSide.Http.Responses.Servers;
 using MoonlightServers.DaemonShared.Enums;
-using MoonlightServers.DaemonShared.PanelSide.Http.Responses;
 
 namespace MoonlightServers.Daemon.Http.Controllers.Servers;
 
@@ -21,14 +20,14 @@ public class ServersController : Controller
     }
 
     [HttpPost("sync")]
-    public async Task<ActionResult> Sync([FromRoute] int id)
+    public async Task<ActionResult> SyncAsync([FromRoute] int id)
     {
-        await ServerService.InitializeById(id);
+        await ServerService.InitializeByIdAsync(id);
         return NoContent();
     }
 
     [HttpGet("status")]
-    public async Task<ActionResult<ServerStatusResponse>> Status([FromRoute] int id)
+    public async Task<ActionResult<ServerStatusResponse>> StatusAsync([FromRoute] int id)
     {
         var server = ServerService.GetById(id);
 
@@ -42,7 +41,7 @@ public class ServersController : Controller
     }
     
     [HttpGet("logs")]
-    public async Task<ActionResult<ServerLogsResponse>> Logs([FromRoute] int id)
+    public async Task<ActionResult<ServerLogsResponse>> LogsAsync([FromRoute] int id)
     {
         var server = ServerService.GetById(id);
 
@@ -58,7 +57,7 @@ public class ServersController : Controller
     }
     
     [HttpGet("stats")]
-    public async Task<ServerStatsResponse> GetStats([FromRoute] int id)
+    public async Task<ServerStatsResponse> GetStatsAsync([FromRoute] int id)
     {
         return new ServerStatsResponse()
         {

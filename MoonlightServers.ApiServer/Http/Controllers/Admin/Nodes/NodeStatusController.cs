@@ -1,6 +1,5 @@
 using System.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
-using MoonCore.Exceptions;
 using MoonCore.Extended.Abstractions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
@@ -25,9 +24,9 @@ public class NodeStatusController : Controller
 
     [HttpGet("{nodeId:int}/system/status")]
     [Authorize(Policy = "permissions:admin.servers.nodes.status")]
-    public async Task<ActionResult<NodeSystemStatusResponse>> GetStatus([FromRoute] int nodeId)
+    public async Task<ActionResult<NodeSystemStatusResponse>> GetStatusAsync([FromRoute] int nodeId)
     {
-        var node = await GetNode(nodeId);
+        var node = await GetNodeAsync(nodeId);
 
         if (node.Value == null)
             return node.Result ?? Problem("Unable to retrieve node");
@@ -39,7 +38,7 @@ public class NodeStatusController : Controller
         
         try
         {
-            var statusResponse = await NodeService.GetSystemStatus(node.Value);
+            var statusResponse = await NodeService.GetSystemStatusAsync(node.Value);
             
             sw.Stop();
 
@@ -69,7 +68,7 @@ public class NodeStatusController : Controller
         return response;
     }
 
-    private async Task<ActionResult<Node>> GetNode(int nodeId)
+    private async Task<ActionResult<Node>> GetNodeAsync(int nodeId)
     {
         var result = await NodeRepository
             .Get()

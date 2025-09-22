@@ -1,4 +1,3 @@
-@using System.Collections.Concurrent
 @using Microsoft.Extensions.Logging
 @using MoonCore.Blazor.FlyonUi.Modals
 @using MoonCore.Helpers
@@ -18,12 +17,12 @@
                Addons="Addons"
                Options="Options"
                Class="h-full w-full"
-               OnFirstRender="HandleFirstRender"/>
+               OnFirstRender="HandleFirstRenderAsync"/>
     }
 
     <div class="flex flex-row w-full mt-1.5">
-        <input @bind="CommandInput" @onkeyup="HandleKey" type="text" placeholder="Type here..." class="input grow"/>
-        <WButton OnClick="_ => SubmitCommand()" CssClasses="btn btn-square btn-primary grow-0 ms-1.5">
+        <input @bind="CommandInput" @onkeyup="HandleKeyAsync" type="text" placeholder="Type here..." class="input grow"/>
+        <WButton OnClick="_ => SubmitCommandAsync()" CssClasses="btn btn-square btn-primary grow-0 ms-1.5">
             <i class="icon-send-horizontal text-lg"></i>
         </WButton>
     </div>
@@ -32,18 +31,18 @@
         <div class="flex flex-col gap-y-1.5">
             @if (IsPaused)
             {
-                <button @onclick="TogglePause" class="btn btn-primary btn-square">
+                <button @onclick="TogglePauseAsync" class="btn btn-primary btn-square">
                     <i class="icon-play text-lg"></i>
                 </button>
             }
             else
             {
-                <button @onclick="TogglePause" class="btn btn-secondary btn-square">
+                <button @onclick="TogglePauseAsync" class="btn btn-secondary btn-square">
                     <i class="icon-pause text-lg"></i>
                 </button>
             }
 
-            <button @onclick="OpenFullscreen" class="btn btn-secondary btn-square">
+            <button @onclick="OpenFullscreenAsync" class="btn btn-secondary btn-square">
                 <i class="icon-maximize text-lg"></i>
             </button>
         </div>
@@ -110,7 +109,7 @@
             await OnAfterInitialized.Invoke();
     }
 
-    private async Task HandleFirstRender()
+    private async Task HandleFirstRenderAsync()
     {
         try
         {
@@ -133,17 +132,17 @@
             await OnFirstRender.Invoke();
     }
 
-    public async Task Write(string content)
+    public async Task WriteAsync(string content)
     {
         // We cache messages here as there is the chance that the console isn't ready for input while receiving write tasks 
 
         if (IsReadyToWrite && !IsPaused)
-            await HandleWrite(content);
+            await HandleWriteAsync(content);
         else
             WriteQueue.Add(content);
     }
 
-    private async Task HandleWrite(string content)
+    private async Task HandleWriteAsync(string content)
     {
         // Update output cache and prune it if required
         if (OutputCache.Count > MaxOutputCacheSize)
@@ -162,12 +161,12 @@
         await Terminal.Write(content);
     }
 
-    private async Task OpenFullscreen()
+    private async Task OpenFullscreenAsync()
     {
-        await ModalService.Launch<FullScreenModal>(parameters => { parameters["Parent"] = this; }, size: "max-w-none");
+        await ModalService.LaunchAsync<FullScreenModal>(parameters => { parameters["Parent"] = this; }, size: "max-w-none");
     }
 
-    private async Task TogglePause()
+    private async Task TogglePauseAsync()
     {
         IsPaused = !IsPaused;
         await InvokeAsync(StateHasChanged);
@@ -178,10 +177,10 @@
         var queueContent = string.Concat(WriteQueue);
         WriteQueue.Clear();
 
-        await HandleWrite(queueContent);
+        await HandleWriteAsync(queueContent);
     }
 
-    private async Task SubmitCommand()
+    private async Task SubmitCommandAsync()
     {
         CommandHistory.Add(CommandInput);
 
@@ -194,12 +193,12 @@
         await InvokeAsync(StateHasChanged);
     }
 
-    private async Task HandleKey(KeyboardEventArgs keyboard)
+    private async Task HandleKeyAsync(KeyboardEventArgs keyboard)
     {
         switch (keyboard.Code)
         {
             case "Enter":
-                await SubmitCommand();
+                await SubmitCommandAsync();
                 break;
                 
             case "ArrowUp" or "ArrowDown":

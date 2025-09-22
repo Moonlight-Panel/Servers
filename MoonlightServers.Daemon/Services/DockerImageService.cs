@@ -25,7 +25,7 @@ public class DockerImageService
         Logger = logger;
     }
 
-    public async Task Download(string name, Action<string>? onProgressUpdated = null)
+    public async Task DownloadAsync(string name, Action<string>? onProgressUpdated = null)
     {
         // If there is already a download for this image occuring, we want to wait for this to complete instead
         // of calling docker to download it again

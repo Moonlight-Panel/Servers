@@ -9,7 +9,7 @@ namespace MoonlightServers.Frontend.Implementations;
 
 public class DefaultServerTabProvider : IServerTabProvider
 {
-    public Task<ServerTab[]> GetTabs(ServerDetailResponse server)
+    public Task<ServerTab[]> GetTabsAsync(ServerDetailResponse server)
     {
         ServerTab[] tabs =
         [

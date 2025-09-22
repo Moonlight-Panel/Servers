@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using MoonCore.Exceptions;
 using MoonCore.Extended.Abstractions;
 using MoonlightServers.ApiServer.Database.Entities;
 using MoonlightServers.ApiServer.Services;
@@ -32,18 +31,18 @@ public class SettingsController : Controller
 
     [HttpPost("{serverId:int}/install")]
     [Authorize]
-    public async Task<ActionResult> Install([FromRoute] int serverId)
+    public async Task<ActionResult> InstallAsync([FromRoute] int serverId)
     {
-        var server = await GetServerById(serverId);
+        var server = await GetServerByIdAsync(serverId);
         
         if (server.Value == null)
             return server.Result ?? Problem("Unable to retrieve server");
         
-        await ServerService.Install(server.Value);
+        await ServerService.InstallAsync(server.Value);
         return NoContent();
     }
     
-    private async Task<ActionResult<Server>> GetServerById(int serverId)
+    private async Task<ActionResult<Server>> GetServerByIdAsync(int serverId)
     {
         var server = await ServerRepository
             .Get()
@@ -53,7 +52,7 @@ public class SettingsController : Controller
         if (server == null)
             return Problem("No server with this id found", statusCode: 404);
 
-        var authorizeResult = await AuthorizeService.Authorize(
+        var authorizeResult = await AuthorizeService.AuthorizeAsync(
             User, server,
             ServerPermissionConstants.Settings,
             ServerPermissionLevel.ReadWrite

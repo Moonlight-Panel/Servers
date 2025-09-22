@@ -2,7 +2,6 @@ using System.Diagnostics.CodeAnalysis;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using MoonCore.Exceptions;
 using MoonCore.Extended.Abstractions;
 using MoonlightServers.ApiServer.Database.Entities;
 using MoonlightServers.ApiServer.Services;
@@ -27,14 +26,14 @@ public class StatisticsController : Controller
     [HttpGet]
     [SuppressMessage("ReSharper.DPA", "DPA0011: High execution time of MVC action", MessageId = "time: 1142ms",
         Justification = "The daemon has an artificial delay of one second to calculate accurate cpu usage values")]
-    public async Task<ActionResult<StatisticsResponse>> Get([FromRoute] int nodeId)
+    public async Task<ActionResult<StatisticsResponse>> GetAsync([FromRoute] int nodeId)
     {
-        var node = await GetNode(nodeId);
+        var node = await GetNodeAsync(nodeId);
 
         if (node.Value == null)
             return node.Result ?? Problem("Unable to retrieve node");
         
-        var statistics = await NodeService.GetStatistics(node.Value);
+        var statistics = await NodeService.GetStatisticsAsync(node.Value);
 
         return new StatisticsResponse()
         {
@@ -66,14 +65,14 @@ public class StatisticsController : Controller
     }
 
     [HttpGet("docker")]
-    public async Task<ActionResult<DockerStatisticsResponse>> GetDocker([FromRoute] int nodeId)
+    public async Task<ActionResult<DockerStatisticsResponse>> GetDockerAsync([FromRoute] int nodeId)
     {
-        var node = await GetNode(nodeId);
+        var node = await GetNodeAsync(nodeId);
 
         if (node.Value == null)
             return node.Result ?? Problem("Unable to retrieve node");
         
-        var statistics = await NodeService.GetDockerStatistics(node.Value);
+        var statistics = await NodeService.GetDockerStatisticsAsync(node.Value);
 
         return new DockerStatisticsResponse()
         {
@@ -87,7 +86,7 @@ public class StatisticsController : Controller
         };
     }
 
-    private async Task<ActionResult<Node>> GetNode(int nodeId)
+    private async Task<ActionResult<Node>> GetNodeAsync(int nodeId)
     {
         var result = await NodeRepository
             .Get()

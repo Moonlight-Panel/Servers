@@ -1,5 +1,4 @@
 using System.Collections.Concurrent;
-using MoonCore.Helpers;
 using MoonCore.Models;
 using MoonlightServers.Daemon.Mappers;
 using MoonlightServers.Daemon.Models.Cache;
@@ -32,7 +31,7 @@ public class ServerService : IHostedLifecycleService
     public Server? GetById(int id)
         => Servers.GetValueOrDefault(id);
 
-    public async Task Initialize(ServerConfiguration configuration)
+    public async Task InitializeAsync(ServerConfiguration configuration)
     {
         var existingServer = Servers.GetValueOrDefault(configuration.Id);
 
@@ -50,20 +49,20 @@ public class ServerService : IHostedLifecycleService
         }
     }
 
-    public async Task InitializeById(int id)
+    public async Task InitializeByIdAsync(int id)
     {
-        var serverData = await RemoteService.GetServer(id);
+        var serverData = await RemoteService.GetServerAsync(id);
         var config = ConfigurationMapper.FromServerDataResponse(serverData);
 
-        await Initialize(config);
+        await InitializeAsync(config);
     }
 
-    private async Task InitializeAll()
+    private async Task InitializeAllAsync()
     {
         Logger.LogDebug("Initialing servers from panel");
 
-        var servers = await PagedData<ServerDataResponse>.All(async (page, pageSize) =>
-            await RemoteService.GetServers(page, pageSize)
+        var servers = await CountedData<ServerDataResponse>.LoadAllAsync(async (startIndex, count) =>
+            await RemoteService.GetServersAsync(startIndex, count)
         );
 
         foreach (var serverData in servers)
@@ -72,7 +71,7 @@ public class ServerService : IHostedLifecycleService
             {
                 var config = ConfigurationMapper.FromServerDataResponse(serverData);
 
-                await Initialize(config);
+                await InitializeAsync(config);
             }
             catch (Exception e)
             {
@@ -91,7 +90,7 @@ public class ServerService : IHostedLifecycleService
 
     public async Task StartedAsync(CancellationToken cancellationToken)
     {
-        await InitializeAll();
+        await InitializeAllAsync();
     }
 
     public Task StartingAsync(CancellationToken cancellationToken)

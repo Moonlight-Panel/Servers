@@ -16,19 +16,19 @@ public class ServerShareService
         ApiClient = apiClient;
     }
 
-    public async Task<PagedData<ServerShareResponse>> Get(int id, int page, int pageSize)
-        => await ApiClient.GetJson<PagedData<ServerShareResponse>>(
-            $"api/client/servers/{id}/shares?page={page}&pageSize={pageSize}");
+    public async Task<CountedData<ServerShareResponse>> GetAsync(int id, int startIndex, int count)
+        => await ApiClient.GetJson<CountedData<ServerShareResponse>>(
+            $"api/client/servers/{id}/shares?startIndex={startIndex}&count={count}");
 
-    public async Task<ServerShareResponse> Get(int id, int shareId)
+    public async Task<ServerShareResponse> GetAsync(int id, int shareId)
         => await ApiClient.GetJson<ServerShareResponse>($"api/client/servers/{id}/shares/{shareId}");
 
-    public async Task<ServerShareResponse> Create(int id, CreateShareRequest request)
+    public async Task<ServerShareResponse> CreateAsync(int id, CreateShareRequest request)
         => await ApiClient.PostJson<ServerShareResponse>($"api/client/servers/{id}/shares", request);
 
-    public async Task<ServerShareResponse> Update(int id, int shareId, UpdateShareRequest request)
+    public async Task<ServerShareResponse> UpdateAsync(int id, int shareId, UpdateShareRequest request)
         => await ApiClient.PatchJson<ServerShareResponse>($"api/client/servers/{id}/shares/{shareId}", request);
 
-    public async Task Delete(int id, int shareId)
+    public async Task DeleteAsync(int id, int shareId)
         => await ApiClient.Delete($"api/client/servers/{id}/shares/{shareId}");
 }

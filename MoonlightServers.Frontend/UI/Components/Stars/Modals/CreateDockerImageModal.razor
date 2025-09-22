@@ -4,30 +4,42 @@
 
 @inherits MoonCore.Blazor.FlyonUi.Modals.Components.BaseModal
 
-<h1 class="mb-5 font-semibold text-xl">Add a new variable</h1>
-
-<HandleForm @ref="HandleForm" Model="Form" OnValidSubmit="OnValidSubmit">
-    <div class="grid grid-cols-2 gap-2">
-        <div class="col-span-2">
-            <label class="block text-sm font-medium leading-6 text-base-content">Display Name</label>
-            <input @bind="Form.DisplayName" type="text" class="input w-full"/>
+<div class="p-5">
+    <div class="flex items-center gap-4">
+        <div class="avatar avatar-placeholder max-sm:hidden">
+            <div class="border-base-content/20 rounded-box w-13 border-1">
+                <span class="icon-container text-xl"></span>
+            </div>
         </div>
-
-        <div class="col-span-2">
-            <label class="block text-sm font-medium leading-6 text-base-content">Identifier</label>
-            <input @bind="Form.Identifier" type="text" class="input w-full"/>
-        </div>
-
-        <div class="col-span-2">
-            <label class="block text-sm font-medium leading-6 text-base-content">Automatic pulling</label>
-            <Switch @bind-Value="Form.AutoPulling"/>
+        <div class="space-y-1">
+            <h3 class="text-base-content text-2xl font-semibold">Add a new docker image</h3>
+            <p class="text-base-content/80">Add a new docker image to the star</p>
         </div>
     </div>
-</HandleForm>
-
-<div class="mt-5 flex space-x-2">
-    <WButton OnClick="_ => Hide()" CssClasses="btn btn-secondary grow">Cancel</WButton>
-    <WButton OnClick="_ => Submit()" CssClasses="btn btn-primary grow">Create</WButton>
+    <div class="mt-5">
+        <HandleForm @ref="HandleForm" Model="Form" OnValidSubmit="OnValidSubmit">
+            <div class="mt-2">
+                <label class="label-text">Display Name</label>
+                <input class="input" @bind="Form.DisplayName" type="text"/>
+            </div>
+            <div class="mt-2">
+                <label class="label-text">Identifier</label>
+                <input class="input" @bind="Form.Identifier" type="text"/>
+            </div>
+            <div class="mt-2">
+                <label class="label-text">Automatic pulling</label>
+                <Switch @bind-Value="Form.AutoPulling"/>
+            </div>
+        </HandleForm>
+    </div>
+    <div class="mt-5 flex justify-end">
+        <button @onclick="HideAsync" type="button" class="btn btn-secondary me-2">
+            Cancel
+        </button>
+        <WButton OnClick="SubmitAsync">
+            Create
+        </WButton>
+    </div>
 </div>
 
 @code
@@ -49,8 +61,8 @@
     private async Task OnValidSubmit()
     {
         await OnSubmit.Invoke(Form);
-        await Hide();
+        await HideAsync();
     }
 
-    private Task Submit() => HandleForm.Submit();
+    private Task SubmitAsync() => HandleForm.SubmitAsync();
 }

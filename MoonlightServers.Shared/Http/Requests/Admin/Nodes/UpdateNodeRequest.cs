@@ -17,7 +17,4 @@ public class UpdateNodeRequest
     [Required(ErrorMessage = "You need to provide a ftp port")]
     [Range(1, 65535, ErrorMessage = "You need to provide a valid ftp port")]
     public int FtpPort { get; set; }
-    
-    public bool EnableTransparentMode { get; set; }
-    public bool EnableDynamicFirewall { get; set; }
 }

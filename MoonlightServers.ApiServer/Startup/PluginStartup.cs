@@ -15,7 +15,7 @@ namespace MoonlightServers.ApiServer.Startup;
 
 public class PluginStartup : IPluginStartup
 {
-    public Task BuildApplication(IServiceProvider serviceProvider, IHostApplicationBuilder builder)
+    public Task BuildApplicationAsync(IServiceProvider serviceProvider, IHostApplicationBuilder builder)
     {
         // Scan the current plugin assembly for di services
         builder.Services.AutoAddServices<PluginStartup>();
@@ -51,9 +51,9 @@ public class PluginStartup : IPluginStartup
         return Task.CompletedTask;
     }
 
-    public Task ConfigureApplication(IServiceProvider serviceProvider, IApplicationBuilder app)
+    public Task ConfigureApplicationAsync(IServiceProvider serviceProvider, IApplicationBuilder app)
         => Task.CompletedTask;
 
-    public Task ConfigureEndpoints(IServiceProvider serviceProvider, IEndpointRouteBuilder routeBuilder)
+    public Task ConfigureEndpointsAsync(IServiceProvider serviceProvider, IEndpointRouteBuilder routeBuilder)
         => Task.CompletedTask;
 }

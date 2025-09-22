@@ -5,5 +5,5 @@ namespace MoonlightServers.Frontend.Interfaces;
 
 public interface IServerPermissionProvider
 {
-    public Task<ServerPermission[]> GetPermissions(ServerDetailResponse server);
+    public Task<ServerPermission[]> GetPermissionsAsync(ServerDetailResponse server);
 }

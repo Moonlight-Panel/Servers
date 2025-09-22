@@ -14,11 +14,7 @@ using MoonlightServers.Daemon.Http.Hubs;
 using MoonlightServers.Daemon.Mappers;
 using MoonlightServers.Daemon.Models.Cache;
 using MoonlightServers.Daemon.ServerSystem;
-using MoonlightServers.Daemon.ServerSystem.Docker;
 using MoonlightServers.Daemon.ServerSystem.Enums;
-using MoonlightServers.Daemon.ServerSystem.FileSystems;
-using MoonlightServers.Daemon.ServerSystem.Handlers;
-using MoonlightServers.Daemon.ServerSystem.Implementations;
 using MoonlightServers.Daemon.ServerSystem.Models;
 using MoonlightServers.Daemon.Services;
 
@@ -40,35 +36,35 @@ public class Startup
     private WebApplication WebApplication;
     private WebApplicationBuilder WebApplicationBuilder;
 
-    public async Task Run(string[] args)
+    public async Task RunAsync(string[] args)
     {
         Args = args;
 
-        await SetupStorage();
-        await SetupAppConfiguration();
-        await SetupLogging();
+        await SetupStorageAsync();
+        await SetupAppConfigurationAsync();
+        await SetupLoggingAsync();
 
-        await CreateWebApplicationBuilder();
+        await CreateWebApplicationBuilderAsync();
 
-        await ConfigureKestrel();
-        await RegisterAppConfiguration();
-        await RegisterLogging();
-        await RegisterBase();
-        await RegisterAuth();
-        await RegisterDocker();
-        await RegisterServers();
-        await RegisterSignalR();
-        await RegisterCors();
+        await ConfigureKestrelAsync();
+        await RegisterAppConfigurationAsync();
+        await RegisterLoggingAsync();
+        await RegisterBaseAsync();
+        await RegisterAuthAsync();
+        await RegisterDockerAsync();
+        await RegisterServersAsync();
+        await RegisterSignalRAsync();
+        await RegisterCorsAsync();
 
-        await BuildWebApplication();
+        await BuildWebApplicationAsync();
 
-        await UseBase();
-        await UseCors();
-        await UseAuth();
-        await UseBaseMiddleware();
+        await UseBaseAsync();
+        await UseCorsAsync();
+        await UseAuthAsync();
+        await UseBaseMiddlewareAsync();
 
-        await MapBase();
-        await MapHubs();
+        await MapBaseAsync();
+        await MapHubsAsync();
 
         Task.Run(async () =>
         {
@@ -93,8 +89,6 @@ public class Startup
                         "java -Xms128M -Xmx{{SERVER_MEMORY}}M -Dterminal.jline=false -Dterminal.ansi=true -jar {{SERVER_JARFILE}}",
                     DockerImage = "ghcr.io/nexocrew-hq/moonlightdockerimages:java21",
                     StopCommand = "stop",
-                    UseVirtualDisk = false,
-                    Bandwidth = 0,
                     Variables = new Dictionary<string, string>()
                     {
                         { "SERVER_JARFILE", "server.jar" },
@@ -139,7 +133,7 @@ public class Startup
         await WebApplication.RunAsync();
     }
 
-    private Task SetupStorage()
+    private Task SetupStorageAsync()
     {
         Directory.CreateDirectory("storage");
         Directory.CreateDirectory(Path.Combine("storage", "logs"));
@@ -149,7 +143,7 @@ public class Startup
 
     #region Base
 
-    private Task RegisterBase()
+    private Task RegisterBaseAsync()
     {
         WebApplicationBuilder.Services.AutoAddServices<Startup>();
         WebApplicationBuilder.Services.AddControllers();
@@ -159,7 +153,7 @@ public class Startup
         return Task.CompletedTask;
     }
 
-    private Task ConfigureKestrel()
+    private Task ConfigureKestrelAsync()
     {
         WebApplicationBuilder.WebHost.ConfigureKestrel(options =>
         {
@@ -170,7 +164,7 @@ public class Startup
         return Task.CompletedTask;
     }
 
-    private Task UseBase()
+    private Task UseBaseAsync()
     {
         WebApplication.UseRouting();
         WebApplication.UseExceptionHandler();
@@ -178,12 +172,12 @@ public class Startup
         return Task.CompletedTask;
     }
 
-    private Task UseBaseMiddleware()
+    private Task UseBaseMiddlewareAsync()
     {
         return Task.CompletedTask;
     }
 
-    private Task MapBase()
+    private Task MapBaseAsync()
     {
         WebApplication.MapControllers();
 
@@ -194,7 +188,7 @@ public class Startup
 
     #region Docker
 
-    private Task RegisterDocker()
+    private Task RegisterDockerAsync()
     {
         var dockerClient = new DockerClientConfiguration(
             new Uri(Configuration.Docker.Uri)
@@ -213,7 +207,7 @@ public class Startup
 
     #region Configurations
 
-    private async Task SetupAppConfiguration()
+    private async Task SetupAppConfigurationAsync()
     {
         var configurationBuilder = new ConfigurationBuilder();
 
@@ -235,7 +229,7 @@ public class Startup
         Configuration = configurationRoot.Get<AppConfiguration>()!;
     }
 
-    private Task RegisterAppConfiguration()
+    private Task RegisterAppConfigurationAsync()
     {
         WebApplicationBuilder.Services.AddSingleton(Configuration);
 
@@ -246,13 +240,13 @@ public class Startup
 
     #region Web Application
 
-    private Task CreateWebApplicationBuilder()
+    private Task CreateWebApplicationBuilderAsync()
     {
         WebApplicationBuilder = WebApplication.CreateBuilder(Args);
         return Task.CompletedTask;
     }
 
-    private Task BuildWebApplication()
+    private Task BuildWebApplicationAsync()
     {
         WebApplication = WebApplicationBuilder.Build();
         return Task.CompletedTask;
@@ -262,7 +256,7 @@ public class Startup
 
     #region Logging
 
-    private Task SetupLogging()
+    private Task SetupLoggingAsync()
     {
         LoggerFactory = new LoggerFactory();
         LoggerFactory.AddAnsiConsole();
@@ -272,7 +266,7 @@ public class Startup
         return Task.CompletedTask;
     }
 
-    private async Task RegisterLogging()
+    private async Task RegisterLoggingAsync()
     {
         // Configure application logging
         WebApplicationBuilder.Logging.ClearProviders();
@@ -323,7 +317,7 @@ public class Startup
 
     #region Servers
 
-    private Task RegisterServers()
+    private Task RegisterServersAsync()
     {
         WebApplicationBuilder.Services.AddScoped<ServerContext>();
         WebApplicationBuilder.Services.AddSingleton<ServerFactory>();
@@ -335,7 +329,7 @@ public class Startup
         return Task.CompletedTask;
     }
 
-    private Task UseServers()
+    private Task UseServersAsync()
     {
         return Task.CompletedTask;
     }
@@ -344,13 +338,13 @@ public class Startup
 
     #region Hubs
 
-    private Task RegisterSignalR()
+    private Task RegisterSignalRAsync()
     {
         WebApplicationBuilder.Services.AddSignalR();
         return Task.CompletedTask;
     }
 
-    private Task MapHubs()
+    private Task MapHubsAsync()
     {
         WebApplication.MapHub<ServerWebSocketHub>("api/servers/ws", options =>
         {
@@ -365,7 +359,7 @@ public class Startup
 
     #region Cors
 
-    private Task RegisterCors()
+    private Task RegisterCorsAsync()
     {
         //TODO: IMPORTANT: CHANGE !!!
         WebApplicationBuilder.Services.AddCors(x =>
@@ -380,7 +374,7 @@ public class Startup
         return Task.CompletedTask;
     }
 
-    private Task UseCors()
+    private Task UseCorsAsync()
     {
         WebApplication.UseCors();
         return Task.CompletedTask;
@@ -390,7 +384,7 @@ public class Startup
 
     #region Authentication
 
-    private Task RegisterAuth()
+    private Task RegisterAuthAsync()
     {
         WebApplicationBuilder.Services
             .AddAuthentication("token")
@@ -461,7 +455,7 @@ public class Startup
         return Task.CompletedTask;
     }
 
-    private Task UseAuth()
+    private Task UseAuthAsync()
     {
         WebApplication.UseAuthentication();
         WebApplication.UseAuthorization();

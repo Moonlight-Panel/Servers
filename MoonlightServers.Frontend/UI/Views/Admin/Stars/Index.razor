@@ -1,7 +1,6 @@
 @page "/admin/servers/stars"
 
 @using MoonCore.Blazor.FlyonUi.Alerts
-@using MoonCore.Blazor.FlyonUi.DataTables
 @using MoonCore.Blazor.FlyonUi.Helpers
 @using MoonCore.Blazor.FlyonUi.Toasts
 @using MoonCore.Helpers
@@ -9,6 +8,8 @@
 @using MoonlightServers.Shared.Http.Responses.Admin.Stars
 @using MoonCore.Exceptions
 @using MoonCore.Blazor.FlyonUi.Components
+@using MoonCore.Blazor.FlyonUi.Grid
+@using MoonCore.Blazor.FlyonUi.Grid.Columns
 
 @inject HttpApiClient ApiClient
 @inject DownloadService DownloadService
@@ -35,88 +36,99 @@
     </PageHeader>
 </div>
 
-<DataTable @ref="Table" TItem="StarResponse">
-    <Configuration>
-        <Pagination TItem="StarResponse" ItemSource="LoadData" />
-        
-        <DataTableColumn TItem="StarResponse" Field="@(x => x.Id)" Name="Id"/>
-        <DataTableColumn TItem="StarResponse" Field="@(x => x.Name)" Name="Name">
-            <ColumnTemplate>
-                <a class="text-primary" href="/admin/servers/stars/update/@(context.Id)">
-                    @context.Name
+<DataGrid @ref="Grid"
+          TGridItem="StarResponse"
+          EnablePagination="true"
+          ItemsProvider="ItemsProviderAsync">
+    <PropertyColumn Field="x => x.Id" />
+    <TemplateColumn Title="Name">
+        <td>
+            <a class="text-primary" href="/admin/servers/stars/update/@(context.Id)">
+                @context.Name
+            </a>
+        </td>
+    </TemplateColumn>
+    <PropertyColumn Field="x => x.Version" />
+    <PropertyColumn Field="x => x.Author" />
+    <TemplateColumn>
+        <td>
+            <div class="flex justify-end">
+                @if (!string.IsNullOrEmpty(context.DonateUrl))
+                {
+                    <a href="@context.DonateUrl" target="_blank" class="text-accent mr-3">
+                        <i class="icon-heart align-middle"></i>
+                        <span class="align-middle">Donate</span>
+                    </a>
+                }
+
+                @if (!string.IsNullOrEmpty(context.UpdateUrl))
+                {
+                    <a href="#" @onclick:preventDefault class="text-accent mr-3">
+                        <i class="icon-refresh-cw align-middle"></i>
+                        <span class="align-middle">Update</span>
+                    </a>
+                }
+
+                <a href="#" @onclick="() => ExportAsync(context)" @onclick:preventDefault class="text-success mr-3">
+                    <i class="icon-download align-middle"></i>
+                    <span class="align-middle">Export</span>
                 </a>
-            </ColumnTemplate>
-        </DataTableColumn>
-        <DataTableColumn TItem="StarResponse" Field="@(x => x.Version)" Name="Version"/>
-        <DataTableColumn TItem="StarResponse" Field="@(x => x.Author)" Name="Author"/>
-        <DataTableColumn TItem="StarResponse">
-            <ColumnTemplate>
-                <div class="flex justify-end">
-                    @if (!string.IsNullOrEmpty(context.DonateUrl))
-                    {
-                        <a href="@context.DonateUrl" target="_blank" class="text-accent mr-3">
-                            <i class="icon-heart align-middle"></i>
-                            <span class="align-middle">Donate</span>
-                        </a>
-                    }
 
-                    @if (!string.IsNullOrEmpty(context.UpdateUrl))
-                    {
-                        <a href="#" @onclick:preventDefault class="text-accent mr-3">
-                            <i class="icon-refresh-cw align-middle"></i>
-                            <span class="align-middle">Update</span>
-                        </a>
-                    }
+                <a href="/admin/servers/stars/update/@(context.Id)" class="text-primary mr-2 sm:mr-3">
+                    <i class="icon-pencil text-base"></i>
+                </a>
 
-                    <a href="#" @onclick="() => Export(context)" @onclick:preventDefault class="text-success mr-3">
-                        <i class="icon-download align-middle"></i>
-                        <span class="align-middle">Export</span>
-                    </a>
-
-                    <a href="/admin/servers/stars/update/@(context.Id)" class="text-primary mr-2 sm:mr-3">
-                        <i class="icon-pencil text-base"></i>
-                    </a>
-
-                    <a href="#" @onclick="() => Delete(context)" @onclick:preventDefault
-                       class="text-error">
-                        <i class="icon-trash text-base"></i>
-                    </a>
-                </div>
-            </ColumnTemplate>
-        </DataTableColumn>
-    </Configuration>
-</DataTable>
+                <a href="#" @onclick="() => DeleteAsync(context)" @onclick:preventDefault
+                   class="text-error">
+                    <i class="icon-trash text-base"></i>
+                </a>
+            </div>
+        </td>
+    </TemplateColumn>
+</DataGrid>
 
 @code
 {
-    private DataTable<StarResponse> Table;
+    private DataGrid<StarResponse> Grid;
 
-    private async Task<IPagedData<StarResponse>> LoadData(PaginationOptions options)
-     => await ApiClient.GetJson<PagedData<StarResponse>>($"api/admin/servers/stars?page={options.Page}&pageSize={options.PerPage}");
-
-    private async Task Delete(StarResponse response)
+    private async Task<DataGridItemResult<StarResponse>> ItemsProviderAsync(
+        DataGridItemRequest request
+    )
     {
-        await AlertService.ConfirmDanger(
+        var query = $"?startIndex={request.StartIndex}&count={request.Count}";
+
+        var countedData = await ApiClient.GetJson<CountedData<StarResponse>>($"api/admin/servers/stars{query}");
+
+        return new()
+        {
+            TotalCount = countedData.TotalCount,
+            Items = countedData.Items
+        };
+    }
+
+    private async Task DeleteAsync(StarResponse response)
+    {
+        await AlertService.ConfirmDangerAsync(
             "Star deletion",
             $"Do you really want to delete the star '{response.Name}'",
             async () =>
             {
                 await ApiClient.Delete($"api/admin/servers/stars/{response.Id}");
-                await ToastService.Success("Successfully deleted star");
+                await ToastService.SuccessAsync("Successfully deleted star");
 
-                await Table.Refresh();
+                await Grid.RefreshAsync();
             }
         );
     }
     
-    private async Task Export(StarResponse star)
+    private async Task ExportAsync(StarResponse star)
     {
         var json = await ApiClient.GetString($"api/admin/servers/stars/{star.Id}/export");
 
         var formattedFileName = star.Name.Replace(" ", "_") + ".json";
 
-        await DownloadService.Download(formattedFileName, json);
-        await ToastService.Success($"Successfully exported '{star.Name}'");
+        await DownloadService.DownloadAsync(formattedFileName, json);
+        await ToastService.SuccessAsync($"Successfully exported '{star.Name}'");
     }
 
     private async Task OnImportFiles(InputFileChangeEventArgs eventArgs)
@@ -137,7 +149,7 @@
             {
                 if (!file.Name.EndsWith(".json"))
                 {
-                    await ToastService.Error($"Failed to import '{file.Name}': Only json files are supported");
+                    await ToastService.ErrorAsync($"Failed to import '{file.Name}': Only json files are supported");
                     continue;
                 }
 
@@ -147,14 +159,14 @@
 
                 var star = await ApiClient.PostJson<StarResponse>("api/admin/servers/stars/import", content);
                 
-                await ToastService.Success($"Successfully imported '{star.Name}'");
+                await ToastService.SuccessAsync($"Successfully imported '{star.Name}'");
             }
             catch (HttpApiException e)
             {
-                await ToastService.Error($"Failed to import '{file.Name}': {e.Title}");
+                await ToastService.ErrorAsync($"Failed to import '{file.Name}': {e.Title}");
             }
         }
 
-        await Table.Refresh();
+        await Grid.RefreshAsync();
     }
 }

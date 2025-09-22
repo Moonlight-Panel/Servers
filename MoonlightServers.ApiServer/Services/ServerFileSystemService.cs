@@ -24,54 +24,54 @@ public class ServerFileSystemService
         ServerRepository = serverRepository;
     }
 
-    public async Task<ServerFileSystemResponse[]> List(Server server, string path)
+    public async Task<ServerFileSystemResponse[]> ListAsync(Server server, string path)
     {
-        using var apiClient = await GetApiClient(server);
+        using var apiClient = await GetApiClientAsync(server);
         
         return await apiClient.GetJson<ServerFileSystemResponse[]>(
             $"api/servers/{server.Id}/files/list?path={path}"
         );
     }
 
-    public async Task Move(Server server, string oldPath, string newPath)
+    public async Task MoveAsync(Server server, string oldPath, string newPath)
     {
-        using var apiClient = await GetApiClient(server);
+        using var apiClient = await GetApiClientAsync(server);
 
         await apiClient.Post(
             $"api/servers/{server.Id}/files/move?oldPath={oldPath}&newPath={newPath}"
         );
     }
     
-    public async Task Delete(Server server, string path)
+    public async Task DeleteAsync(Server server, string path)
     {
-        using var apiClient = await GetApiClient(server);
+        using var apiClient = await GetApiClientAsync(server);
 
         await apiClient.Delete(
             $"api/servers/{server.Id}/files/delete?path={path}"
         );
     }
     
-    public async Task Mkdir(Server server, string path)
+    public async Task MkdirAsync(Server server, string path)
     {
-        using var apiClient = await GetApiClient(server);
+        using var apiClient = await GetApiClientAsync(server);
 
         await apiClient.Post(
             $"api/servers/{server.Id}/files/mkdir?path={path}"
         );
     }
     
-    public async Task Touch(Server server, string path)
+    public async Task TouchAsync(Server server, string path)
     {
-        using var apiClient = await GetApiClient(server);
+        using var apiClient = await GetApiClientAsync(server);
 
         await apiClient.Post(
             $"api/servers/{server.Id}/files/touch?path={path}"
         );
     }
 
-    public async Task Compress(Server server, CompressType type, string[] items, string destination)
+    public async Task CompressAsync(Server server, CompressType type, string[] items, string destination)
     {
-        using var apiClient = await GetApiClient(server);
+        using var apiClient = await GetApiClientAsync(server);
 
         await apiClient.Post(
             $"api/servers/{server.Id}/files/compress",
@@ -84,9 +84,9 @@ public class ServerFileSystemService
         );
     }
     
-    public async Task Decompress(Server server, CompressType type, string path, string destination)
+    public async Task DecompressAsync(Server server, CompressType type, string path, string destination)
     {
-        using var apiClient = await GetApiClient(server);
+        using var apiClient = await GetApiClientAsync(server);
 
         await apiClient.Post(
             $"api/servers/{server.Id}/files/decompress",
@@ -101,7 +101,7 @@ public class ServerFileSystemService
 
     #region Helpers
 
-    private async Task<HttpApiClient> GetApiClient(Server server)
+    private async Task<HttpApiClient> GetApiClientAsync(Server server)
     {
         var serverWithNode = server;
 

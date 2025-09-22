@@ -1,10 +1,8 @@
-using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authorization;
 using MoonCore.Exceptions;
 using MoonCore.Extended.Abstractions;
-using MoonCore.Extended.Models;
 using MoonCore.Models;
 using MoonlightServers.ApiServer.Database.Entities;
 using MoonlightServers.ApiServer.Mappers;
@@ -30,11 +28,15 @@ public class StarVariablesController : Controller
 
     [HttpGet]
     [Authorize(Policy = "permissions:admin.servers.stars.get")]
-    public async Task<ActionResult<IPagedData<StarVariableResponse>>> Get(
+    public async Task<ActionResult<CountedData<StarVariableResponse>>> GetAsync(
         [FromRoute] int starId,
-        [FromQuery] PagedOptions options
+        [FromQuery] int startIndex,
+        [FromQuery] int count
     )
     {
+        if (count > 100)
+            return Problem("Only 100 items can be fetched at a time", statusCode: 400);
+        
         var starExists = StarRepository
             .Get()
             .Any(x => x.Id == starId);
@@ -46,29 +48,26 @@ public class StarVariablesController : Controller
             .Get()
             .Where(x => x.Star.Id == starId);
 
-        var count = await query.CountAsync();
+        var totalCount = await query.CountAsync();
 
         var variables = await query
             .OrderBy(x => x.Id)
-            .Skip(options.Page * options.PageSize)
-            .Take(options.PageSize)
+            .Skip(startIndex)
+            .Take(count)
             .AsNoTracking()
             .ProjectToAdminResponse()
             .ToArrayAsync();
 
-        return new PagedData<StarVariableResponse>()
+        return new CountedData<StarVariableResponse>()
         {
             Items = variables,
-            CurrentPage = options.Page,
-            PageSize = options.PageSize,
-            TotalItems = count,
-            TotalPages = (int)Math.Ceiling(Math.Max(0, count) / (double)options.PageSize)
+            TotalCount = totalCount
         };
     }
 
     [HttpGet("{id:int}")]
     [Authorize(Policy = "permissions:admin.servers.stars.get")]
-    public async Task<StarVariableResponse> GetSingle(
+    public async Task<StarVariableResponse> GetSingleAsync(
         [FromRoute] int starId,
         [FromRoute] int id
     )
@@ -92,7 +91,7 @@ public class StarVariablesController : Controller
 
     [HttpPost("")]
     [Authorize(Policy = "permissions:admin.servers.stars.create")]
-    public async Task<StarVariableResponse> Create([FromRoute] int starId,
+    public async Task<StarVariableResponse> CreateAsync([FromRoute] int starId,
         [FromBody] CreateStarVariableRequest request)
     {
         var star = StarRepository
@@ -105,14 +104,14 @@ public class StarVariablesController : Controller
         var starVariable = StarVariableMapper.ToStarVariable(request);
         starVariable.Star = star;
 
-        await VariableRepository.Add(starVariable);
+        await VariableRepository.AddAsync(starVariable);
 
         return StarVariableMapper.ToAdminResponse(starVariable);
     }
 
     [HttpPatch("{id:int}")]
     [Authorize(Policy = "permissions:admin.servers.stars.update")]
-    public async Task<StarVariableResponse> Update(
+    public async Task<StarVariableResponse> UpdateAsync(
         [FromRoute] int starId,
         [FromRoute] int id,
         [FromBody] UpdateStarVariableRequest request
@@ -133,14 +132,14 @@ public class StarVariablesController : Controller
             throw new HttpApiException("No variable with this id found", 404);
         
         StarVariableMapper.Merge(request, starVariable);
-        await VariableRepository.Update(starVariable);
+        await VariableRepository.UpdateAsync(starVariable);
         
         return StarVariableMapper.ToAdminResponse(starVariable);
     }
 
     [HttpDelete("{id:int}")]
     [Authorize(Policy = "permissions:admin.servers.stars.delete")]
-    public async Task Delete([FromRoute] int starId, [FromRoute] int id)
+    public async Task DeleteAsync([FromRoute] int starId, [FromRoute] int id)
     {
         var starExists = StarRepository
             .Get()
@@ -156,6 +155,6 @@ public class StarVariablesController : Controller
         if (starVariable == null)
             throw new HttpApiException("No variable with this id found", 404);
         
-        await VariableRepository.Remove(starVariable);
+        await VariableRepository.RemoveAsync(starVariable);
     }
 }

@@ -15,7 +15,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="9.0.5" />
+        <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="9.0.9" />
         <PackageReference Include="Moonlight.Client" Version="2.1.*"/>
         <PackageReference Include="XtermBlazor" Version="2.1.2" />
     </ItemGroup>
@@ -31,7 +31,8 @@
     </ItemGroup>
 
     <ItemGroup>
-      <Folder Include="Styles\" />
+        <None Include="Styles/mappings/*.map" Pack="true" PackagePath="Styles/" />
+        <None Include="MoonlightServers.Frontend.targets" Pack="true" PackagePath="build/MoonlightServers.Frontend.targets" />
     </ItemGroup>
 
 </Project>

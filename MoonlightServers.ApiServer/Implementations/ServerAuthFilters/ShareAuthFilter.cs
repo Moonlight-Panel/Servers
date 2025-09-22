@@ -1,12 +1,10 @@
 using System.Security.Claims;
 using Microsoft.EntityFrameworkCore;
-using MoonCore.Attributes;
 using MoonCore.Extended.Abstractions;
 using MoonlightServers.ApiServer.Database.Entities;
 using MoonlightServers.ApiServer.Interfaces;
 using MoonlightServers.ApiServer.Models;
 using MoonlightServers.Shared.Enums;
-using MoonlightServers.Shared.Models;
 
 namespace MoonlightServers.ApiServer.Implementations.ServerAuthFilters;
 
@@ -21,7 +19,7 @@ public class ShareAuthFilter : IServerAuthorizationFilter
 
     public int Priority => 0;
 
-    public async Task<ServerAuthorizationResult?> Process(
+    public async Task<ServerAuthorizationResult?> ProcessAsync(
         ClaimsPrincipal user,
         Server server,
         string permissionId,

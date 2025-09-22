@@ -18,17 +18,17 @@ public class StatisticsController : Controller
     }
 
     [HttpGet]
-    public async Task<StatisticsResponse> Get()
+    public async Task<StatisticsResponse> GetAsync()
     {
         var response = new StatisticsResponse();
 
-        var cpuUsage = await HostSystemHelper.GetCpuUsage();
+        var cpuUsage = await HostSystemHelper.GetCpuUsageAsync();
 
         response.Cpu.Model = cpuUsage.Model;
         response.Cpu.Usage = cpuUsage.OverallUsage;
         response.Cpu.UsagePerCore = cpuUsage.PerCoreUsage;
 
-        var memoryUsage = await HostSystemHelper.GetMemoryUsage();
+        var memoryUsage = await HostSystemHelper.GetMemoryUsageAsync();
 
         response.Memory.Available = memoryUsage.Available;
         response.Memory.Cached = memoryUsage.Cached;
@@ -37,7 +37,7 @@ public class StatisticsController : Controller
         response.Memory.SwapTotal = memoryUsage.SwapTotal;
         response.Memory.SwapFree = memoryUsage.SwapFree;
 
-        var diskDetails = await HostSystemHelper.GetDiskUsages();
+        var diskDetails = await HostSystemHelper.GetDiskUsagesAsync();
 
         response.Disks = diskDetails.Select(x => new StatisticsResponse.DiskData()
         {

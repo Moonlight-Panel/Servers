@@ -1,7 +1,6 @@
 using MoonlightServers.ApiServer.Database.Entities;
 using MoonlightServers.Shared.Http.Requests.Admin.Servers;
 using MoonlightServers.Shared.Http.Responses.Admin.Servers;
-using MoonlightServers.Shared.Http.Responses.Client.Servers;
 using Riok.Mapperly.Abstractions;
 
 namespace MoonlightServers.ApiServer.Mappers;

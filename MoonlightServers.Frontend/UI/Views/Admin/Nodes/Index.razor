@@ -2,7 +2,6 @@
 
 @using Microsoft.Extensions.Logging
 @using MoonCore.Blazor.FlyonUi.Alerts
-@using MoonCore.Blazor.FlyonUi.DataTables
 @using MoonCore.Blazor.FlyonUi.Toasts
 @using MoonCore.Helpers
 @using MoonCore.Models
@@ -11,6 +10,8 @@
 @using MoonlightServers.Shared.Http.Responses.Admin.Nodes.Statistics
 @using MoonlightServers.Shared.Http.Responses.Admin.Nodes.Sys
 @using MoonCore.Blazor.FlyonUi.Components
+@using MoonCore.Blazor.FlyonUi.Grid
+@using MoonCore.Blazor.FlyonUi.Grid.Columns
 
 @inject HttpApiClient ApiClient
 @inject NodeService NodeService
@@ -32,153 +33,151 @@
     </PageHeader>
 </div>
 
-<DataTable TItem="NodeResponse">
-    <Configuration>
-        <Pagination TItem="NodeResponse" ItemSource="LoadData"/>
+<DataGrid @ref="Grid"
+          TGridItem="NodeResponse"
+          EnablePagination="true"
+          ItemsProvider="ItemsProviderAsync">
+    <PropertyColumn Field="x => x.Id"/>
+    <TemplateColumn Title="Name">
+        <td>
+            <a class="text-primary" href="/admin/servers/nodes/update/@(context.Id)">
+                @context.Name
+            </a>
+        </td>
+    </TemplateColumn>
+    <PropertyColumn Field="x => x.Fqdn"/>
+    <TemplateColumn Title="Status">
+        <td>
+            @{
+                var isFetched = StatusResponses.TryGetValue(context.Id, out var data);
+            }
 
-        <DataTableColumn TItem="NodeResponse" Field="@(x => x.Id)" Name="Id"/>
-        <DataTableColumn TItem="NodeResponse" Field="@(x => x.Name)" Name="Name">
-            <ColumnTemplate>
-                <a class="text-primary" href="/admin/servers/nodes/update/@(context.Id)">
-                    @context.Name
-                </a>
-            </ColumnTemplate>
-        </DataTableColumn>
-        <DataTableColumn TItem="NodeResponse" Field="@(x => x.Fqdn)" Name="Fqdn"/>
-        <DataTableColumn TItem="NodeResponse" Field="@(x => x.Fqdn)" Name="Status">
-            <ColumnTemplate>
-                @{
-                    var isFetched = StatusResponses.TryGetValue(context.Id, out var data);
-                }
-
-                @if (isFetched)
+            @if (isFetched)
+            {
+                if (data == null)
                 {
-                    if (data == null)
+                    <div class="text-error flex items-center">
+                        <i class="icon-server-off text-base me-1"></i>
+                        <span>
+                            API Error
+                        </span>
+                    </div>
+                }
+                else
+                {
+                    if (data.RoundtripSuccess)
+                    {
+                        <div class="text-success flex items-center">
+                            <i class="icon-check text-base me-1"></i>
+                            <span>Online (@(data.Version))</span>
+                        </div>
+                    }
+                    else
                     {
                         <div class="text-error flex items-center">
                             <i class="icon-server-off text-base me-1"></i>
-                            <span>
-                                API Error
+                            <span class="me-2">
+                                Error
                             </span>
-                        </div>
-                    }
-                    else
-                    {
-                        if (data.RoundtripSuccess)
-                        {
-                            <div class="text-success flex items-center">
-                                <i class="icon-check text-base me-1"></i>
-                                <span>Online (@(data.Version))</span>
-                            </div>
-                        }
-                        else
-                        {
-                            <div class="text-error flex items-center">
-                                <i class="icon-server-off text-base me-1"></i>
-                                <span class="me-2">
-                                    Error
-                                </span>
-                                <a @onclick="() => ShowErrorDetails(context.Id)" @onclick:preventDefault
-                                   href="#" class="ms-1 text-base-content/40">Details</a>
-                            </div>
-                        }
-                    }
-                }
-                else
-                {
-                    <div class="text-gray-500">
-                        <i class="icon-loader text-base me-1 align-middle"></i>
-                        <span class="align-middle">Loading</span>
-                    </div>
-                }
-            </ColumnTemplate>
-        </DataTableColumn>
-        <DataTableColumn TItem="NodeResponse"
-                         Name="Utilization"
-                         HeaderCss="p-2 font-semibold text-left hidden xl:table-cell"
-                         ColumnCss="p-2 text-left font-normal hidden xl:table-cell">
-            <ColumnTemplate>
-                @{
-                    var isFetched = Statistics.TryGetValue(context.Id, out var data);
-                }
-
-                @if (isFetched)
-                {
-                    if (data == null)
-                    {
-                        <div class="flex items-center text-error">
-                            <i class="icon-server-off text-base me-1"></i>
-                            <span>
-                                API Error
-                            </span>
-                        </div>
-                    }
-                    else
-                    {
-                        <div class="flex flex-row">
-                            <div class="flex items-center">
-                                <i class="text-primary text-base me-2 icon-cpu"></i>
-                                <span>@(Math.Round(data.Cpu.Usage))%</span>
-                            </div>
-                        
-                            <div class="flex items-center ms-5">
-                                <i class="text-primary text-base me-2 icon-memory-stick"></i>
-                                <span>
-                                    @(Math.Round((data.Memory.Total - data.Memory.Free - data.Memory.Cached) / (double)data.Memory.Total * 100))%
-                                </span>
-                            </div>
+                            <a @onclick="() => ShowErrorDetailsAsync(context.Id)" @onclick:preventDefault
+                               href="#" class="ms-1 text-base-content/40">Details</a>
                         </div>
                     }
                 }
-                else
-                {
-                    <div class="flex items-center text-gray-500">
-                        <i class="icon-loader text-base me-1"></i>
-                        <span>Loading</span>
-                    </div>
-                }
-            </ColumnTemplate>
-        </DataTableColumn>
-        <DataTableColumn TItem="NodeResponse">
-            <ColumnTemplate>
-                <div class="flex justify-end">
-                    <a href="/admin/servers/nodes/update/@(context.Id)" class="text-primary mr-2 sm:mr-3">
-                        <i class="icon-pencil text-base"></i>
-                    </a>
-
-                    <a href="#" @onclick="() => Delete(context)" @onclick:preventDefault
-                       class="text-error">
-                        <i class="icon-trash text-base"></i>
-                    </a>
+            }
+            else
+            {
+                <div class="text-gray-500">
+                    <i class="icon-loader text-base me-1 align-middle"></i>
+                    <span class="align-middle">Loading</span>
                 </div>
-            </ColumnTemplate>
-        </DataTableColumn>
-    </Configuration>
-</DataTable>
+            }
+        </td>
+    </TemplateColumn>
+    <TemplateColumn Title="Utilization">
+        <td>
+            @{
+                var isFetched = Statistics.TryGetValue(context.Id, out var data);
+            }
+
+            @if (isFetched)
+            {
+                if (data == null)
+                {
+                    <div class="flex items-center text-error">
+                        <i class="icon-server-off text-base me-1"></i>
+                        <span>
+                            API Error
+                        </span>
+                    </div>
+                }
+                else
+                {
+                    <div class="flex flex-row">
+                        <div class="flex items-center">
+                            <i class="text-primary text-base me-2 icon-cpu"></i>
+                            <span>@(Math.Round(data.Cpu.Usage))%</span>
+                        </div>
+
+                        <div class="flex items-center ms-5">
+                            <i class="text-primary text-base me-2 icon-memory-stick"></i>
+                            <span>
+                                @(Math.Round((data.Memory.Total - data.Memory.Free - data.Memory.Cached) / (double)data.Memory.Total * 100))%
+                            </span>
+                        </div>
+                    </div>
+                }
+            }
+            else
+            {
+                <div class="flex items-center text-gray-500">
+                    <i class="icon-loader text-base me-1"></i>
+                    <span>Loading</span>
+                </div>
+            }
+        </td>
+    </TemplateColumn>
+    <TemplateColumn Title="Actions">
+        <td>
+            <div class="flex justify-end">
+                <a href="/admin/servers/nodes/update/@(context.Id)" class="text-primary mr-2 sm:mr-3">
+                    <i class="icon-pencil text-base"></i>
+                </a>
+
+                <a href="#" @onclick="() => DeleteAsync(context)" @onclick:preventDefault
+                   class="text-error">
+                    <i class="icon-trash text-base"></i>
+                </a>
+            </div>
+        </td>
+    </TemplateColumn>
+</DataGrid>
 
 @code
 {
-    private DataTable<NodeResponse> Table;
+    private DataGrid<NodeResponse> Grid;
 
     private Dictionary<int, NodeSystemStatusResponse?> StatusResponses = new();
     private Dictionary<int, StatisticsResponse?> Statistics = new();
-
-    private async Task<IPagedData<NodeResponse>> LoadData(PaginationOptions options)
+    
+    private async Task<DataGridItemResult<NodeResponse>> ItemsProviderAsync(
+        DataGridItemRequest request
+    )
     {
+        var query = $"?startIndex={request.StartIndex}&count={request.Count}";
+
+        var countedData = await ApiClient.GetJson<CountedData<NodeResponse>>($"api/admin/servers/nodes{query}");
+
         Statistics.Clear();
         StatusResponses.Clear();
-
-        var result = await ApiClient.GetJson<PagedData<NodeResponse>>(
-            $"api/admin/servers/nodes?page={options.Page}&pageSize={options.PerPage}"
-        );
-
+        
         Task.Run(async () =>
         {
-            foreach (var item in result.Items)
+            foreach (var item in countedData.Items)
             {
                 try
                 {
-                    Statistics[item.Id] = await NodeService.GetStatistics(item.Id);
+                    Statistics[item.Id] = await NodeService.GetStatisticsAsync(item.Id);
                 }
                 catch (Exception e)
                 {
@@ -192,10 +191,10 @@
                 }
 
                 await InvokeAsync(StateHasChanged);
-                
+
                 try
                 {
-                    StatusResponses[item.Id] = await NodeService.GetSystemStatus(item.Id);
+                    StatusResponses[item.Id] = await NodeService.GetSystemStatusAsync(item.Id);
                 }
                 catch (Exception e)
                 {
@@ -207,30 +206,34 @@
 
                     StatusResponses[item.Id] = null;
                 }
-                
+
                 await InvokeAsync(StateHasChanged);
             }
         });
-
-        return result;
+        
+        return new()
+        {
+            Items = countedData.Items,
+            TotalCount = countedData.TotalCount
+        };
     }
 
-    private async Task Delete(NodeResponse response)
+    private async Task DeleteAsync(NodeResponse response)
     {
-        await AlertService.ConfirmDanger(
+        await AlertService.ConfirmDangerAsync(
             "Node deletion",
             $"Do you really want to delete the node '{response.Name}'",
             async () =>
             {
                 await ApiClient.Delete($"api/admin/servers/nodes/{response.Id}");
-                await ToastService.Success("Successfully deleted node");
+                await ToastService.SuccessAsync("Successfully deleted node");
 
-                await Table.Refresh();
+                await Grid.RefreshAsync();
             }
         );
     }
 
-    private async Task ShowErrorDetails(int id)
+    private async Task ShowErrorDetailsAsync(int id)
     {
         var data = StatusResponses.GetValueOrDefault(id);
 
@@ -241,6 +244,6 @@
                       (data.RoundtripRemoteFailure ? "(Failed at node)" : "(Failed at api server)") +
                       $" {data.RoundtripError}";
 
-        await AlertService.Error("Node error details", message);
+        await AlertService.ErrorAsync("Node error details", message);
     }
 }

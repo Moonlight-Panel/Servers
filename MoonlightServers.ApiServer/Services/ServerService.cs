@@ -1,4 +1,3 @@
-using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using MoonCore.Attributes;
 using MoonCore.Exceptions;
@@ -25,11 +24,11 @@ public class ServerService
 
     #region Power Actions
 
-    public async Task Start(Server server)
+    public async Task StartAsync(Server server)
     {
         try
         {
-            using var apiClient = await GetApiClient(server);
+            using var apiClient = await GetApiClientAsync(server);
             await apiClient.Post($"api/servers/{server.Id}/start");
         }
         catch (HttpRequestException e)
@@ -38,11 +37,11 @@ public class ServerService
         }
     }
 
-    public async Task Stop(Server server)
+    public async Task StopAsync(Server server)
     {
         try
         {
-            using var apiClient = await GetApiClient(server);
+            using var apiClient = await GetApiClientAsync(server);
             await apiClient.Post($"api/servers/{server.Id}/stop");
         }
         catch (HttpRequestException e)
@@ -51,11 +50,11 @@ public class ServerService
         }
     }
 
-    public async Task Kill(Server server)
+    public async Task KillAsync(Server server)
     {
         try
         {
-            using var apiClient = await GetApiClient(server);
+            using var apiClient = await GetApiClientAsync(server);
             await apiClient.Post($"api/servers/{server.Id}/kill");
         }
         catch (HttpRequestException e)
@@ -66,11 +65,11 @@ public class ServerService
 
     #endregion
 
-    public async Task Install(Server server)
+    public async Task InstallAsync(Server server)
     {
         try
         {
-            using var apiClient = await GetApiClient(server);
+            using var apiClient = await GetApiClientAsync(server);
             await apiClient.Post($"api/servers/{server.Id}/install");
         }
         catch (HttpRequestException e)
@@ -79,11 +78,11 @@ public class ServerService
         }
     }
 
-    public async Task Sync(Server server)
+    public async Task SyncAsync(Server server)
     {
         try
         {
-            using var apiClient = await GetApiClient(server);
+            using var apiClient = await GetApiClientAsync(server);
             await apiClient.Post($"api/servers/{server.Id}/sync");
         }
         catch (HttpRequestException e)
@@ -92,11 +91,11 @@ public class ServerService
         }
     }
 
-    public async Task SyncDelete(Server server)
+    public async Task SyncDeleteAsync(Server server)
     {
         try
         {
-            using var apiClient = await GetApiClient(server);
+            using var apiClient = await GetApiClientAsync(server);
             await apiClient.Delete($"api/servers/{server.Id}");
         }
         catch (HttpRequestException e)
@@ -105,11 +104,11 @@ public class ServerService
         }
     }
 
-    public async Task<ServerStatusResponse> GetStatus(Server server)
+    public async Task<ServerStatusResponse> GetStatusAsync(Server server)
     {
         try
         {
-            using var apiClient = await GetApiClient(server);
+            using var apiClient = await GetApiClientAsync(server);
             return await apiClient.GetJson<ServerStatusResponse>($"api/servers/{server.Id}/status");
         }
         catch (HttpRequestException e)
@@ -118,11 +117,11 @@ public class ServerService
         }
     }
 
-    public async Task<ServerLogsResponse> GetLogs(Server server)
+    public async Task<ServerLogsResponse> GetLogsAsync(Server server)
     {
         try
         {
-            using var apiClient = await GetApiClient(server);
+            using var apiClient = await GetApiClientAsync(server);
             return await apiClient.GetJson<ServerLogsResponse>($"api/servers/{server.Id}/logs");
         }
         catch (HttpRequestException e)
@@ -131,11 +130,11 @@ public class ServerService
         }
     }
 
-    public async Task<ServerStatsResponse> GetStats(Server server)
+    public async Task<ServerStatsResponse> GetStatsAsync(Server server)
     {
         try
         {
-            using var apiClient = await GetApiClient(server);
+            using var apiClient = await GetApiClientAsync(server);
             return await apiClient.GetJson<ServerStatsResponse>($"api/servers/{server.Id}/stats");
         }
         catch (HttpRequestException)
@@ -144,11 +143,11 @@ public class ServerService
         }
     }
 
-    public async Task RunCommand(Server server, string command)
+    public async Task RunCommandAsync(Server server, string command)
     {
         try
         {
-            using var apiClient = await GetApiClient(server);
+            using var apiClient = await GetApiClientAsync(server);
 
             await apiClient.Post(
                 $"api/servers/{server.Id}/command",
@@ -174,7 +173,7 @@ public class ServerService
         return PermissionHelper.HasPermission(user.Permissions, "admin.servers.get");
     }
 
-    private async Task<HttpApiClient> GetApiClient(Server server)
+    private async Task<HttpApiClient> GetApiClientAsync(Server server)
     {
         var serverWithNode = server;
 

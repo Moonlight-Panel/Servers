@@ -13,13 +13,13 @@
 
 @attribute [Authorize(Policy = "permissions:admin.servers.nodes.update")]
 
-<LazyLoader Load="Load">
+<LazyLoader Load="LoadAsync">
     <PageHeader Title="@Node.Name">
         <a href="/admin/servers/nodes" class="btn btn-secondary">
             <i class="icon-chevron-left"></i>
             Back
         </a>
-        <WButton OnClick="_ => Form.Submit()" CssClasses="btn btn-primary">
+        <WButton OnClick="Form.SubmitAsync" CssClasses="btn btn-primary">
             <i class="icon-check"></i>
             Update
         </WButton>
@@ -58,15 +58,13 @@
     private UpdateNodeRequest Request;
     private NodeResponse Node;
 
-    private async Task Load(LazyLoader _)
+    private async Task LoadAsync(LazyLoader _)
     {
         Node = await ApiClient.GetJson<NodeResponse>($"api/admin/servers/nodes/{Id}");
 
         Request = new UpdateNodeRequest()
         {
             Name = Node.Name,
-            EnableDynamicFirewall = Node.EnableDynamicFirewall,
-            EnableTransparentMode = Node.EnableTransparentMode,
             Fqdn = Node.Fqdn,
             FtpPort = Node.FtpPort,
             HttpPort = Node.HttpPort
@@ -77,7 +75,7 @@
     {
         await ApiClient.Patch($"api/admin/servers/nodes/{Id}", Request);
 
-        await ToastService.Success("Successfully updated Node");
+        await ToastService.SuccessAsync("Successfully updated Node");
         Navigation.NavigateTo("/admin/servers/nodes");
     }
 }

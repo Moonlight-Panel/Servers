@@ -12,7 +12,7 @@
 
 @implements IDisposable
 
-<LazyLoader Load="Load">
+<LazyLoader Load="LoadAsync">
 
     <div class="mb-3 mt-5 text-xl font-semibold">
         Overview
@@ -176,27 +176,27 @@
 
     private Timer? UpdateTimer;
 
-    private async Task Load(LazyLoader _)
+    private async Task LoadAsync(LazyLoader _)
     {
-        Statistics = await NodeService.GetStatistics(Node.Id);
-        DockerStatistics = await NodeService.GetDockerStatistics(Node.Id);
+        Statistics = await NodeService.GetStatisticsAsync(Node.Id);
+        DockerStatistics = await NodeService.GetDockerStatisticsAsync(Node.Id);
 
-        UpdateTimer = new Timer(HandleUpdate, null, TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(3));
+        UpdateTimer = new Timer(HandleUpdateAsync, null, TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(3));
     }
 
-    private async void HandleUpdate(object? _)
+    private async void HandleUpdateAsync(object? _)
     {
         try
         {
-            Statistics = await NodeService.GetStatistics(Node.Id);
-            DockerStatistics = await NodeService.GetDockerStatistics(Node.Id);
+            Statistics = await NodeService.GetStatisticsAsync(Node.Id);
+            DockerStatistics = await NodeService.GetDockerStatisticsAsync(Node.Id);
             
             await InvokeAsync(StateHasChanged);
         }
         catch (Exception e)
         {
             Logger.LogWarning("An error occured while fetching status update: {e}", e);
-            await ToastService.Error("Unable to fetch status update", e.Message);
+            await ToastService.ErrorAsync("Unable to fetch status update", e.Message);
         }
     }
     

@@ -57,18 +57,18 @@ public class HostSystemHelper
 
     #region CPU Usage
 
-    public async Task<CpuUsageDetails> GetCpuUsage()
+    public async Task<CpuUsageDetails> GetCpuUsageAsync()
     {
         var result = new CpuUsageDetails();
         var perCoreUsages = new List<double>();
 
         // Initial read
-        var (cpuLastStats, cpuLastSums) = await ReadAllCpuStats();
+        var (cpuLastStats, cpuLastSums) = await ReadAllCpuStatsAsync();
 
         await Task.Delay(1000);
 
         // Second read
-        var (cpuNowStats, cpuNowSums) = await ReadAllCpuStats();
+        var (cpuNowStats, cpuNowSums) = await ReadAllCpuStatsAsync();
 
         for (var i = 0; i < cpuNowStats.Length; i++)
         {
@@ -94,7 +94,7 @@ public class HostSystemHelper
         return result;
     }
 
-    private async Task<(long[][] cpuStatsList, long[] cpuSums)> ReadAllCpuStats()
+    private async Task<(long[][] cpuStatsList, long[] cpuSums)> ReadAllCpuStatsAsync()
     {
         var lines = await File.ReadAllLinesAsync("/proc/stat");
 
@@ -128,12 +128,12 @@ public class HostSystemHelper
 
     #region Memory
 
-    public async Task ClearCachedMemory()
+    public async Task ClearCachedMemoryAsync()
     {
         await File.WriteAllTextAsync("/proc/sys/vm/drop_caches", "3");
     }
 
-    public async Task<MemoryUsageDetails> GetMemoryUsage()
+    public async Task<MemoryUsageDetails> GetMemoryUsageAsync()
     {
         var details = new MemoryUsageDetails();
 
@@ -194,7 +194,7 @@ public class HostSystemHelper
 
     #region Disks
 
-    public async Task<DiskUsageDetails[]> GetDiskUsages()
+    public async Task<DiskUsageDetails[]> GetDiskUsagesAsync()
     {
         var details = new List<DiskUsageDetails>();
 

@@ -3,21 +3,34 @@
 @using MoonlightServers.Shared.Http.Requests.Client.Servers.Shares
 @using MoonlightServers.Shared.Http.Responses.Client.Servers
 @using MoonlightServers.Shared.Http.Responses.Client.Servers.Shares
-@using MoonlightServers.Shared.Models
 
 @inherits MoonCore.Blazor.FlyonUi.Modals.Components.BaseModal
 
-<div class="text-lg font-semibold mb-5">
-    Update share for @Share.Username
-</div>
-
-<HandleForm @ref="HandleForm" Model="Request" OnValidSubmit="OnValidSubmit">
-    <PermissionEditor Server="Server" PermissionLevels="Permissions" />
-</HandleForm>
-
-<div class="mt-8 flex space-x-2">
-    <WButton OnClick="_ => Hide()" CssClasses="btn btn-secondary grow">Cancel</WButton>
-    <WButton OnClick="_ => Submit()" CssClasses="btn btn-primary grow">Update</WButton>
+<div class="p-5">
+    <div class="flex items-center gap-4">
+        <div class="avatar avatar-placeholder max-sm:hidden">
+            <div class="border-base-content/20 rounded-box w-13 border-1">
+                <span class="icon-share-2 text-xl"></span>
+            </div>
+        </div>
+        <div class="space-y-1">
+            <h3 class="text-base-content text-2xl font-semibold">Update share for @Share.Username</h3>
+            <p class="text-base-content/80">Grant access to this server to other users</p>
+        </div>
+    </div>
+    <div class="mt-5">
+        <HandleForm @ref="HandleForm" Model="Request" OnValidSubmit="OnValidSubmit">
+            <PermissionEditor Server="Server" PermissionLevels="Permissions" />
+        </HandleForm>
+    </div>
+    <div class="mt-5 flex justify-end">
+        <button @onclick="HideAsync" type="button" class="btn btn-secondary me-2">
+            Cancel
+        </button>
+        <WButton OnClick="SubmitAsync">
+            Create
+        </WButton>
+    </div>
 </div>
 
 @code
@@ -31,16 +44,6 @@
 
     private Dictionary<string, ServerPermissionLevel> Permissions = new();
 
-    private string[] Names =
-    [
-        "console",
-        "power",
-        "shares",
-        "files",
-        "variables",
-        "settings"
-    ];
-
     protected override void OnInitialized()
     {
         Request = new();
@@ -48,20 +51,20 @@
         Permissions = Share.Permissions;
     }
 
-    private async Task Set(string name, ServerPermissionLevel level)
+    private async Task SetAsync(string name, ServerPermissionLevel level)
     {
         Permissions[name] = level;
         await InvokeAsync(StateHasChanged);
     }
 
-    private async Task Submit()
-        => await HandleForm.Submit();
+    private async Task SubmitAsync()
+        => await HandleForm.SubmitAsync();
 
     private async Task OnValidSubmit()
     {
         Request.Permissions = Permissions;
 
         await OnSubmit.Invoke(Request);
-        await Hide();
+        await HideAsync();
     }
 }

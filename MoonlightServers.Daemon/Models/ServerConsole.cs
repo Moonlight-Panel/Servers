@@ -14,7 +14,7 @@ public class ServerConsole
         MaxMessagesInCache = maxMessagesInCache;
     }
 
-    public async Task WriteToOutput(string content)
+    public async Task WriteToOutputAsync(string content)
     {
         lock (MessageCache)
         {
@@ -32,7 +32,7 @@ public class ServerConsole
         }
     }
     
-    public async Task WriteToInput(string content)
+    public async Task WriteToInputAsync(string content)
     {
         if (OnInput != null)
             await OnInput.Invoke(content);
