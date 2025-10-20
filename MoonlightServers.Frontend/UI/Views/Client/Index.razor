@@ -1,8 +1,8 @@
 @page "/servers"
 
 @using MoonCore.Blazor.FlyonUi.Components
+@using MoonCore.Common
 @using MoonlightServers.Frontend.UI.Components.Servers
-@using MoonCore.Models
 @using MoonlightServers.Frontend.Services
 @using MoonlightServers.Shared.Http.Responses.Client.Servers
 
@@ -74,14 +74,14 @@
 
     private async Task LoadOwnServersAsync(LazyLoader lazyLoader)
     {
-        OwnServers = await CountedData<ServerDetailResponse>.LoadAllAsync(async (startIndex, count) =>
+        OwnServers = await CountedData.AllAsync<ServerDetailResponse>(async (startIndex, count) =>
             await ServerService.GetServersAsync(startIndex, count)
         );
     }
     
     private async Task LoadSharedServersAsync(LazyLoader lazyLoader)
     {
-        SharedServers = await CountedData<ServerDetailResponse>.LoadAllAsync(async (startIndex, count) =>
+        SharedServers = await CountedData.AllAsync<ServerDetailResponse>(async (startIndex, count) =>
             await ServerService.GetSharedServersAsync(startIndex, count)
         );
     }

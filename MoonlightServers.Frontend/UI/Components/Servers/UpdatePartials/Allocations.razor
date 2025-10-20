@@ -1,9 +1,10 @@
+@using MoonCore.Blazor.FlyonUi.Common
 @using MoonlightServers.Shared.Http.Requests.Admin.Servers
 @using MoonCore.Helpers
-@using MoonCore.Models
 @using MoonlightServers.Shared.Http.Responses.Admin.NodeAllocations
 @using MoonlightServers.Shared.Http.Responses.Admin.Servers
 @using MoonCore.Blazor.FlyonUi.Forms
+@using MoonCore.Common
 @using MoonlightServers.Frontend.UI.Views.Admin.All
 
 @inject HttpApiClient ApiClient
@@ -15,8 +16,7 @@
             <InputMultipleItem TItem="NodeAllocationResponse"
                                Value="Parent.Allocations"
                                DisplayField="@(x => $"{x.IpAddress}:{x.Port}")"
-                               SearchField="@(x => $"{x.IpAddress}:{x.Port}")"
-                               ItemSource="LoaderAsync">
+                               ItemSource="ItemSource">
             </InputMultipleItem>
         </div>
     </div>
@@ -28,12 +28,12 @@
     [Parameter] public ServerResponse Server { get; set; }
     [Parameter] public Update Parent { get; set; }
 
-    private async Task<NodeAllocationResponse[]> LoaderAsync()
+    private ItemSource<NodeAllocationResponse> ItemSource => ItemSourceFactory.From(LoadAsync);
+
+    private async Task<IEnumerable<NodeAllocationResponse>> LoadAsync(int startIndex, int count)
     {
-        return await CountedData<NodeAllocationResponse>.LoadAllAsync(async (startIndex, count) =>
-            await ApiClient.GetJson<CountedData<NodeAllocationResponse>>(
-                $"api/admin/servers/nodes/{Server.NodeId}/allocations/free?startIndex={startIndex}&count={count}&serverId={Server.Id}"
-            )
+        return await ApiClient.GetJson<CountedData<NodeAllocationResponse>>(
+            $"api/admin/servers/nodes/{Server.NodeId}/allocations/free?startIndex={startIndex}&count={count}&serverId={Server.Id}"
         );
     }
 }

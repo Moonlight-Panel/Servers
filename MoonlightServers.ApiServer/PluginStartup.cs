@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Routing;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
 using MoonCore.Extensions;
 using Moonlight.ApiServer.Configuration;
 using Moonlight.ApiServer.Models;
@@ -11,11 +10,11 @@ using MoonlightServers.ApiServer.Helpers;
 using MoonlightServers.ApiServer.Implementations.ServerAuthFilters;
 using MoonlightServers.ApiServer.Interfaces;
 
-namespace MoonlightServers.ApiServer.Startup;
+namespace MoonlightServers.ApiServer;
 
 public class PluginStartup : IPluginStartup
 {
-    public Task BuildApplicationAsync(IServiceProvider serviceProvider, IHostApplicationBuilder builder)
+    public void AddPlugin(WebApplicationBuilder builder)
     {
         // Scan the current plugin assembly for di services
         builder.Services.AutoAddServices<PluginStartup>();
@@ -27,7 +26,8 @@ public class PluginStartup : IPluginStartup
             .AddAuthentication()
             .AddScheme<NodeAuthOptions, NodeAuthScheme>("nodeAuthentication", null);
 
-        var configuration = serviceProvider.GetRequiredService<AppConfiguration>();
+        var configuration = AppConfiguration.CreateEmpty();
+        builder.Configuration.Bind(configuration);
 
         if (configuration.Frontend.EnableHosting)
         {
@@ -42,18 +42,18 @@ public class PluginStartup : IPluginStartup
                 Styles = ["/_content/MoonlightServers.Frontend/css/XtermBlazor.min.css"]
             });
         }
-        
+
         //  Add server auth filters
         builder.Services.AddSingleton<IServerAuthorizationFilter, OwnerAuthFilter>();
         builder.Services.AddScoped<IServerAuthorizationFilter, AdminAuthFilter>();
         builder.Services.AddScoped<IServerAuthorizationFilter, ShareAuthFilter>();
-
-        return Task.CompletedTask;
     }
 
-    public Task ConfigureApplicationAsync(IServiceProvider serviceProvider, IApplicationBuilder app)
-        => Task.CompletedTask;
+    public void UsePlugin(WebApplication app)
+    {
+    }
 
-    public Task ConfigureEndpointsAsync(IServiceProvider serviceProvider, IEndpointRouteBuilder routeBuilder)
-        => Task.CompletedTask;
+    public void MapPlugin(WebApplication app)
+    {
+    }
 }

@@ -2,8 +2,8 @@
 @using MoonCore.Blazor.FlyonUi.Components
 @using MoonCore.Blazor.FlyonUi.Modals
 @using MoonCore.Blazor.FlyonUi.Toasts
+@using MoonCore.Common
 @using MoonCore.Helpers
-@using MoonCore.Models
 @using MoonlightServers.Frontend.UI.Components.Stars.Modals
 @using MoonlightServers.Shared.Http.Requests.Admin.StarVariables
 @using MoonlightServers.Shared.Http.Responses.Admin.Stars
@@ -28,7 +28,7 @@
                         <i class="icon-variable text-xl align-middle mr-2"></i>
                         <span class="align-middle text-lg">@variable.Name</span>
                     </div>
-                    
+
                     <div class="gap-x-2">
                         <button type="button" @onclick="() => UpdateVariableAsync(variable)" class="btn btn-primary">
                             <i class="icon-settings text-base"></i>
@@ -47,17 +47,17 @@
 @code
 {
     [Parameter] public StarResponse Star { get; set; }
-    
+
     private StarVariableResponse[] CurrentVariables;
     private LazyLoader LazyLoader;
 
     private async Task LoadAsync(LazyLoader arg)
     {
-        var pagedVariables = await ApiClient.GetJson<CountedData<StarVariableResponse>>(
-            $"api/admin/servers/stars/{Star.Id}/variables?startIndex=0&count=100"
+        CurrentVariables = await CountedData.AllAsync<StarVariableResponse>(async (startIndex, count) =>
+            await ApiClient.GetJson<CountedData<StarVariableResponse>>(
+                $"api/admin/servers/stars/{Star.Id}/variables?startIndex={startIndex}&count={count}"
+            )
         );
-
-        CurrentVariables = pagedVariables.Items;
     }
 
     private async Task AddVariableAsync()
@@ -65,27 +65,24 @@
         Func<CreateStarVariableRequest, Task> onSubmit = async request =>
         {
             await ApiClient.Post($"api/admin/servers/stars/{Star.Id}/variables", request);
-            
+
             await ToastService.SuccessAsync("Successfully created variable");
             await LazyLoader.ReloadAsync();
         };
-        
-        await ModalService.LaunchAsync<CreateVariableModal>(parameters =>
-        {
-            parameters.Add("OnSubmit", onSubmit);
-        }, "max-w-xl");
+
+        await ModalService.LaunchAsync<CreateVariableModal>(parameters => { parameters.Add("OnSubmit", onSubmit); }, "max-w-xl");
     }
-    
+
     private async Task UpdateVariableAsync(StarVariableResponse variable)
     {
         Func<UpdateStarVariableRequest, Task> onSubmit = async request =>
         {
             await ApiClient.Patch($"api/admin/servers/stars/{Star.Id}/variables/{variable.Id}", request);
-            
+
             await ToastService.SuccessAsync("Successfully updated variable");
             await LazyLoader.ReloadAsync();
         };
-        
+
         await ModalService.LaunchAsync<UpdateVariableModal>(parameters =>
         {
             parameters.Add("OnSubmit", onSubmit);
@@ -101,7 +98,7 @@
             async () =>
             {
                 await ApiClient.Delete($"api/admin/servers/stars/{Star.Id}/variables/{variable.Id}");
-            
+
                 await ToastService.SuccessAsync("Successfully deleted variable");
                 await LazyLoader.ReloadAsync();
             }

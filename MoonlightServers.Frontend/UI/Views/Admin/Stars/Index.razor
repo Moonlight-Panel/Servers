@@ -1,15 +1,16 @@
 @page "/admin/servers/stars"
 
 @using MoonCore.Blazor.FlyonUi.Alerts
+@using MoonCore.Blazor.FlyonUi.Common
 @using MoonCore.Blazor.FlyonUi.Helpers
 @using MoonCore.Blazor.FlyonUi.Toasts
 @using MoonCore.Helpers
-@using MoonCore.Models
 @using MoonlightServers.Shared.Http.Responses.Admin.Stars
 @using MoonCore.Exceptions
 @using MoonCore.Blazor.FlyonUi.Components
 @using MoonCore.Blazor.FlyonUi.Grid
 @using MoonCore.Blazor.FlyonUi.Grid.Columns
+@using MoonCore.Common
 
 @inject HttpApiClient ApiClient
 @inject DownloadService DownloadService
@@ -38,8 +39,7 @@
 
 <DataGrid @ref="Grid"
           TGridItem="StarResponse"
-          EnablePagination="true"
-          ItemsProvider="ItemsProviderAsync">
+          ItemSource="ItemSource">
     <PropertyColumn Field="x => x.Id" />
     <TemplateColumn Title="Name">
         <td>
@@ -91,19 +91,13 @@
 {
     private DataGrid<StarResponse> Grid;
 
-    private async Task<DataGridItemResult<StarResponse>> ItemsProviderAsync(
-        DataGridItemRequest request
-    )
+    private ItemSource<StarResponse> ItemSource => ItemSourceFactory.From(LoadAsync);
+
+    private async Task<IEnumerable<StarResponse>> LoadAsync(int startIndex, int count)
     {
-        var query = $"?startIndex={request.StartIndex}&count={request.Count}";
+        var query = $"?startIndex={startIndex}&count={count}";
 
-        var countedData = await ApiClient.GetJson<CountedData<StarResponse>>($"api/admin/servers/stars{query}");
-
-        return new()
-        {
-            TotalCount = countedData.TotalCount,
-            Items = countedData.Items
-        };
+        return await ApiClient.GetJson<CountedData<StarResponse>>($"api/admin/servers/stars{query}");
     }
 
     private async Task DeleteAsync(StarResponse response)

@@ -6,23 +6,21 @@ using Moonlight.Client.Plugins;
 using MoonlightServers.Frontend.Implementations;
 using MoonlightServers.Frontend.Interfaces;
 
-namespace MoonlightServers.Frontend.Startup;
+namespace MoonlightServers.Frontend;
 
 public class PluginStartup : IPluginStartup
 {
-    public Task BuildApplicationAsync(IServiceProvider serviceProvider, WebAssemblyHostBuilder builder)
+    public void AddPlugin(WebAssemblyHostBuilder builder)
     {
         builder.Services.AddSingleton<ISidebarItemProvider, SidebarImplementation>();
         builder.Services.AddSingleton<IServerTabProvider, DefaultServerTabProvider>();
         builder.Services.AddSingleton<IServerPermissionProvider, DefaultPermissionProvider>();
         
         builder.Services.AutoAddServices<PluginStartup>();
-        
-        return Task.CompletedTask;
     }
 
-    public Task ConfigureApplicationAsync(IServiceProvider serviceProvider, WebAssemblyHost app)
+    public void ConfigurePlugin(WebAssemblyHost app)
     {
-        return Task.CompletedTask;
+        
     }
 }

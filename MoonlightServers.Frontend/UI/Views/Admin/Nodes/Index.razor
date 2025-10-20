@@ -2,9 +2,9 @@
 
 @using Microsoft.Extensions.Logging
 @using MoonCore.Blazor.FlyonUi.Alerts
+@using MoonCore.Blazor.FlyonUi.Common
 @using MoonCore.Blazor.FlyonUi.Toasts
 @using MoonCore.Helpers
-@using MoonCore.Models
 @using MoonlightServers.Shared.Http.Responses.Admin.Nodes
 @using MoonlightServers.Frontend.Services
 @using MoonlightServers.Shared.Http.Responses.Admin.Nodes.Statistics
@@ -12,6 +12,7 @@
 @using MoonCore.Blazor.FlyonUi.Components
 @using MoonCore.Blazor.FlyonUi.Grid
 @using MoonCore.Blazor.FlyonUi.Grid.Columns
+@using MoonCore.Common
 
 @inject HttpApiClient ApiClient
 @inject NodeService NodeService
@@ -35,8 +36,7 @@
 
 <DataGrid @ref="Grid"
           TGridItem="NodeResponse"
-          EnablePagination="true"
-          ItemsProvider="ItemsProviderAsync">
+          ItemSource="ItemSource">
     <PropertyColumn Field="x => x.Id"/>
     <TemplateColumn Title="Name">
         <td>
@@ -159,12 +159,12 @@
 
     private Dictionary<int, NodeSystemStatusResponse?> StatusResponses = new();
     private Dictionary<int, StatisticsResponse?> Statistics = new();
+
+    private ItemSource<NodeResponse> ItemSource => ItemSourceFactory.From(LoadAsync);
     
-    private async Task<DataGridItemResult<NodeResponse>> ItemsProviderAsync(
-        DataGridItemRequest request
-    )
+    private async Task<IEnumerable<NodeResponse>> LoadAsync(int startIndex, int count)
     {
-        var query = $"?startIndex={request.StartIndex}&count={request.Count}";
+        var query = $"?startIndex={startIndex}&count={count}";
 
         var countedData = await ApiClient.GetJson<CountedData<NodeResponse>>($"api/admin/servers/nodes{query}");
 
@@ -210,12 +210,8 @@
                 await InvokeAsync(StateHasChanged);
             }
         });
-        
-        return new()
-        {
-            Items = countedData.Items,
-            TotalCount = countedData.TotalCount
-        };
+
+        return countedData;
     }
 
     private async Task DeleteAsync(NodeResponse response)

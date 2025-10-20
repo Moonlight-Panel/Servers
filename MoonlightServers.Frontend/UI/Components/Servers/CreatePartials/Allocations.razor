@@ -1,8 +1,9 @@
+@using MoonCore.Blazor.FlyonUi.Common
 @using MoonlightServers.Shared.Http.Requests.Admin.Servers
 @using MoonCore.Helpers
-@using MoonCore.Models
 @using MoonlightServers.Shared.Http.Responses.Admin.NodeAllocations
 @using MoonCore.Blazor.FlyonUi.Forms
+@using MoonCore.Common
 @using MoonlightServers.Frontend.UI.Views.Admin.All
 
 @inject HttpApiClient ApiClient
@@ -13,9 +14,8 @@
         <div class="mt-2">
             <InputMultipleItem TItem="NodeAllocationResponse"
                                DisplayField="@(x => $"{x.IpAddress}:{x.Port}")"
-                               SearchField="@(x => $"{x.IpAddress}:{x.Port}")"
                                Value="Parent.Allocations"
-                               ItemSource="ItemSourceAsync">
+                               ItemSource="ItemSource">
             </InputMultipleItem>
         </div>
     </div>
@@ -26,19 +26,17 @@
     [Parameter] public CreateServerRequest Request { get; set; }
     [Parameter] public Create Parent { get; set; }
 
-    private async Task<NodeAllocationResponse[]> ItemSourceAsync()
+    private ItemSource<NodeAllocationResponse> ItemSource => ItemSourceFactory.From(LoadAsync);
+    
+    private async Task<IEnumerable<NodeAllocationResponse>> LoadAsync(int startIndex, int count)
     {
         // Handle unselected node
         // ReSharper disable once ConditionIsAlwaysTrueOrFalseAccordingToNullableAPIContract
         if (Parent.Node == null)
             return [];
 
-        var items = await CountedData<NodeAllocationResponse>.LoadAllAsync(async (startIndex, count) =>
-            await ApiClient.GetJson<CountedData<NodeAllocationResponse>>(
-                $"api/admin/servers/nodes/{Parent.Node.Id}/allocations/free?startIndex={startIndex}&count={count}"
-            )
+        return await ApiClient.GetJson<CountedData<NodeAllocationResponse>>(
+            $"api/admin/servers/nodes/{Parent.Node.Id}/allocations/free?startIndex={startIndex}&count={count}"
         );
-        
-        return items;
     }
 }

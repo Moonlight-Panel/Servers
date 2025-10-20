@@ -1,6 +1,6 @@
 @using MoonCore.Blazor.FlyonUi.Components
 @using MoonCore.Blazor.FlyonUi.Toasts
-@using MoonCore.Models
+@using MoonCore.Common
 @using MoonlightServers.Frontend.Services
 @using MoonlightServers.Shared.Http.Responses.Client.Servers.Variables
 
@@ -42,7 +42,7 @@
 
     private async Task LoadAsync(LazyLoader _)
     {
-        Variables = await CountedData<ServerVariableDetailResponse>.LoadAllAsync(async (startIndex, count)
+        Variables = await CountedData.AllAsync<ServerVariableDetailResponse>(async (startIndex, count)
             => await ServerService.GetVariablesAsync(Server.Id, startIndex, count)
         );
     }

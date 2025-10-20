@@ -27,6 +27,7 @@
     <ItemGroup>
         <Folder Include="Database\Migrations\"/>
         <Folder Include="Http\Middleware\"/>
+        <Folder Include="Startup\" />
     </ItemGroup>
 
     <ItemGroup Label="Build instruction for nuget package building">

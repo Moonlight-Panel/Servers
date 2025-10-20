@@ -2,7 +2,7 @@
 @using MoonCore.Blazor.FlyonUi.Components
 @using MoonCore.Blazor.FlyonUi.Modals
 @using MoonCore.Blazor.FlyonUi.Toasts
-@using MoonCore.Models
+@using MoonCore.Common
 @using MoonlightServers.Frontend.Services
 @using MoonlightServers.Shared.Http.Requests.Client.Servers.Shares
 @using MoonlightServers.Shared.Http.Responses.Client.Servers.Shares
@@ -65,7 +65,7 @@
 
     private async Task LoadAsync(LazyLoader _)
     {
-        Shares = await CountedData<ServerShareResponse>.LoadAllAsync(async (startIndex, count)
+        Shares = await CountedData.AllAsync<ServerShareResponse>(async (startIndex, count)
             => await ShareService.GetAsync(Server.Id, startIndex, count)
         );
     }

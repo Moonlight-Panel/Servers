@@ -1,7 +1,7 @@
 @using MoonCore.Blazor.FlyonUi.Components
+@using MoonCore.Common
 @using MoonlightServers.Shared.Http.Requests.Admin.Servers
 @using MoonCore.Helpers
-@using MoonCore.Models
 @using MoonlightServers.Shared.Http.Requests.Admin.ServerVariables
 @using MoonlightServers.Shared.Http.Responses.Admin.Servers
 @using MoonlightServers.Shared.Http.Responses.Admin.ServerVariables
@@ -50,13 +50,13 @@
 
     private async Task LoadAsync(LazyLoader _)
     {
-        StarVariables = await CountedData<StarVariableResponse>.LoadAllAsync(async (startIndex, count) =>
+        StarVariables = await CountedData.AllAsync<StarVariableResponse>(async (startIndex, count) =>
             await ApiClient.GetJson<CountedData<StarVariableResponse>>(
                 $"api/admin/servers/stars/{Server.StarId}/variables?startIndex={startIndex}&count={count}"
             )
         );
 
-        ServerVariables = await CountedData<ServerVariableResponse>.LoadAllAsync(async (startIndex, count) =>
+        ServerVariables = await CountedData.AllAsync<ServerVariableResponse>(async (startIndex, count) =>
             await ApiClient.GetJson<CountedData<ServerVariableResponse>>(
                 $"api/admin/servers/{Server.Id}/variables?startIndex={startIndex}&count={count}"
             )

@@ -1,7 +1,7 @@
 @using MoonCore.Blazor.FlyonUi.Components
+@using MoonCore.Common
 @using MoonlightServers.Shared.Http.Requests.Admin.Servers
 @using MoonCore.Helpers
-@using MoonCore.Models
 @using MoonlightServers.Frontend.UI.Views.Admin.All
 @using MoonlightServers.Shared.Http.Requests.Admin.ServerVariables
 @using MoonlightServers.Shared.Http.Responses.Admin.StarVariables
@@ -51,10 +51,10 @@
             StarVariables = [];
             return;
         }
-        
-        StarVariables = await CountedData<StarVariableResponse>.LoadAllAsync(async (startIndex, count) =>
+
+        StarVariables = await CountedData.AllAsync(async (index, count) =>
             await ApiClient.GetJson<CountedData<StarVariableResponse>>(
-                $"api/admin/servers/stars/{Parent.Star.Id}/variables?startIndex={startIndex}&count={count}"
+                $"api/admin/servers/stars/{Parent.Star.Id}/variables?startIndex={index}&count={count}"
             )
         );
     }
@@ -77,7 +77,7 @@
                 {
                     Key = starVariable.Key
                 };
-                
+
                 Request.Variables.Add(serverVar);
             }
 

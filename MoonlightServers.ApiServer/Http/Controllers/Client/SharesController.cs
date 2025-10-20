@@ -1,8 +1,8 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using MoonCore.Common;
 using MoonCore.Extended.Abstractions;
-using MoonCore.Models;
 using Moonlight.ApiServer.Database.Entities;
 using MoonlightServers.ApiServer.Database.Entities;
 using MoonlightServers.ApiServer.Mappers;

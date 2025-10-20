@@ -35,4 +35,8 @@
         <None Include="MoonlightServers.Frontend.targets" Pack="true" PackagePath="build/MoonlightServers.Frontend.targets" />
     </ItemGroup>
 
+    <ItemGroup>
+      <Folder Include="Startup\" />
+    </ItemGroup>
+
 </Project>

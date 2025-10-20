@@ -2,7 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using MoonCore.Extended.Abstractions;
 using Microsoft.AspNetCore.Authorization;
-using MoonCore.Models;
+using MoonCore.Common;
 using MoonlightServers.ApiServer.Database.Entities;
 using MoonlightServers.ApiServer.Mappers;
 using MoonlightServers.Shared.Http.Requests.Admin.StarDockerImages;

@@ -1,8 +1,9 @@
+@using MoonCore.Blazor.FlyonUi.Common
 @using MoonlightServers.Shared.Http.Requests.Admin.Servers
 @using MoonCore.Helpers
-@using MoonCore.Models
 @using Moonlight.Shared.Http.Responses.Admin.Users
 @using MoonCore.Blazor.FlyonUi.Forms
+@using MoonCore.Common
 @using MoonlightServers.Frontend.UI.Views.Admin.All
 
 @inject HttpApiClient ApiClient
@@ -20,9 +21,8 @@
         <div class="mt-2">
             <InputItem TItem="UserResponse"
                        DisplayField="@(x => x.Username)"
-                       SearchField="@(x => x.Username)"
                        @bind-Value="Parent.Owner"
-                       ItemSource="LoaderAsync">
+                       ItemSource="UserItemSource">
             </InputItem>
 
         </div>
@@ -64,12 +64,12 @@
     [Parameter] public UpdateServerRequest Request { get; set; }
     [Parameter] public Update Parent { get; set; }
 
-    private async Task<UserResponse[]> LoaderAsync()
+    private ItemSource<UserResponse> UserItemSource => ItemSourceFactory.From(LoadAsync);
+
+    private async Task<IEnumerable<UserResponse>> LoadAsync(int startIndex, int count)
     {
-        return await CountedData<UserResponse>.LoadAllAsync(async (startIndex, count) =>
-            await ApiClient.GetJson<CountedData<UserResponse>>(
-                $"api/admin/users?startIndex={startIndex}&count={count}"
-            )
+        return await ApiClient.GetJson<CountedData<UserResponse>>(
+            $"api/admin/users?startIndex={startIndex}&count={count}"
         );
     }
 }

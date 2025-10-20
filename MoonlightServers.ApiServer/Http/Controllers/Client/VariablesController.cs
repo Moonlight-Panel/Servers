@@ -1,9 +1,9 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using MoonCore.Common;
 using MoonCore.Exceptions;
 using MoonCore.Extended.Abstractions;
-using MoonCore.Models;
 using MoonlightServers.ApiServer.Database.Entities;
 using MoonlightServers.ApiServer.Services;
 using MoonlightServers.Shared.Constants;

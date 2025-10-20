@@ -2,8 +2,8 @@
 @using MoonCore.Blazor.FlyonUi.Components
 @using MoonCore.Blazor.FlyonUi.Modals
 @using MoonCore.Blazor.FlyonUi.Toasts
+@using MoonCore.Common
 @using MoonCore.Helpers
-@using MoonCore.Models
 @using MoonlightServers.Frontend.UI.Components.Stars.Modals
 @using MoonlightServers.Shared.Http.Requests.Admin.StarDockerImages
 @using MoonlightServers.Shared.Http.Responses.Admin.StarDockerImages
@@ -18,7 +18,7 @@
     <div class="flex justify-end">
         <button type="button" @onclick="AddDockerImageAsync" class="btn btn-primary">Add docker image</button>
     </div>
-    
+
     <div class="grid sm:grid-cols-2 xl:grid-cols-3 gap-4 mt-5">
         @foreach (var dockerImage in DockerImages)
         {
@@ -30,11 +30,13 @@
                     </div>
 
                     <div class="gap-x-2">
-                        <button type="button" @onclick="() => UpdateDockerImageAsync(dockerImage)" class="btn btn-primary">
+                        <button type="button" @onclick="() => UpdateDockerImageAsync(dockerImage)"
+                                class="btn btn-primary">
                             <i class="icon-settings text-base"></i>
                         </button>
 
-                        <button type="button" @onclick="() => DeleteDockerImageAsync(dockerImage)" class="btn btn-error">
+                        <button type="button" @onclick="() => DeleteDockerImageAsync(dockerImage)"
+                                class="btn btn-error">
                             <i class="icon-trash text-base"></i>
                         </button>
                     </div>
@@ -47,19 +49,17 @@
 @code
 {
     [Parameter] public StarResponse Star { get; set; }
-    
+
     private StarDockerImageResponse[] DockerImages;
     private LazyLoader LazyLoader;
 
     private async Task LoadAsync(LazyLoader _)
     {
-        var pagedVariables = await ApiClient.GetJson<CountedData<StarDockerImageResponse>>(
-            $"api/admin/servers/stars/{Star.Id}/dockerImages?startIndex=0&count=100"
+        DockerImages = await CountedData.AllAsync<StarDockerImageResponse>(async (startIndex, count) =>
+            await ApiClient.GetJson<CountedData<StarDockerImageResponse>>(
+                $"api/admin/servers/stars/{Star.Id}/dockerImages?startIndex={startIndex}&count={count}"
+            )
         );
-
-        // TODO: Improve paged stuff
-        
-        DockerImages = pagedVariables.Items;
     }
 
     private async Task AddDockerImageAsync()
@@ -67,34 +67,31 @@
         Func<CreateStarDockerImageRequest, Task> onSubmit = async request =>
         {
             await ApiClient.Post($"api/admin/servers/stars/{Star.Id}/dockerImages", request);
-            
+
             await ToastService.SuccessAsync("Successfully created docker image");
             await LazyLoader.ReloadAsync();
         };
-        
-        await ModalService.LaunchAsync<CreateDockerImageModal>(parameters =>
-        {
-            parameters.Add("OnSubmit", onSubmit);
-        });
+
+        await ModalService.LaunchAsync<CreateDockerImageModal>(parameters => { parameters.Add("OnSubmit", onSubmit); });
     }
-    
+
     private async Task UpdateDockerImageAsync(StarDockerImageResponse dockerImage)
     {
         Func<UpdateStarDockerImageRequest, Task> onSubmit = async request =>
         {
             await ApiClient.Patch($"api/admin/servers/stars/{Star.Id}/dockerImages/{dockerImage.Id}", request);
-            
+
             await ToastService.SuccessAsync("Successfully updated docker image");
             await LazyLoader.ReloadAsync();
         };
-        
+
         await ModalService.LaunchAsync<UpdateDockerImageModal>(parameters =>
         {
             parameters.Add("OnSubmit", onSubmit);
             parameters.Add("DockerImage", dockerImage);
         });
     }
-    
+
     private async Task DeleteDockerImageAsync(StarDockerImageResponse dockerImage)
     {
         await AlertService.ConfirmDangerAsync(
@@ -103,7 +100,7 @@
             async () =>
             {
                 await ApiClient.Delete($"api/admin/servers/stars/{Star.Id}/dockerImages/{dockerImage.Id}");
-            
+
                 await ToastService.SuccessAsync("Successfully deleted docker image");
                 await LazyLoader.ReloadAsync();
             }

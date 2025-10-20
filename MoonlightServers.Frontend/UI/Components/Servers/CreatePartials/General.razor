@@ -1,10 +1,11 @@
+@using MoonCore.Blazor.FlyonUi.Common
 @using MoonlightServers.Shared.Http.Requests.Admin.Servers
 @using MoonCore.Helpers
-@using MoonCore.Models
 @using MoonlightServers.Shared.Http.Responses.Admin.Nodes
 @using MoonlightServers.Shared.Http.Responses.Admin.Stars
 @using Moonlight.Shared.Http.Responses.Admin.Users
 @using MoonCore.Blazor.FlyonUi.Forms
+@using MoonCore.Common
 @using MoonlightServers.Frontend.UI.Views.Admin.All
 
 @inject HttpApiClient ApiClient
@@ -22,8 +23,7 @@
         <div class="mt-2">
             <InputItem TItem="UserResponse"
                        DisplayField="@(x => x.Username)"
-                       SearchField="@(x => x.Username)"
-                       ItemSource="LoadUsersAsync"
+                       ItemSource="UsersItemSource"
                        @bind-Value="Parent.Owner">
             </InputItem>
         </div>
@@ -34,8 +34,7 @@
         <div class="mt-2">
             <InputItem TItem="StarResponse"
                        DisplayField="@(x => x.Name)"
-                       SearchField="@(x => x.Name)"
-                       ItemSource="LoadStarsAsync"
+                       ItemSource="StarsItemSource"
                        @bind-Value="Parent.Star">
             </InputItem>
         </div>
@@ -46,8 +45,7 @@
         <div class="mt-2">
             <InputItem TItem="NodeResponse"
                        DisplayField="@(x => x.Name)"
-                       SearchField="@(x => x.Name)"
-                       ItemSource="LoadNodesAsync"
+                       ItemSource="NodesItemSource"
                        @bind-Value="Parent.Node">
             </InputItem>
         </div>
@@ -91,30 +89,28 @@
     [Parameter] public CreateServerRequest Request { get; set; }
     [Parameter] public Create Parent { get; set; }
 
-    private async Task<StarResponse[]> LoadStarsAsync()
+    private ItemSource<StarResponse> StarsItemSource => ItemSourceFactory.From(LoadStarsAsync);
+    private ItemSource<NodeResponse> NodesItemSource => ItemSourceFactory.From(LoadNodesAsync);
+    private ItemSource<UserResponse> UsersItemSource => ItemSourceFactory.From(LoadUsersAsync);
+
+    private async Task<IEnumerable<StarResponse>> LoadStarsAsync(int startIndex, int count)
     {
-        return await CountedData<StarResponse>.LoadAllAsync(async (startIndex, count) =>
-            await ApiClient.GetJson<CountedData<StarResponse>>(
-                $"api/admin/servers/stars?startIndex={startIndex}&count={count}"
-            )
+        return await ApiClient.GetJson<CountedData<StarResponse>>(
+            $"api/admin/servers/stars?startIndex={startIndex}&count={count}"
         );
     }
 
-    private async Task<NodeResponse[]> LoadNodesAsync()
+    private async Task<IEnumerable<NodeResponse>> LoadNodesAsync(int startIndex, int count)
     {
-        return await CountedData<NodeResponse>.LoadAllAsync(async (startIndex, count) =>
-            await ApiClient.GetJson<CountedData<NodeResponse>>(
-                $"api/admin/servers/nodes?startIndex={startIndex}&count={count}"
-            )
+        return await ApiClient.GetJson<CountedData<NodeResponse>>(
+            $"api/admin/servers/nodes?startIndex={startIndex}&count={count}"
         );
     }
 
-    private async Task<UserResponse[]> LoadUsersAsync()
+    private async Task<IEnumerable<UserResponse>> LoadUsersAsync(int startIndex, int count)
     {
-        return await CountedData<UserResponse>.LoadAllAsync(async (startIndex, count) =>
-            await ApiClient.GetJson<CountedData<UserResponse>>(
-                $"api/admin/users?startIndex={startIndex}&count={count}"
-            )
+        return await ApiClient.GetJson<CountedData<UserResponse>>(
+            $"api/admin/users?startIndex={startIndex}&count={count}"
         );
     }
 }

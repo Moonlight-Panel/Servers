@@ -1,11 +1,12 @@
 @using MoonCore.Blazor.FlyonUi.Alerts
+@using MoonCore.Blazor.FlyonUi.Common
 @using MoonCore.Blazor.FlyonUi.Grid
 @using MoonCore.Blazor.FlyonUi.Grid.Columns
 @using MoonCore.Blazor.FlyonUi.Modals
 @using MoonCore.Blazor.FlyonUi.Toasts
+@using MoonCore.Common
 @using MoonlightServers.Shared.Http.Responses.Admin.Nodes
 @using MoonCore.Helpers
-@using MoonCore.Models
 @using MoonlightServers.Frontend.UI.Components.Nodes.Modals
 @using MoonlightServers.Shared.Http.Requests.Admin.NodeAllocations
 @using MoonlightServers.Shared.Http.Responses.Admin.NodeAllocations
@@ -34,9 +35,8 @@
     <div class="col-span-1 md:col-span-2 -mb-3">
         <DataGrid @ref="Grid"
                   TGridItem="NodeAllocationResponse"
-                  EnablePagination="true"
-                  ItemsProvider="ItemsProviderAsync">
-            <PropertyColumn Field="x => x.IpAddress" Title="IP Address" />
+                  ItemSource="ItemSource">
+            <PropertyColumn Field="x => x.IpAddress" Title="IP Address"/>
             <PropertyColumn Field="x => x.Port"/>
             <TemplateColumn>
                 <td>
@@ -63,22 +63,16 @@
     [Parameter] public NodeResponse Node { get; set; }
 
     private DataGrid<NodeAllocationResponse> Grid;
-    
-    private async Task<DataGridItemResult<NodeAllocationResponse>> ItemsProviderAsync(
-        DataGridItemRequest request
-    )
-    {
-        var query = $"?startIndex={request.StartIndex}&count={request.Count}";
 
-        var countedData = await ApiClient.GetJson<CountedData<NodeAllocationResponse>>(
+    private ItemSource<NodeAllocationResponse> ItemSource => ItemSourceFactory.From(LoadAsync);
+
+    private async Task<IEnumerable<NodeAllocationResponse>> LoadAsync(int startIndex, int count)
+    {
+        var query = $"?startIndex={startIndex}&count={count}";
+
+        return await ApiClient.GetJson<CountedData<NodeAllocationResponse>>(
             $"api/admin/servers/nodes/{Node.Id}/allocations{query}"
         );
-
-        return new()
-        {
-            TotalCount = countedData.TotalCount,
-            Items = countedData.Items
-        };
     }
 
     private async Task AddAllocationRangeAsync()
